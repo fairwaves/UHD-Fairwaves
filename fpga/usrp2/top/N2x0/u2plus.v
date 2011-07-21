@@ -110,6 +110,7 @@ module u2plus
    input exp_user_in_p, input exp_user_in_n, // Diff
    output exp_user_out_p, output exp_user_out_n, // Diff 
    
+`ifndef NO_SERDES
    // SERDES
    output ser_enable,
    output ser_prbsen,
@@ -125,7 +126,9 @@ module u2plus
    input [15:0] ser_r,
    input ser_rklsb,
    input ser_rkmsb,
+`endif // !`ifndef NO_SERDES
 
+`ifndef NO_EXT_RAM
    // SRAM
    inout [35:0] RAM_D,
    output [20:0] RAM_A,
@@ -136,6 +139,7 @@ module u2plus
    output RAM_WEn,
    output RAM_CENn,
    output RAM_CLK,
+`endif // !`ifndef NO_EXT_RAM
    
    // SPI Flash
    output flash_cs,
@@ -297,6 +301,7 @@ module u2plus
       .S(0)       // Synchronous preset input
       );
    
+`ifndef NO_SERDES
    wire ser_tklsb_unreg, ser_tkmsb_unreg;
    wire [15:0] ser_t_unreg;
    wire        ser_tx_clk_int;
@@ -333,6 +338,7 @@ module u2plus
       );
    */
 
+`endif // !`ifndef NO_SERDES
 
    //
    // Instantiate IO for Bidirectional bus to SRAM
@@ -346,6 +352,7 @@ module u2plus
    generate  
       for (i=0;i<36;i=i+1)
         begin : gen_RAM_D_IO
+`ifndef NO_EXT_RAM
 
 	   IOBUF #(
 		   .DRIVE(12),
@@ -358,6 +365,7 @@ module u2plus
 		      .IO(RAM_D[i]),
 		      .T(RAM_D_poe)
 		      );
+`endif // !`ifndef NO_EXT_RAM
 	end // block: gen_RAM_D_IO
    endgenerate
 
@@ -397,6 +405,7 @@ module u2plus
 		     .MDC		(MDC),
 		     .PHY_INTn		(PHY_INTn),
 		     .PHY_RESETn	(PHY_RESETn),
+`ifndef NO_SERDES
 		     .ser_enable	(ser_enable),
 		     .ser_prbsen	(ser_prbsen),
 		     .ser_loopen	(ser_loopen),
@@ -409,6 +418,7 @@ module u2plus
 		     .ser_r		(ser_r_int[15:0]),
 		     .ser_rklsb		(ser_rklsb_int),
 		     .ser_rkmsb		(ser_rkmsb_int),
+`endif // !`ifndef NO_SERDES
 		     .adc_a		(adc_a[13:0]),
 		     .adc_ovf_a		(1'b0),
 		     .adc_on_a		(),
@@ -443,6 +453,7 @@ module u2plus
 		     .sen_rx_dac	(SEN_RX_DAC),
 		     .io_tx		(io_tx[15:0]),
 		     .io_rx		(io_rx[15:0]),
+`ifndef NO_EXT_RAM
 		     .RAM_D_po          (RAM_D_po),
 		     .RAM_D_pi          (RAM_D_pi),
 		     .RAM_D_poe         (RAM_D_poe),
@@ -452,6 +463,7 @@ module u2plus
 		     .RAM_WEn           (RAM_WEn),
 		     .RAM_OEn           (RAM_OEn),
 		     .RAM_LDn           (RAM_LDn), 
+`endif // !`ifndef NO_EXT_RAM
 		     .uart_tx_o         (TXD[3:1]),
 		     .uart_rx_i         ({1'b1,RXD[3:1]}),
 		     .uart_baud_o       (),
@@ -464,10 +476,12 @@ module u2plus
 		     .spiflash_mosi     (flash_mosi)
 		     );
 
+`ifndef NO_EXT_RAM
    // Drive low so that RAM does not sleep.
    assign RAM_ZZ = 0;
    // Byte Writes are qualified by the global write enable
    // Always do 36bit operations to extram.
    assign RAM_BWn = 4'b0000;
+`endif // !`ifndef NO_EXT_RAM
    
 endmodule // u2plus

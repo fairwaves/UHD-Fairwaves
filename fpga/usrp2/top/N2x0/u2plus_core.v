@@ -60,6 +60,7 @@ module u2plus_core
    input PHY_INTn,   // open drain
    output PHY_RESETn,
 
+`ifndef NO_SERDES
    // SERDES
    output ser_enable,
    output ser_prbsen,
@@ -78,6 +79,7 @@ module u2plus_core
    
    input por,
    output config_success,
+`endif // !`ifndef NO_SERDES
    
    // ADC
    input [13:0] adc_a,
@@ -126,6 +128,7 @@ module u2plus_core
    inout [15:0] io_tx,
    inout [15:0] io_rx,
 
+`ifndef NO_EXT_RAM
    // External RAM
    input [35:0] RAM_D_pi,
    output [35:0] RAM_D_po,
@@ -136,6 +139,7 @@ module u2plus_core
    output RAM_WEn,
    output RAM_OEn,
    output RAM_LDn,
+`endif // !`ifndef NO_EXT_RAM
    
    // Debug stuff
    output [3:0] uart_tx_o, 
@@ -636,6 +640,7 @@ module u2plus_core
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),
       .in(set_data_dsp),.out(),.changed(clear_tx));
 
+`ifndef NO_EXT_RAM
    assign 	 RAM_A[20:18] = 3'b0;
    
    ext_fifo #(.EXT_WIDTH(36),.INT_WIDTH(36),.RAM_DEPTH(18),.FIFO_DEPTH(18)) 
@@ -660,6 +665,7 @@ module u2plus_core
 	.dst_rdy_i(tx_dst_rdy),
 	.debug(debug_extfifo),
 	.debug2(debug_extfifo2) );
+`endif // !`ifndef NO_EXT_RAM
 
    wire [23:0] 	 tx_i, tx_q;
    
@@ -686,6 +692,7 @@ module u2plus_core
    // ///////////////////////////////////////////////////////////////////////////////////
    // SERDES
 
+`ifndef NO_SERDES
    serdes #(.TXFIFOSIZE(SERDES_TX_FIFOSIZE),.RXFIFOSIZE(SERDES_RX_FIFOSIZE)) serdes
      (.clk(dsp_clk),.rst(dsp_rst),
       .ser_tx_clk(ser_tx_clk),.ser_t(ser_t),.ser_tklsb(ser_tklsb),.ser_tkmsb(ser_tkmsb),
@@ -695,6 +702,7 @@ module u2plus_core
       .tx_occupied(ser_tx_occ),.tx_full(ser_tx_full),.tx_empty(ser_tx_empty),
       .rx_occupied(ser_rx_occ),.rx_full(ser_rx_full),.rx_empty(ser_rx_empty),
       .serdes_link_up(serdes_link_up),.debug0(debug_serdes0), .debug1(debug_serdes1) );
+`endif // !`ifndef NO_SERDES
 
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing
