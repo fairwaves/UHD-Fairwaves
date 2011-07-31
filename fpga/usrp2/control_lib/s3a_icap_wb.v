@@ -64,6 +64,7 @@ module s3a_icap_wb
    assign ack_o = (icap_state == ICAP_WR1) | (icap_state == ICAP_RD1);
    //assign debug_out = {17'd0, BUSY, dat_i[7:0], ~CE, ICAPCLK, ~WRITE, icap_state};
    
+`ifndef SPARTAN6
    ICAP_SPARTAN3A ICAP_SPARTAN3A_inst 
      (.BUSY(BUSY),          // Busy output
       .O(dat_o[7:0]),            // 32-bit data output
@@ -72,5 +73,15 @@ module s3a_icap_wb
       .I(dat_i[7:0]),            // 32-bit data input
       .WRITE(~WRITE)         // Write input
       );
+`else
+   ICAP_SPARTAN6 ICAP_SPARTAN3A_inst
+     (.BUSY(BUSY),          // Busy output
+      .O(dat_o[7:0]),            // 32-bit data output
+      .CE(~CE),              // Clock enable input
+      .CLK(ICAPCLK),            // Clock input
+      .I(dat_i[7:0]),            // 32-bit data input
+      .WRITE(~WRITE)         // Write input
+      );
+`endif // !`ifndef SPARTAN6
 
 endmodule // s3a_icap_wb
