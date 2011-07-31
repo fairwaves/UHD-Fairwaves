@@ -24,6 +24,7 @@ module u2plus
   (
    input CLK_FPGA_P, input CLK_FPGA_N,  // Diff
    
+`ifndef NO_LMS
    // ADC
    input ADC_clkout_p, input ADC_clkout_n,
    input ADCA_12_p, input ADCA_12_n,
@@ -45,6 +46,17 @@ module u2plus
    output reg [15:0] DACA,
    output reg [15:0] DACB,
    input DAC_LOCK,     // unused for now
+`else
+   // ADC
+   input [11:0] ADC_0,
+   output reg RX_IQ_SEL_0,
+   input [11:0] ADC_1,
+   output reg RX_IQ_SEL_1,
+
+   // DAC
+   output reg [11:0] DAC,
+   output reg TX_IQ_SEL,
+`endif // !`ifndef NO_LMS
    
    // DB IO Pins
    inout [15:0] io_tx,
@@ -179,6 +191,7 @@ module u2plus
      clock_ready_d[5:0] <= {clock_ready_d[4:0],clock_ready};
    wire 	dcm_rst = ~&clock_ready_d & |clock_ready_d;
 
+`ifndef NO_LMS
    // ADC A is inverted on the schematic to facilitate a clean layout
    //  We account for that here by inverting it
 `ifdef LVDS
@@ -203,6 +216,29 @@ module u2plus
 	adc_b <= adc_b_pre;
      end
 `endif // !`ifdef LVDS
+`else
+   // Interface to ADC of LMS
+   reg dsp_clk_div2_rx=0; // DSP clock signal devided by 2
+   reg [13:0] 	adc_a_0, adc_b_0, 	adc_a_1, adc_b_1;
+   always @(posedge dsp_clk)
+     begin
+         dsp_clk_div2_rx = ~dsp_clk_div2_rx;
+         if (dsp_clk_div2_rx == 1'b0)
+            begin
+               adc_a_0 = {2'b00, ADC_0}; //ADC_I signal
+               RX_IQ_SEL_0 = 0;
+               adc_a_1 = {2'b00, ADC_1}; //ADC_I signal
+               RX_IQ_SEL_1 = 0;
+            end
+         else
+            begin
+               adc_b_0 <= {2'b00, ADC_0}; // ADC_Q signal
+               RX_IQ_SEL_0 = 1'b1;
+               adc_b_1 <= {2'b00, ADC_1}; // ADC_Q signal
+               RX_IQ_SEL_1 = 1'b1;
+            end
+     end
+`endif // !`ifndef NO_LMS
    
    // Handle Clocks
    DCM DCM_INST (.CLKFB(dsp_clk), 
@@ -372,10 +408,29 @@ module u2plus
    
    
    wire [15:0] dac_a_int, dac_b_int;
+`ifndef NO_LMS
    // DAC A and B are swapped in schematic to facilitate clean layout
    // DAC A is also inverted in schematic to facilitate clean layout
    always @(negedge dsp_clk) DACA <= ~dac_b_int;
    always @(negedge dsp_clk) DACB <= dac_a_int;
+`else
+   // Interface to DAC of LMS
+   reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
+   always @(negedge dsp_clk)
+   begin
+      dsp_clk_div2_tx = ~dsp_clk_div2_tx;
+      if (dsp_clk_div2_tx)
+         begin
+            DAC = dac_a_int[11:0]; //DAC_I signal
+            TX_IQ_SEL = 1'b0;
+         end
+      else
+         begin
+            DAC = dac_b_int[11:0]; //DAC_Q signal
+            TX_IQ_SEL = 1'b1;
+         end
+      end
+`endif // !`ifndef NO_LMS
 
    wire 	pps;
    assign pps = PPS_IN ^ PPS2_IN;
@@ -419,6 +474,7 @@ module u2plus
 		     .ser_rklsb		(ser_rklsb_int),
 		     .ser_rkmsb		(ser_rkmsb_int),
 `endif // !`ifndef NO_SERDES
+`ifndef NO_LMS
 		     .adc_a		(adc_a[13:0]),
 		     .adc_ovf_a		(1'b0),
 		     .adc_on_a		(),
@@ -427,6 +483,24 @@ module u2plus
 		     .adc_ovf_b		(1'b0),
 		     .adc_on_b		(),
 		     .adc_oe_b		(),
+`else
+		     .adc_a_0		(adc_a_0[13:0]),
+		     .adc_ovf_a_0		(1'b0),
+		     .adc_on_a_0		(),
+		     .adc_oe_a_0		(),
+		     .adc_b_0		(adc_b_0[13:0]),
+		     .adc_ovf_b_0		(1'b0),
+		     .adc_on_b_0		(),
+		     .adc_oe_b_0		(),
+		     .adc_a_1		(adc_a_1[13:0]),
+		     .adc_ovf_a_1		(1'b0),
+		     .adc_on_a_1		(),
+		     .adc_oe_a_1		(),
+		     .adc_b_1		(adc_b_1[13:0]),
+		     .adc_ovf_b_1		(1'b0),
+		     .adc_on_b_1		(),
+		     .adc_oe_b_1		(),
+`endif // !`ifndef NO_LMS
 		     .dac_a		(dac_a_int[15:0]),
 		     .dac_b		(dac_b_int[15:0]),
 		     .scl_pad_i		(scl_pad_i),
