@@ -81,7 +81,7 @@ module u2plus_core
    output config_success,
 `endif // !`ifndef NO_SERDES
    
-`ifndef NO_LMS
+`ifndef LMS602D_FRONTEND
    // ADC
    input [13:0] adc_a,
    input adc_ovf_a,
@@ -113,7 +113,7 @@ module u2plus_core
    input adc_ovf_b_1,
    output adc_on_b_1,
    output adc_oe_b_1,
-`endif // !`ifndef NO_LMS
+`endif // !`ifndef LMS602D_FRONTEND
    
    // DAC
    output [15:0] dac_a,
@@ -606,10 +606,10 @@ module u2plus_core
    dsp_core_rx #(.BASE(SR_RX_DSP0)) dsp_core_rx0
      (.clk(dsp_clk),.rst(dsp_rst),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef NO_LMS
+`ifndef LMS602D_FRONTEND
       .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
       .adc_i(adc_a_0),.adc_ovf_i(adc_ovf_a_0),.adc_q(adc_b_0),.adc_ovf_q(adc_ovf_b_0),
-`endif // !`ifndef NO_LMS
+`endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx0), .run(run_rx0_d1), .strobe(strobe_rx0),
       .debug() );
 
@@ -637,11 +637,11 @@ module u2plus_core
    dsp_core_rx #(.BASE(SR_RX_DSP1)) dsp_core_rx1
      (.clk(dsp_clk),.rst(dsp_rst),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef NO_LMS
+`ifndef LMS602D_FRONTEND
       .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
 `else
       .adc_i(adc_a_1),.adc_ovf_i(adc_ovf_a_1),.adc_q(adc_b_1),.adc_ovf_q(adc_ovf_b_1),
-`endif // !`ifndef NO_LMS
+`endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx1), .run(run_rx1_d1), .strobe(strobe_rx1),
       .debug() );
 
