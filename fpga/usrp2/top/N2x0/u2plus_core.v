@@ -608,6 +608,7 @@ module u2plus_core
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
 `ifndef LMS602D_FRONTEND
       .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
+`else
       .adc_i(adc_a_0),.adc_ovf_i(adc_ovf_a_0),.adc_q(adc_b_0),.adc_ovf_q(adc_ovf_b_0),
 `endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx0), .run(run_rx0_d1), .strobe(strobe_rx0),
