@@ -140,7 +140,7 @@ module u2plus
    input ser_rkmsb,
 `endif // !`ifndef NO_SERDES
 
-`ifndef NO_EXT_RAM
+`ifndef NO_EXT_FIFO
    // SRAM
    inout [35:0] RAM_D,
    output [20:0] RAM_A,
@@ -151,7 +151,7 @@ module u2plus
    output RAM_WEn,
    output RAM_CENn,
    output RAM_CLK,
-`endif // !`ifndef NO_EXT_RAM
+`endif // !`ifndef NO_EXT_FIFO
    
    // SPI Flash
    output flash_cs,
@@ -388,7 +388,7 @@ module u2plus
    generate  
       for (i=0;i<36;i=i+1)
         begin : gen_RAM_D_IO
-`ifndef NO_EXT_RAM
+`ifndef NO_EXT_FIFO
 
 	   IOBUF #(
 		   .DRIVE(12),
@@ -401,7 +401,7 @@ module u2plus
 		      .IO(RAM_D[i]),
 		      .T(RAM_D_poe)
 		      );
-`endif // !`ifndef NO_EXT_RAM
+`endif // !`ifndef NO_EXT_FIFO
 	end // block: gen_RAM_D_IO
    endgenerate
 
@@ -527,7 +527,7 @@ module u2plus
 		     .sen_rx_dac	(SEN_RX_DAC),
 		     .io_tx		(io_tx[15:0]),
 		     .io_rx		(io_rx[15:0]),
-`ifndef NO_EXT_RAM
+`ifndef NO_EXT_FIFO
 		     .RAM_D_po          (RAM_D_po),
 		     .RAM_D_pi          (RAM_D_pi),
 		     .RAM_D_poe         (RAM_D_poe),
@@ -537,7 +537,7 @@ module u2plus
 		     .RAM_WEn           (RAM_WEn),
 		     .RAM_OEn           (RAM_OEn),
 		     .RAM_LDn           (RAM_LDn), 
-`endif // !`ifndef NO_EXT_RAM
+`endif // !`ifndef NO_EXT_FIFO
 		     .uart_tx_o         (TXD[3:1]),
 		     .uart_rx_i         ({1'b1,RXD[3:1]}),
 		     .uart_baud_o       (),
