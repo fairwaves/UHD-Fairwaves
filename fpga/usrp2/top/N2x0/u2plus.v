@@ -47,15 +47,39 @@ module u2plus
    output reg [15:0] DACB,
    input DAC_LOCK,     // unused for now
 `else
-   // ADC
-   input [11:0] ADC_0,
-   output reg RX_IQ_SEL_0,
-   input [11:0] ADC_1,
-   output reg RX_IQ_SEL_1,
+   // ADC 1
+   input ADC_CLK_O1,
+   input RX1IQSEL,
+   input RX1_EN,
+   input [11:0] RX1D,
+   // ADC 2
+   input ADC_CLK_O2,
+   input RX2IQSEL,
+   input RX2_EN,
+   input [11:0] RX2D,
+   // DAC 1
+   input TX1CLK,
+   input TX1EN,
+   output reg TX1IQSEL,
+   output reg [11:0] TX1D,
+   // DAC 2
+   input TX2CLK,
+   input TX2EN,
+   output reg TX2IQSEL,
+   output reg [11:0] TX2D,
+   //LMS 1 Control
+   input SCLK1,
+   input LMS1nRST,
+   input SEN1,
+   input MISO1,
+   input MOSI1,
+   //LMS 2 Control
+   input SCLK2,
+   input LMS2nRST,
+   input SEN2,
+   input MISO2,
+   input MOSI2,
 
-   // DAC
-   output reg [11:0] DAC,
-   output reg TX_IQ_SEL,
 `endif // !`ifndef LMS602D_FRONTEND
    
    // DB IO Pins
@@ -218,25 +242,20 @@ module u2plus
 `endif // !`ifdef LVDS
 `else
    // Interface to ADC of LMS
-   reg dsp_clk_div2_rx=0; // DSP clock signal devided by 2
-   reg [13:0] 	adc_a_0, adc_b_0, 	adc_a_1, adc_b_1;
+   reg [13:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
    always @(posedge dsp_clk)
      begin
-         dsp_clk_div2_rx = ~dsp_clk_div2_rx;
-         if (dsp_clk_div2_rx == 1'b0)
-            begin
-               adc_a_0 = {2'b00, ADC_0}; //ADC_I signal
-               RX_IQ_SEL_0 = 0;
-               adc_a_1 = {2'b00, ADC_1}; //ADC_I signal
-               RX_IQ_SEL_1 = 0;
-            end
+         if (RX1IQSEL == 1'b0)
+            adc_a_0 = {2'b00, RX1D}; //ADC_I signal
          else
-            begin
-               adc_b_0 <= {2'b00, ADC_0}; // ADC_Q signal
-               RX_IQ_SEL_0 = 1'b1;
-               adc_b_1 <= {2'b00, ADC_1}; // ADC_Q signal
-               RX_IQ_SEL_1 = 1'b1;
-            end
+            adc_b_0 <= {2'b00, RX1D}; // ADC_Q signal
+     end
+   always @(posedge dsp_clk)
+     begin
+         if (RX2IQSEL == 1'b0)
+            adc_a_1 = {2'b00, RX2D}; //ADC_I signal
+         else
+            adc_b_1 <= {2'b00, RX2D}; // ADC_Q signal
      end
 `endif // !`ifndef LMS602D_FRONTEND
    
@@ -407,7 +426,7 @@ module u2plus
 
    
    
-   wire [15:0] dac_a_int, dac_b_int;
+   wire [15:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
 `ifndef LMS602D_FRONTEND
    // DAC A and B are swapped in schematic to facilitate clean layout
    // DAC A is also inverted in schematic to facilitate clean layout
@@ -421,13 +440,17 @@ module u2plus
       dsp_clk_div2_tx = ~dsp_clk_div2_tx;
       if (dsp_clk_div2_tx)
          begin
-            DAC = dac_a_int[11:0]; //DAC_I signal
-            TX_IQ_SEL = 1'b0;
+            TX1D = dac_a_int1[11:0]; //DAC_I signal
+            TX1IQSEL = 1'b0;
+            TX2D = dac_a_int2[11:0]; //DAC_I signal
+            TX2IQSEL = 1'b0;
          end
       else
          begin
-            DAC = dac_b_int[11:0]; //DAC_Q signal
-            TX_IQ_SEL = 1'b1;
+            TX1D = dac_b_int1[11:0]; //DAC_Q signal
+            TX1IQSEL = 1'b1;
+            TX2D = dac_b_int2[11:0]; //DAC_Q signal
+            TX2IQSEL = 1'b1;
          end
       end
 `endif // !`ifndef LMS602D_FRONTEND
@@ -501,8 +524,8 @@ module u2plus
 		     .adc_on_b_1		(),
 		     .adc_oe_b_1		(),
 `endif // !`ifndef LMS602D_FRONTEND
-		     .dac_a		(dac_a_int[15:0]),
-		     .dac_b		(dac_b_int[15:0]),
+		     .dac_a		(dac_a_int1[15:0]),
+		     .dac_b		(dac_b_int1[15:0]),
 		     .scl_pad_i		(scl_pad_i),
 		     .scl_pad_o		(scl_pad_o),
 		     .scl_pad_oen_o	(scl_pad_oen_o),
