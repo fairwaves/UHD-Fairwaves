@@ -30,9 +30,13 @@
 #include "i2c.h"
 
 uint16_t get_hw_rev(void) {
+#ifdef NO_EEPROM
+    return 0x0;
+#else
     uint16_t tmp;
     eeprom_read(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_REV, &tmp, sizeof(tmp));
     return tmp;
+#endif
 }
 
 spi_flash_async_state_t spi_flash_async_state;

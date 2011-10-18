@@ -54,6 +54,10 @@ void start_program(void)
 }
 
 void do_the_bootload_thing(void) {
+#ifdef NO_FLASH
+	puts("Starting USRP2+ without flash.");
+	return;
+#else
 	spif_init(); //initialize SPI flash clock
 	
     bool production_image = find_safe_booted_flag();
@@ -101,4 +105,5 @@ void do_the_bootload_thing(void) {
 	}
     puts("ERROR: no safe firmware image available. Falling through to built-in firmware.");
     */
+#endif
 }

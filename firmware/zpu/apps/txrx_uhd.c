@@ -141,6 +141,7 @@ static void handle_udp_ctrl_packet(
         memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
         break;
 
+#ifndef NO_SPI_I2C
     /*******************************************************************
      * SPI
      ******************************************************************/
@@ -187,6 +188,7 @@ static void handle_udp_ctrl_packet(
             ctrl_data_out.data.i2c_args.bytes = num_bytes;
         }
         break;
+#endif
 
     /*******************************************************************
      * Peek and Poke Register
@@ -314,7 +316,9 @@ main(void)
   register_udp_listener(USRP2_UDP_TX_DSP0_PORT, handle_udp_data_packet);
   
 #ifdef USRP2P
+#ifndef NO_FLASH
   register_udp_listener(USRP2_UDP_UPDATE_PORT, handle_udp_fw_update_packet);
+#endif
 #endif
 
   udp_uart_init(USRP2_UDP_UART_BASE_PORT); //setup uart messaging

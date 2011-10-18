@@ -22,16 +22,23 @@
 static const int EEPROM_PAGESIZE = 16;
 
 bool find_safe_booted_flag(void) {
+#ifdef NO_EEPROM
+	return 0;
+#else
 	unsigned char flag_byte;
 	eeprom_read(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_BOOTLOADER_FLAGS, &flag_byte, 1);
 	return (flag_byte == 0x5E);
+#endif
 }
 
 void set_safe_booted_flag(bool flag) {
+#ifndef NO_EEPROM
 	unsigned char flag_byte = flag ? 0x5E : 0xDC;
 	eeprom_write(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_BOOTLOADER_FLAGS, &flag_byte, 1);
+#endif
 }
 
+#ifndef NO_EEPROM
 bool
 eeprom_write (int i2c_addr, int eeprom_offset, const void *buf, int len)
 {
@@ -78,4 +85,4 @@ eeprom_read (int i2c_addr, int eeprom_offset, void *buf, int len)
   }
   return true;
 }
- 
+#endif

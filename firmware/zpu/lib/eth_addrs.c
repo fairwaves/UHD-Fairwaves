@@ -60,7 +60,7 @@ ethernet_mac_addr(void)
 {
   if (!src_mac_addr_initialized){    // fetch from eeprom
     src_mac_addr_initialized = true;
-
+#ifndef NO_EEPROM
     // if we're simulating, don't read the EEPROM model, it's REALLY slow
     if (hwconfig_simulation_p())
       return &src_mac_addr;
@@ -72,6 +72,7 @@ ethernet_mac_addr(void)
     }
     else
       src_mac_addr = tmp;
+#endif
   }
 
   return &src_mac_addr;
@@ -80,7 +81,11 @@ ethernet_mac_addr(void)
 bool
 ethernet_set_mac_addr(const eth_mac_addr_t *t)
 {
+#ifdef NO_EEPROM
+  bool ok = true;
+#else
   bool ok = eeprom_write(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_MAC_ADDR, t, sizeof(eth_mac_addr_t));
+#endif
   if (ok){
     src_mac_addr = *t;
     src_mac_addr_initialized = true;
@@ -112,7 +117,7 @@ const struct ip_addr *get_ip_addr(void)
 {
   if (!src_ip_addr_initialized){    // fetch from eeprom
     src_ip_addr_initialized = true;
-
+#ifndef NO_EEPROM
     // if we're simulating, don't read the EEPROM model, it's REALLY slow
     if (hwconfig_simulation_p())
       return &src_ip_addr;
@@ -124,13 +129,18 @@ const struct ip_addr *get_ip_addr(void)
     }
     else
       src_ip_addr = tmp;
+#endif
   }
 
   return &src_ip_addr;
 }
 
 bool set_ip_addr(const struct ip_addr *t){
+#ifdef NO_EEPROM
+  bool ok = true;
+#else
   bool ok = eeprom_write(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_IP_ADDR, t, sizeof(struct ip_addr));
+#endif
   if (ok){
     src_ip_addr = *t;
     src_ip_addr_initialized = true;

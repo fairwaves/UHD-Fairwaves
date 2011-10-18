@@ -24,13 +24,13 @@ ADD_DEFINITIONS(-DUDP_UART_MASK=4) #GPS=UART2 streaming enabled
 
 ADD_LIBRARY(libusrp2pfw STATIC
     ${COMMON_SRCS}
-    spif.c
-    spi_flash.c
-    spi_flash_read.c
+#    spif.c
+#    spi_flash.c
+#    spi_flash_read.c
     bootloader_utils.c
     ethernet.c
-    xilinx_s3_icap.c
-    udp_fw_update.c
+#    xilinx_s3_icap.c
+#    udp_fw_update.c
     u2p_init.c
 )
 

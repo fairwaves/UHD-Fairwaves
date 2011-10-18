@@ -37,17 +37,21 @@ u2_init(void)
   hal_disable_ints();
   hal_io_init();
 
+#ifndef NO_SPI_I2C
   // init spi, so that we can switch over to the high-speed clock
   spi_init();
 
   // set up the default clocks
   clocks_init();
+#endif
 
   hal_uart_init();
 
   // init i2c so we can read our rev
   pic_init();	// progammable interrupt controller
+#ifndef NO_SPI_I2C
   i2c_init();
+#endif
   hal_enable_ints();
 
   // flash all leds to let us know board is alive
