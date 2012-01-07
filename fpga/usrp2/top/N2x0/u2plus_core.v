@@ -60,7 +60,6 @@ module u2plus_core
    input PHY_INTn,   // open drain
    output PHY_RESETn,
 
-`ifndef NO_SERDES
    // SERDES
    output ser_enable,
    output ser_prbsen,
@@ -79,7 +78,6 @@ module u2plus_core
    
    input por,
    output config_success,
-`endif // !`ifndef NO_SERDES
    
 `ifndef LMS602D_FRONTEND
    // ADC
@@ -735,7 +733,6 @@ module u2plus_core
    // ///////////////////////////////////////////////////////////////////////////////////
    // SERDES
 
-`ifndef NO_SERDES
    serdes #(.TXFIFOSIZE(SERDES_TX_FIFOSIZE),.RXFIFOSIZE(SERDES_RX_FIFOSIZE)) serdes
      (.clk(dsp_clk),.rst(dsp_rst),
       .ser_tx_clk(ser_tx_clk),.ser_t(ser_t),.ser_tklsb(ser_tklsb),.ser_tkmsb(ser_tkmsb),
@@ -745,7 +742,6 @@ module u2plus_core
       .tx_occupied(ser_tx_occ),.tx_full(ser_tx_full),.tx_empty(ser_tx_empty),
       .rx_occupied(ser_rx_occ),.rx_full(ser_rx_full),.rx_empty(ser_rx_empty),
       .serdes_link_up(serdes_link_up),.debug0(debug_serdes0), .debug1(debug_serdes1) );
-`endif // !`ifndef NO_SERDES
 
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing

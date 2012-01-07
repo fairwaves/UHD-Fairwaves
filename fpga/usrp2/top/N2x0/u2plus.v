@@ -527,6 +527,19 @@ module u2plus
 		     .ser_r		(ser_r_int[15:0]),
 		     .ser_rklsb		(ser_rklsb_int),
 		     .ser_rkmsb		(ser_rkmsb_int),
+`else
+		     .ser_enable  (),
+		     .ser_prbsen  (),
+		     .ser_loopen  (),
+		     .ser_rx_en   (),
+		     .ser_tx_clk  (),
+		     .ser_t       (),
+		     .ser_tklsb   (),
+		     .ser_tkmsb   (),
+		     .ser_rx_clk  (),
+		     .ser_r       (),
+		     .ser_rklsb   (),
+		     .ser_rkmsb   (),
 `endif // !`ifndef NO_SERDES
 `ifndef LMS602D_FRONTEND
 		     .adc_a		(adc_a[13:0]),
