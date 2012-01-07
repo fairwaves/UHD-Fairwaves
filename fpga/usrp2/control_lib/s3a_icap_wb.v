@@ -63,7 +63,52 @@ module s3a_icap_wb
 
    assign WRITE 	 = (icap_state == ICAP_WR0) | (icap_state == ICAP_WR1);
    assign CE 		 = (icap_state == ICAP_WR0) | (icap_state == ICAP_RD0);
+`ifndef SPARTAN6
    assign ICAPCLK        = CE & (~clk);
+`else
+   wire 	clk_fb, clk_out, clk_inv;
+   DCM DCM_INST_ICAP (.CLKFB(clk_fb),
+                 .CLKIN(clk),
+                 .DSSEN(0),
+                 .PSCLK(0),
+                 .PSEN(0),
+                 .PSINCDEC(0),
+                 .RST(reset),
+                 .CLKDV(),
+                 .CLKFX(),
+                 .CLKFX180(),
+                 .CLK0(clk_out),
+                 .CLK2X(),
+                 .CLK2X180(),
+                 .CLK90(),
+                 .CLK180(clk_inv),
+                 .CLK270(),
+                 .LOCKED(),
+                 .PSDONE(),
+                 .STATUS());
+   defparam DCM_INST.CLK_FEEDBACK = "1X";
+   defparam DCM_INST.CLKDV_DIVIDE = 2.0;
+   defparam DCM_INST.CLKFX_DIVIDE = 1;
+   defparam DCM_INST.CLKFX_MULTIPLY = 4;
+   defparam DCM_INST.CLKIN_DIVIDE_BY_2 = "FALSE";
+   defparam DCM_INST.CLKIN_PERIOD = 10.000;
+   defparam DCM_INST.CLKOUT_PHASE_SHIFT = "NONE";
+   defparam DCM_INST.DESKEW_ADJUST = "SYSTEM_SYNCHRONOUS";
+   defparam DCM_INST.DFS_FREQUENCY_MODE = "LOW";
+   defparam DCM_INST.DLL_FREQUENCY_MODE = "LOW";
+   defparam DCM_INST.DUTY_CYCLE_CORRECTION = "TRUE";
+   defparam DCM_INST.FACTORY_JF = 16'h8080;
+   defparam DCM_INST.PHASE_SHIFT = 0;
+   defparam DCM_INST.STARTUP_WAIT = "FALSE";
+
+   BUFG wbclk_BUFG (.I(clk_out), .O(clk_fb));
+
+   BUFGCE BUFGCE_inst (
+      .O(ICAPCLK),   // 1-bit output: Clock buffer output
+      .CE(CE), // 1-bit input: Clock buffer select
+      .I(clk_inv)    // 1-bit input: Clock buffer input (S=0)
+   );
+`endif // !`ifndef SPARTAN6
 
    assign ack_o = (icap_state == ICAP_WR1) | (icap_state == ICAP_RD1);
    //assign debug_out = {17'd0, BUSY, dat_i[7:0], ~CE, ICAPCLK, ~WRITE, icap_state};
