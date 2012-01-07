@@ -74,7 +74,7 @@ module s3a_icap_wb
       .WRITE(~WRITE)         // Write input
       );
 `else
-   ICAP_SPARTAN6 ICAP_SPARTAN3A_inst
+   ICAP_SPARTAN6 ICAP_SPARTAN6_inst
      (.BUSY(BUSY),          // Busy output
       .O(dat_o[7:0]),            // 32-bit data output
       .CE(~CE),              // Clock enable input
