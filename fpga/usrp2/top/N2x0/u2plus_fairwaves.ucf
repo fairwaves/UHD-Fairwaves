@@ -292,7 +292,7 @@ NET "clk_to_mac" TNM_NET = "clk_to_mac";
 TIMESPEC TS_clk_to_mac = PERIOD "clk_to_mac" 8 ns HIGH 50 %;
 
 NET "clk_fpga_p" TNM_NET = "clk_fpga_p";
-TIMESPEC TS_clk_fpga_p = PERIOD "clk_fpga_p" 10 ns HIGH 50 %;
+TIMESPEC TS_clk_fpga_p = PERIOD "clk_fpga_p" 38 ns HIGH 50 %;
 
 NET "GMII_RX_CLK" TNM_NET = "GMII_RX_CLK";
 TIMESPEC TS_GMII_RX_CLK = PERIOD "GMII_RX_CLK" 8 ns HIGH 50 %;
@@ -310,7 +310,7 @@ TIMESPEC TS_clk_div_to_dsp_clk = FROM "clk_div" TO "dcm_out" 10 ns;
 
 
 #PIN "wbclk_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE;
-PIN "phyclk.O" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "phyclk.O" CLOCK_DEDICATED_ROUTE = FALSE;
 #PIN "clk_fpga_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE;
 
 # PlanAhead Generated physical constraints

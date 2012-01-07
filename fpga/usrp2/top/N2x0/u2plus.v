@@ -185,14 +185,18 @@ module u2plus
    );
 
    wire  CLK_TO_MAC_int, CLK_TO_MAC_int2;
+`ifndef UMTRX
    IBUFG phyclk (.O(CLK_TO_MAC_int), .I(CLK_TO_MAC));
    BUFG phyclk2 (.O(CLK_TO_MAC_int2), .I(CLK_TO_MAC_int));
+`endif // !`ifndef UMTRX
       
    // FPGA-specific pins connections
    wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clock_ready;
 
+`ifndef UMTRX
    IBUFGDS clk_fpga_pin (.O(clk_fpga),.I(CLK_FPGA_P),.IB(CLK_FPGA_N));
    defparam 	clk_fpga_pin.IOSTANDARD = "LVPECL_25";
+`endif // !`ifndef UMTRX
    
    wire 	exp_time_in;
    IBUFDS exp_time_in_pin (.O(exp_time_in),.I(exp_time_in_p),.IB(exp_time_in_n));
@@ -260,6 +264,7 @@ module u2plus
 `endif // !`ifndef LMS602D_FRONTEND
    
    // Handle Clocks
+`ifndef UMTRX
    DCM DCM_INST (.CLKFB(dsp_clk), 
                  .CLKIN(clk_fpga), 
                  .DSSEN(0), 
@@ -296,6 +301,28 @@ module u2plus
 
    BUFG dspclk_BUFG (.I(dcm_out), .O(dsp_clk));
    BUFG wbclk_BUFG (.I(clk_div), .O(wb_clk));
+`else
+
+   pll_clk pll_clk_instance
+   (// Clock in ports
+    .clk_in(CLK_FPGA_P),      // IN
+    // Clock out ports
+    .wb_clk(wb_clk),     // OUT 52 MHz
+    .dsp_clk(dsp_clk),     // OUT 104 MHz
+    .clk270_100(clk270_100),     // OUT 104 MHz
+    .clk_fpga(clk_fpga),     // OUT 104 MHz
+    // Status and control signals
+    .LOCKED_OUT(LOCKED_OUT));      // OUT
+
+   pll_rx pll_rx_instance
+   (// Clock in ports
+    .gmii_rx_clk(GMII_RX_CLK),      // IN
+    // Clock out ports
+    .clk_rx(clk_rx),     // OUT
+    .clk_to_mac(CLK_TO_MAC_int2), // OUT
+    .clk_rx_180(clk_rx_180));    // OUT
+
+`endif // !`ifndef UMTRX
 
    // Create clock for external SRAM thats -90degree phase to DSPCLK (i.e) 2nS earlier at 100MHz.
    BUFG  clk270_100_buf_i1 (.I(clk270_100), 
@@ -476,7 +503,11 @@ module u2plus
 		     .GMII_GTX_CLK	(GMII_GTX_CLK_int),
 		     .GMII_TX_CLK	(GMII_TX_CLK),
 		     .GMII_RXD		(GMII_RXD[7:0]),
+`ifndef UMTRX
 		     .GMII_RX_CLK	(GMII_RX_CLK),
+`else
+		     .GMII_RX_CLK	(clk_rx),
+`endif // !`ifndef ATLYS
 		     .GMII_RX_DV	(GMII_RX_DV),
 		     .GMII_RX_ER	(GMII_RX_ER),
 		     .MDIO		(MDIO),
