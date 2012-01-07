@@ -507,7 +507,7 @@ module u2plus
 		     .GMII_RX_CLK	(GMII_RX_CLK),
 `else
 		     .GMII_RX_CLK	(clk_rx),
-`endif // !`ifndef ATLYS
+`endif // !`ifndef UMTRX
 		     .GMII_RX_DV	(GMII_RX_DV),
 		     .GMII_RX_ER	(GMII_RX_ER),
 		     .MDIO		(MDIO),
