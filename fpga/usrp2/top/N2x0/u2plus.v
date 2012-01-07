@@ -617,12 +617,12 @@ module u2plus
 		     .spiflash_mosi     (flash_mosi)
 		     );
 
-`ifndef NO_EXT_RAM
+`ifndef NO_EXT_FIFO
    // Drive low so that RAM does not sleep.
    assign RAM_ZZ = 0;
    // Byte Writes are qualified by the global write enable
    // Always do 36bit operations to extram.
    assign RAM_BWn = 4'b0000;
-`endif // !`ifndef NO_EXT_RAM
+`endif // !`ifndef NO_EXT_FIFO
    
 endmodule // u2plus
