@@ -375,7 +375,11 @@ module u2plus_core
 //defparam bootram.RAM0.INIT_00=256'hbc32fff0_aa43502b_b00000fe_30630001_80000000_10600000_a48500ff_10a00000;
 //defparam bootram.RAM0.INIT_01=256'ha48500ff_b810ffd0_f880200c_30a50001_10830000_308000ff_be23000c_a4640001;
 
+`ifndef UMTRX
 `include "bootloader.rmi"
+`else
+`include "bootloader_umtrx.rmi"
+`endif // !`ifndef UMTRX
 
    ram_harvard2 #(.AWIDTH(14),.RAM_SIZE(16384))
    sys_ram(.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),	     
