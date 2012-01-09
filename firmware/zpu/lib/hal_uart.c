@@ -30,6 +30,17 @@
 //if you're going to recalculate the divisors, it's just uart_clock_rate / baud_rate.
 //uart_clock_rate is 50MHz for USRP2.
 static const uint16_t
+#ifndef UMTRX
+divisor_table[NSPEEDS] = {
+  5208,	//    9600
+  2604,	//   19200
+  1302,	//   38400
+  868,	//   57600
+  434,	//  115200
+  217	//  230400
+};
+#else
+//uart_clock_rate is 52MHz for UmTRX.
 divisor_table[NSPEEDS] = {
   5417,	//    9600
   2708,	//   19200
@@ -38,6 +49,7 @@ divisor_table[NSPEEDS] = {
   451,	//  115200
   226	//  230400
 };
+#endif //UMTRX
 
 static char uart_mode[4] = {
   [UART_DEBUG] = UART_MODE_ONLCR, 
