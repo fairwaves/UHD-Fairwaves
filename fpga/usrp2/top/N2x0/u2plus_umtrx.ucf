@@ -35,9 +35,9 @@ NET "PHY_INTn" LOC = E22;
 NET "PHY_RESETn" LOC = R20;
 
 ## UARTS
-NET "RXD[1]" LOC = T18; // FPGA output -> FTDI input
+NET "RXD[1]" LOC = T17; // FPGA output -> FTDI input
 NET "RXD[2]" LOC = Y17; // FPGA output -> GPS input
-NET "TXD[1]" LOC = T17; // FPGA input <- FTDI output
+NET "TXD[1]" LOC = T18; // FPGA input <- FTDI output
 NET "TXD[2]" LOC = AB17; // FPGA input <- GPS output
 
 ## Global CLK
