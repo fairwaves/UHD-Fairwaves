@@ -295,6 +295,12 @@ module u2plus
    assign 	miso 			   = (~SEN_CLK & MISO_CLK) | (~SEN_DAC & MISO_DAC) |
 					     (~SEN_TX_DB & MISO_TX_DB) | (~SEN_TX_ADC & MISO_TX_ADC) |
 					     (~SEN_RX_DB & MISO_RX_DB) | (~SEN_RX_ADC & MISO_RX_ADC);
+`else
+   assign 	SCLK_DAC = sclk;
+   assign 	{SCLK1,MOSI1} 	   = ~SEN1 ? {sclk,mosi} : 2'B0;
+   assign 	{SCLK2,MOSI2} 	   = ~SEN2 ? {sclk,mosi} : 2'B0;
+   
+   assign 	miso 	= (~SEN_DAC & MISO_DAC) | (~SEN1 & MISO1) | (~SEN2 & MISO2) ;
 `endif // !`ifndef UMTRX
    
    wire 	GMII_TX_EN_unreg, GMII_TX_ER_unreg;
@@ -544,14 +550,9 @@ module u2plus
 		     .io_tx		(io_tx[15:0]),
 		     .io_rx		(io_rx[15:0]),
 `else
-		     .sen_clk	 (),
 		     .sen_dac	 (SEN_DAC),
-		     .sen_adc   (),
-		     .sen_tx_db (),
-		     .sen_tx_adc(),
-		     .sen_tx_dac(),
-		     .sen_rx_db (),
-		     .sen_rx_adc(),
+		     .sen_lms1   (SEN1),
+		     .sen_lms2 (SEN2),
 		     .io_tx		 (),
 		     .io_rx		 (),
 `endif // !`ifndef UMTRX
