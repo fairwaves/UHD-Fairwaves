@@ -45,17 +45,17 @@ module u2plus_umtrx
    output reg TX2IQSEL,
    output reg [11:0] TX2D,
    //LMS 1 Control
-   input SCLK1,
-   input LMS1nRST,
-   input SEN1,
+   output SCLK1,
+   output LMS1nRST,
+   output SEN1,
    input MISO1,
-   input MOSI1,
+   output MOSI1,
    //LMS 2 Control
-   input SCLK2,
-   input LMS2nRST,
-   input SEN2,
+   output SCLK2,
+   output LMS2nRST,
+   output SEN2,
    input MISO2,
-   input MOSI2,
+   output MOSI2,
 
    // Misc, debug
    output [5:1] leds,  // LED4 is shared w/INIT_B
