@@ -24,29 +24,6 @@ module u2plus
   (
    input CLK_FPGA_P, input CLK_FPGA_N,  // Diff
    
-`ifndef LMS602D_FRONTEND
-   // ADC
-   input ADC_clkout_p, input ADC_clkout_n,
-   input ADCA_12_p, input ADCA_12_n,
-   input ADCA_10_p, input ADCA_10_n,
-   input ADCA_8_p, input ADCA_8_n,
-   input ADCA_6_p, input ADCA_6_n,
-   input ADCA_4_p, input ADCA_4_n,
-   input ADCA_2_p, input ADCA_2_n,
-   input ADCA_0_p, input ADCA_0_n,
-   input ADCB_12_p, input ADCB_12_n,
-   input ADCB_10_p, input ADCB_10_n,
-   input ADCB_8_p, input ADCB_8_n,
-   input ADCB_6_p, input ADCB_6_n,
-   input ADCB_4_p, input ADCB_4_n,
-   input ADCB_2_p, input ADCB_2_n,
-   input ADCB_0_p, input ADCB_0_n,
-   
-   // DAC
-   output reg [15:0] DACA,
-   output reg [15:0] DACB,
-   input DAC_LOCK,     // unused for now
-`else
    // ADC 1
    input ADC_CLK_O1,
    input RX1IQSEL,
@@ -80,41 +57,20 @@ module u2plus
    input MISO2,
    input MOSI2,
 
-`endif // !`ifndef LMS602D_FRONTEND
-   
-   // DB IO Pins
-   inout [15:0] io_tx,
-   inout [15:0] io_rx,
-
    // Misc, debug
    output [5:1] leds,  // LED4 is shared w/INIT_B
    input FPGA_RESET,
    output [1:0] debug_clk,
    output [31:0] debug,
    output [3:1] TXD, input [3:1] RXD, // UARTs
-   //input [3:0] dipsw,  // Forgot DIP Switches...
-   
-   // Clock Gen Control
-   output [1:0] clk_en,
-   output [1:0] clk_sel,
-   input CLK_FUNC,        // FIXME is an input to control the 9510
-   input clk_status,
 
    inout SCL, inout SDA,   // I2C
 
    // PPS
-   input PPS_IN, input PPS2_IN,
+   input PPS_IN,
 
    // SPI
-   output SEN_CLK, output SCLK_CLK, output MOSI_CLK, input MISO_CLK,
-   output SEN_DAC, output SCLK_DAC, output MOSI_DAC, input MISO_DAC,
-   output SEN_ADC, output SCLK_ADC, output MOSI_ADC,
-   output SEN_TX_DB, output SCLK_TX_DB, output MOSI_TX_DB, input MISO_TX_DB,
-   output SEN_TX_DAC, output SCLK_TX_DAC, output MOSI_TX_DAC,
-   output SEN_TX_ADC, output SCLK_TX_ADC, output MOSI_TX_ADC, input MISO_TX_ADC,
-   output SEN_RX_DB, output SCLK_RX_DB, output MOSI_RX_DB, input MISO_RX_DB,
-   output SEN_RX_DAC, output SCLK_RX_DAC, output MOSI_RX_DAC,
-   output SEN_RX_ADC, output SCLK_RX_ADC, output MOSI_RX_ADC, input MISO_RX_ADC,
+   output SEN_DAC, output SCLK_DAC, input MISO_DAC,
 
    // GigE PHY
    input CLK_TO_MAC,
@@ -138,33 +94,6 @@ module u2plus
    output PHY_RESETn,
    output ETH_LED,
    
-//   input POR,
-   
-   // Expansion
-   input exp_time_in_p, input exp_time_in_n, // Diff
-   output exp_time_out_p, output exp_time_out_n, // Diff 
-   input exp_user_in_p, input exp_user_in_n, // Diff
-   output exp_user_out_p, output exp_user_out_n, // Diff 
-   
-`ifndef NO_SERDES
-   // SERDES
-   output ser_enable,
-   output ser_prbsen,
-   output ser_loopen,
-   output ser_rx_en,
-   
-   output ser_tx_clk,
-   output reg [15:0] ser_t,
-   output reg ser_tklsb,
-   output reg ser_tkmsb,
-
-   input ser_rx_clk,
-   input [15:0] ser_r,
-   input ser_rklsb,
-   input ser_rkmsb,
-`endif // !`ifndef NO_SERDES
-
-`ifndef NO_EXT_FIFO
    // SRAM
    inout [35:0] RAM_D,
    output [20:0] RAM_A,
@@ -175,7 +104,6 @@ module u2plus
    output RAM_WEn,
    output RAM_CENn,
    output RAM_CLK,
-`endif // !`ifndef NO_EXT_FIFO
    
    // SPI Flash
    output flash_cs,
@@ -199,20 +127,28 @@ module u2plus
 `endif // !`ifndef UMTRX
    
    wire 	exp_time_in;
+`ifndef UMTRX
    IBUFDS exp_time_in_pin (.O(exp_time_in),.I(exp_time_in_p),.IB(exp_time_in_n));
    defparam 	exp_time_in_pin.IOSTANDARD = "LVDS_25";
+`endif // !`ifndef UMTRX
    
    wire 	exp_time_out;
+`ifndef UMTRX
    OBUFDS exp_time_out_pin (.O(exp_time_out_p),.OB(exp_time_out_n),.I(exp_time_out));
    defparam 	exp_time_out_pin.IOSTANDARD  = "LVDS_25";
+`endif // !`ifndef UMTRX
 
    wire 	exp_user_in;
+`ifndef UMTRX
    IBUFDS exp_user_in_pin (.O(exp_user_in),.I(exp_user_in_p),.IB(exp_user_in_n));
    defparam 	exp_user_in_pin.IOSTANDARD = "LVDS_25";
+`endif // !`ifndef UMTRX
    
    wire 	exp_user_out;
+`ifndef UMTRX
    OBUFDS exp_user_out_pin (.O(exp_user_out_p),.OB(exp_user_out_n),.I(exp_user_out));
    defparam 	exp_user_out_pin.IOSTANDARD  = "LVDS_25";
+`endif // !`ifndef UMTRX
 
    reg [5:0] 	clock_ready_d;
    always @(posedge clk_fpga)
@@ -299,6 +235,9 @@ module u2plus
 
    BUFG dspclk_BUFG (.I(dcm_out), .O(dsp_clk));
    BUFG wbclk_BUFG (.I(clk_div), .O(wb_clk));
+   // Create clock for external SRAM thats -90degree phase to DSPCLK (i.e) 2nS earlier at 100MHz.
+   BUFG  clk270_100_buf_i1 (.I(clk270_100), 
+			    .O(clk270_100_buf));
 `else
 
    pll_clk pll_clk_instance
@@ -307,7 +246,7 @@ module u2plus
     // Clock out ports
     .wb_clk(wb_clk),     // OUT 52 MHz
     .dsp_clk(dsp_clk),     // OUT 104 MHz
-    .clk270_100(clk270_100),     // OUT 104 MHz
+    .clk270_100(clk270_100_buf),     // OUT 104 MHz
     .clk_fpga(clk_fpga),     // OUT 104 MHz
     // Status and control signals
     .LOCKED_OUT(LOCKED_OUT));      // OUT
@@ -322,9 +261,6 @@ module u2plus
 
 `endif // !`ifndef UMTRX
 
-   // Create clock for external SRAM thats -90degree phase to DSPCLK (i.e) 2nS earlier at 100MHz.
-   BUFG  clk270_100_buf_i1 (.I(clk270_100), 
-			    .O(clk270_100_buf));
    OFDDRRSE RAM_CLK_i1 (.Q(RAM_CLK),
 			.C0(clk270_100_buf),
 			.C1(~clk270_100_buf),
@@ -345,6 +281,7 @@ module u2plus
    // SPI
    wire       miso, mosi, sclk;
 
+`ifndef UMTRX
    assign 	{SCLK_CLK,MOSI_CLK} 	   = ~SEN_CLK ? {sclk,mosi} : 2'B0;
    assign 	{SCLK_DAC,MOSI_DAC} 	   = ~SEN_DAC ? {sclk,mosi} : 2'B0;
    assign 	{SCLK_ADC,MOSI_ADC} 	   = ~SEN_ADC ? {sclk,mosi} : 2'B0;
@@ -358,6 +295,7 @@ module u2plus
    assign 	miso 			   = (~SEN_CLK & MISO_CLK) | (~SEN_DAC & MISO_DAC) |
 					     (~SEN_TX_DB & MISO_TX_DB) | (~SEN_TX_ADC & MISO_TX_ADC) |
 					     (~SEN_RX_DB & MISO_RX_DB) | (~SEN_RX_ADC & MISO_RX_ADC);
+`endif // !`ifndef UMTRX
    
    wire 	GMII_TX_EN_unreg, GMII_TX_ER_unreg;
    wire [7:0] 	GMII_TXD_unreg;
@@ -481,7 +419,12 @@ module u2plus
 `endif // !`ifndef LMS602D_FRONTEND
 
    wire 	pps;
+`ifndef UMTRX
    assign pps = PPS_IN ^ PPS2_IN;
+`else
+   assign pps = PPS_IN;
+`endif // !`ifndef UMTRX
+
    
    u2plus_core u2p_c(.dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
@@ -574,13 +517,21 @@ module u2plus
 		     .sda_pad_i		(sda_pad_i),
 		     .sda_pad_o		(sda_pad_o),
 		     .sda_pad_oen_o	(sda_pad_oen_o),
+`ifndef UMTRX
 		     .clk_en		(clk_en[1:0]),
 		     .clk_sel		(clk_sel[1:0]),
 		     .clk_func		(clk_func),
 		     .clk_status	(clk_status),
+`else
+		     .clk_en		(),
+		     .clk_sel		(),
+		     .clk_func		(),
+		     .clk_status	(),
+`endif // !`ifndef UMTRX
 		     .sclk		(sclk),
 		     .mosi		(mosi),
 		     .miso		(miso),
+`ifndef UMTRX
 		     .sen_clk		(SEN_CLK),
 		     .sen_dac		(SEN_DAC),
 		     .sen_adc           (SEN_ADC),
@@ -592,6 +543,18 @@ module u2plus
 		     .sen_rx_dac	(SEN_RX_DAC),
 		     .io_tx		(io_tx[15:0]),
 		     .io_rx		(io_rx[15:0]),
+`else
+		     .sen_clk	 (),
+		     .sen_dac	 (SEN_DAC),
+		     .sen_adc   (),
+		     .sen_tx_db (),
+		     .sen_tx_adc(),
+		     .sen_tx_dac(),
+		     .sen_rx_db (),
+		     .sen_rx_adc(),
+		     .io_tx		 (),
+		     .io_rx		 (),
+`endif // !`ifndef UMTRX
 `ifndef NO_EXT_FIFO
 		     .RAM_D_po          (RAM_D_po),
 		     .RAM_D_pi          (RAM_D_pi),
