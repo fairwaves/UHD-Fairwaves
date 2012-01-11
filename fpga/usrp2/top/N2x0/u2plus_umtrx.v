@@ -20,7 +20,7 @@
 //`define DCM_FOR_RAMCLK
 //////////////////////////////////////////////////////////////////////////////////
 
-module u2plus
+module u2plus_umtrx
   (
    input CLK_FPGA_P, input CLK_FPGA_N,  // Diff
    
