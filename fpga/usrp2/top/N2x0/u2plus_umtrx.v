@@ -46,13 +46,13 @@ module u2plus_umtrx
    output reg [11:0] TX2D,
    //LMS 1 Control
    output SCLK1,
-   output LMS1nRST,
+   output reg LMS1nRST,
    output SEN1,
    input MISO1,
    output MOSI1,
    //LMS 2 Control
    output SCLK2,
-   output LMS2nRST,
+   output reg LMS2nRST,
    output SEN2,
    input MISO2,
    output MOSI2,
@@ -183,6 +183,7 @@ module u2plus_umtrx
    reg [13:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
    always @(posedge dsp_clk)
      begin
+         LMS1nRST = 1'b1;
          if (RX1IQSEL == 1'b0)
             adc_a_0 = {2'b00, RX1D}; //ADC_I signal
          else
@@ -190,6 +191,7 @@ module u2plus_umtrx
      end
    always @(posedge dsp_clk)
      begin
+         LMS2nRST = 1'b1;
          if (RX2IQSEL == 1'b0)
             adc_a_1 = {2'b00, RX2D}; //ADC_I signal
          else
