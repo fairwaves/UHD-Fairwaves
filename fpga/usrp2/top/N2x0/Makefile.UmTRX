@@ -5,7 +5,7 @@
 ##################################################
 # Project Setup
 ##################################################
-TOP_MODULE = u2plus
+TOP_MODULE = u2plus_umtrx
 BUILD_DIR = $(abspath build$(ISE)_UmTRX)
 
 ##################################################
@@ -47,8 +47,8 @@ simulator "ISE Simulator (VHDL/Verilog)" \
 TOP_SRCS = \
 capture_ddrlvds.v \
 u2plus_core.v \
-u2plus.v \
-u2plus_fairwaves.ucf
+u2plus_umtrx.v \
+u2plus_umtrx.ucf
 
 SOURCES = $(abspath $(TOP_SRCS)) $(FIFO_SRCS) \
 $(CONTROL_LIB_SRCS) $(SDR_LIB_SRCS) $(SERDES_SRCS) \
