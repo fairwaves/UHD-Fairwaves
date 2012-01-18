@@ -41,8 +41,10 @@ u2_init(void)
   // init spi, so that we can switch over to the high-speed clock
   spi_init();
 
+#ifndef UMTRX
   // set up the default clocks
   clocks_init();
+#endif // UMTRX
 #endif
 
   hal_uart_init();
