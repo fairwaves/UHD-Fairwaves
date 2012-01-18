@@ -21,14 +21,14 @@ SET(COMMON_SRCS
     ${CMAKE_SOURCE_DIR}/lib/abort.c
 #    ${CMAKE_SOURCE_DIR}/lib/ad9510.c
 #    ${CMAKE_SOURCE_DIR}/lib/clocks.c
-#    ${CMAKE_SOURCE_DIR}/lib/eeprom.c
+    ${CMAKE_SOURCE_DIR}/lib/eeprom.c
     ${CMAKE_SOURCE_DIR}/lib/eth_addrs.c
     ${CMAKE_SOURCE_DIR}/lib/eth_mac.c
     ${CMAKE_SOURCE_DIR}/lib/_exit.c
     ${CMAKE_SOURCE_DIR}/lib/exit.c
     ${CMAKE_SOURCE_DIR}/lib/hal_io.c
     ${CMAKE_SOURCE_DIR}/lib/hal_uart.c
-#    ${CMAKE_SOURCE_DIR}/lib/i2c.c
+    ${CMAKE_SOURCE_DIR}/lib/i2c.c
     ${CMAKE_SOURCE_DIR}/lib/mdelay.c
     ${CMAKE_SOURCE_DIR}/lib/memcpy_wa.c
     ${CMAKE_SOURCE_DIR}/lib/memset_wa.c
@@ -40,7 +40,7 @@ SET(COMMON_SRCS
     ${CMAKE_SOURCE_DIR}/lib/print_buffer.c
     ${CMAKE_SOURCE_DIR}/lib/printf.c
     ${CMAKE_SOURCE_DIR}/lib/ihex.c
-#    ${CMAKE_SOURCE_DIR}/lib/spi.c
+    ${CMAKE_SOURCE_DIR}/lib/spi.c
     ${CMAKE_SOURCE_DIR}/lib/net_common.c
     ${CMAKE_SOURCE_DIR}/lib/arp_cache.c
     ${CMAKE_SOURCE_DIR}/lib/banal.c
