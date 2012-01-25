@@ -2,7 +2,7 @@
 # Copyright 2011 Ettus Research LLC
 #
 
-all: N200R3 N210R3 N200R4 N210R4
+all: N200R3 N210R3 N200R4 N210R4 UmTRX
 	find -name "*.twr" | xargs grep constraint | grep met
 
 clean:
@@ -18,6 +18,9 @@ N200R4:
 	make -f Makefile.$@ bin
 
 N210R4:
+	make -f Makefile.$@ bin
+
+UmTRX:
 	make -f Makefile.$@ bin
 
 .PHONY: all clean
