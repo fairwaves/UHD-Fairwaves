@@ -16,16 +16,20 @@
 //
 
 
+//ATTENTION!! Maximum ICAP clock in Spartan 6 is 20 MHz!!!
 
-module s3a_icap_wb
-  (input clk, input reset,
+module s6_icap_wb
+  (input clk, input clk_icap, input reset,
    input cyc_i, input stb_i, input we_i, output ack_o,
-   input [31:0] dat_i, output [31:0] dat_o);//, output [31:0] debug_out);
+   input [31:0] dat_i, output reg[31:0] dat_o);//, output [31:0] debug_out);
 
-   assign dat_o[31:8] = 24'd0;
-   
-   wire 	BUSY, CE, WRITE, ICAPCLK;
-   
+	wire 	BUSY, CE, WRITE, ICAPCLK;
+	reg[31:0] s_dat_o;
+	wire[31:0] s1_dat_o;
+	
+   assign s1_dat_o[31:16] = 16'd0;
+  
+ 	
    //changed this to gray-ish code to prevent glitching
    reg [2:0] 	icap_state;
    localparam ICAP_IDLE  = 0;
@@ -34,7 +38,7 @@ module s3a_icap_wb
    localparam ICAP_RD0 	 = 2;
    localparam ICAP_RD1 	 = 3;
 
-   always @(posedge clk)
+   always @(negedge clk_icap) //13 MHz ICAP clock w/180 degree phase shift from source 26 MHz clock
      if(reset)
        icap_state 	<= ICAP_IDLE;
      else
@@ -59,18 +63,36 @@ module s3a_icap_wb
 
    assign WRITE 	 = (icap_state == ICAP_WR0) | (icap_state == ICAP_WR1);
    assign CE 		 = (icap_state == ICAP_WR0) | (icap_state == ICAP_RD0);
-   assign ICAPCLK        = CE & (~clk);
+
+   BUFGCE BUFGCE_inst (
+      .O(ICAPCLK),   // 1-bit output: Clock buffer output
+      .CE(CE), // 1-bit input: Clock buffer select
+      .I(clk_icap)    // 1-bit input: Clock buffer input (S=0)
+   );
 
    assign ack_o = (icap_state == ICAP_WR1) | (icap_state == ICAP_RD1);
    //assign debug_out = {17'd0, BUSY, dat_i[7:0], ~CE, ICAPCLK, ~WRITE, icap_state};
    
-   ICAP_SPARTAN3A ICAP_SPARTAN3A_inst 
+   ICAP_SPARTAN6 ICAP_SPARTAN6_inst
      (.BUSY(BUSY),          // Busy output
-      .O(dat_o[7:0]),            // 32-bit data output
+      .O(s1_dat_o[15:0]),            // 32-bit data output
       .CE(~CE),              // Clock enable input
       .CLK(ICAPCLK),            // Clock input
-      .I(dat_i[7:0]),            // 32-bit data input
+      .I(dat_i[15:0]),            // 32-bit data input
       .WRITE(~WRITE)         // Write input
       );
 
-endmodule // s3a_icap_wb
+//cross back to 54 MHz clock domain
+	always @(posedge clk)
+	if (reset)
+   	begin
+			s_dat_o <= 32'd0;
+		   dat_o <= 32'd0;
+		end
+	else 
+		begin
+		   s_dat_o <= s1_dat_o;
+		   dat_o[15:0] <= s_dat_o[15:0];
+		end
+		
+endmodule // s6_icap_wb

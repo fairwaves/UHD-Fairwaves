@@ -487,6 +487,7 @@ module u2plus
    
    u2plus_core u2p_c(.dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
+		     .clk_icap		(1'b0), //Only used for Spartan-6
 		     .clock_ready       (clock_ready),
 		     .clk_to_mac	(CLK_TO_MAC_int2),
 		     .pps_in		(pps),

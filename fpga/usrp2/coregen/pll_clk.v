@@ -59,6 +59,7 @@
 // CLK_OUT2   104.001      0.000      50.0      289.929    276.415
 // CLK_OUT3   104.001      0.000      50.0      289.929    276.415
 // CLK_OUT4   104.001    270.000      50.0      289.929    276.415
+// CLK_OUT5    13.000    180.000      50.0      424.762    276.415
 //
 //----------------------------------------------------------------------------
 // Input Clock   Input Freq (MHz)   Input Jitter (UI)
@@ -67,7 +68,7 @@
 
 `timescale 1ps/1ps
 
-(* CORE_GENERATION_INFO = "pll_clk,clk_wiz_v3_1,{component_name=pll_clk,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=4,clkin1_period=38.461,clkin2_period=38.461,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
+(* CORE_GENERATION_INFO = "pll_clk,clk_wiz_v3_1,{component_name=pll_clk,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=5,clkin1_period=38.461,clkin2_period=38.461,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
 module pll_clk
  (// Clock in ports
   input         clk_in,
@@ -76,6 +77,7 @@ module pll_clk
   output        clk_fpga,
   output        dsp_clk,
   output        clk270_100,
+  output        clk_icap,
   // Status and control signals
   output        LOCKED_OUT
  );
@@ -96,7 +98,6 @@ module pll_clk
   wire        drdy_unused;
   wire        clkfbout;
   wire        clkfbout_buf;
-  wire        clkout4_unused;
   wire        clkout5_unused;
 
   PLL_BASE
@@ -118,6 +119,9 @@ module pll_clk
     .CLKOUT3_DIVIDE         (4),
     .CLKOUT3_PHASE          (270.000),
     .CLKOUT3_DUTY_CYCLE     (0.500),
+    .CLKOUT4_DIVIDE         (32),
+    .CLKOUT4_PHASE          (180.000),
+    .CLKOUT4_DUTY_CYCLE     (0.500),
     .CLKIN_PERIOD           (38.461),
     .REF_JITTER             (0.001))
   pll_base_inst
@@ -127,7 +131,7 @@ module pll_clk
     .CLKOUT1               (clkout1),
     .CLKOUT2               (clkout2),
     .CLKOUT3               (clkout3),
-    .CLKOUT4               (clkout4_unused),
+    .CLKOUT4               (clkout4),
     .CLKOUT5               (clkout5_unused),
     // Status and control signals
     .LOCKED                (LOCKED_OUT),
@@ -159,6 +163,10 @@ module pll_clk
   BUFG clkout4_buf
    (.O   (clk270_100),
     .I   (clkout3));
+
+  BUFG clkout5_buf
+   (.O   (clk_icap),
+    .I   (clkout4));
 
 
 

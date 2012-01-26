@@ -23,6 +23,7 @@ module u2plus_core
   (// Clocks
    input dsp_clk,
    input wb_clk,
+   input clk_icap, //ICAP timing fixes for UmTRX Spartan-6 FPGA.
    output clock_ready,
    input clk_to_mac,
    input pps_in,
@@ -583,9 +584,15 @@ module u2plus_core
    // /////////////////////////////////////////////////////////////////////////
    // ICAP for reprogramming the FPGA, Slave #13 (D)
 
+`ifndef UMTRX
    s3a_icap_wb s3a_icap_wb
      (.clk(wb_clk), .reset(wb_rst), .cyc_i(sd_cyc), .stb_i(sd_stb),
       .we_i(sd_we), .ack_o(sd_ack), .dat_i(sd_dat_o), .dat_o(sd_dat_i));
+`else
+   s6_icap_wb s6_icap_wb
+     (.clk(wb_clk), .clk_icap(clk_icap),.reset(wb_rst), .cyc_i(sd_cyc), .stb_i(sd_stb),
+      .we_i(sd_we), .ack_o(sd_ack), .dat_i(sd_dat_o), .dat_o(sd_dat_i));
+`endif
    
    // /////////////////////////////////////////////////////////////////////////
    // SPI for Flash -- Slave #14 (E)

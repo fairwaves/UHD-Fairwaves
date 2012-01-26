@@ -76,6 +76,7 @@ MAP_PROPERTIES = \
 "Generate Detailed MAP Report" TRUE \
 "Allow Logic Optimization Across Hierarchy" TRUE \
 "Map to Input Functions" 4 \
+"Global Optimization" Speed\
 "Optimization Strategy (Cover Mode)" Speed \
 "Pack I/O Registers/Latches into IOBs" "For Inputs and Outputs" \
 "Perform Timing-Driven Packing and Placement" TRUE \
@@ -85,7 +86,8 @@ MAP_PROPERTIES = \
 "Register Duplication" TRUE
 
 PLACE_ROUTE_PROPERTIES = \
-"Place & Route Effort Level (Overall)" High 
+"Place & Route Effort Level (Overall)" High \
+"Place & Route Extra Effort (Highest PAR level only)" NORMAL
 
 STATIC_TIMING_PROPERTIES = \
 "Number of Paths in Error/Verbose Report" 10 \

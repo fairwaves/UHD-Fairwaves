@@ -119,7 +119,7 @@ module u2plus_umtrx
 `endif // !`ifndef UMTRX
       
    // FPGA-specific pins connections
-   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clock_ready;
+   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, clock_ready;
 
 `ifndef UMTRX
    IBUFGDS clk_fpga_pin (.O(clk_fpga),.I(CLK_FPGA_P),.IB(CLK_FPGA_N));
@@ -250,6 +250,7 @@ module u2plus_umtrx
     .dsp_clk(dsp_clk),     // OUT 104 MHz
     .clk270_100(clk270_100_buf),     // OUT 104 MHz
     .clk_fpga(clk_fpga),     // OUT 104 MHz
+    .clk_icap(clk_icap),     // OUT 13 MHz, 180 deg 
     // Status and control signals
     .LOCKED_OUT(LOCKED_OUT));      // OUT
 
@@ -411,16 +412,16 @@ module u2plus_umtrx
       dsp_clk_div2_tx = ~dsp_clk_div2_tx;
       if (dsp_clk_div2_tx)
          begin
-            TX1D = dac_a_int1[11:0]; //DAC_I signal
+            TX1D <= dac_a_int1[11:0]; //DAC_I signal
             TX1IQSEL = 1'b0;
-            TX2D = dac_a_int2[11:0]; //DAC_I signal
+            TX2D <= dac_a_int2[11:0]; //DAC_I signal
             TX2IQSEL = 1'b0;
          end
       else
          begin
-            TX1D = dac_b_int1[11:0]; //DAC_Q signal
+            TX1D <= dac_b_int1[11:0]; //DAC_Q signal
             TX1IQSEL = 1'b1;
-            TX2D = dac_b_int2[11:0]; //DAC_Q signal
+            TX2D <= dac_b_int2[11:0]; //DAC_Q signal
             TX2IQSEL = 1'b1;
          end
       end
@@ -436,6 +437,7 @@ module u2plus_umtrx
    
    u2plus_core u2p_c(.dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
+		     .clk_icap		(clk_icap),
 		     .clock_ready       (clock_ready),
 		     .clk_to_mac	(CLK_TO_MAC_int2),
 		     .pps_in		(pps),
