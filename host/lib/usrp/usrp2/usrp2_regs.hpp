@@ -73,8 +73,8 @@
 
 ////////////////////////////////////////////////
 // Masks for controlling different peripherals in UmTRX
-#define SPI_SS_LMS2    1
-#define SPI_SS_LMS1    2
+#define SPI_SS_LMS1    1
+#define SPI_SS_LMS2    2
 #define SPI_SS_DAC     4
 
 /////////////////////////////////////////////////

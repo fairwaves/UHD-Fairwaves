@@ -443,7 +443,7 @@ module u2plus_core
 `ifndef UMTRX
       .ss_pad_o({sen_adc, sen_tx_db,sen_tx_adc,sen_tx_dac,sen_rx_db,sen_rx_adc,sen_rx_dac,sen_dac,sen_clk}),
 `else
-      .ss_pad_o({sen_dac,sen_lms1,sen_lms2}),
+      .ss_pad_o({sen_dac,sen_lms2,sen_lms1}),
 `endif // !`ifndef UMTRX
       .sclk_pad_o(sclk),.mosi_pad_o(mosi),.miso_pad_i(miso) );
 
