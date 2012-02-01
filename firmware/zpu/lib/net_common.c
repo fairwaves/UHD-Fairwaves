@@ -41,11 +41,7 @@
  **********************************************************************/
 static const bool debug = false;
 static const size_t out_buff_size = 2048;
-#ifndef Fix_Issue9
 static const eth_mac_addr_t BCAST_MAC_ADDR = {{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
-#else
-static const eth_mac_addr_t BCAST_MAC_ADDR = {{0x00, 0x00, 0xff, 0xff, 0xff, 0xff}};
-#endif
 #define MAX_UDP_LISTENERS 10
 
 /***********************************************************************
