@@ -21,7 +21,11 @@
 
 #include <stdint.h>
 
-#define MASTER_CLK_RATE 100000000 // 100 MHz
+#ifdef UMTRX
+# define MASTER_CLK_RATE 104000000 // UmTRX:    104 MHz
+#else
+# define MASTER_CLK_RATE 100000000 // USRP2(p): 100 MHz
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Define slave bases
