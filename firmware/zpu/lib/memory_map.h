@@ -278,7 +278,9 @@ typedef struct {
 #define	LED_D		(1 << 0)
 #define	LED_C		(1 << 3)
 //      LED_F		// controlled by CPLD
-#define	LED_RJ45	(1 << 5)
+// Note: the following LEDs are mutually exclusive, only one can lit.
+#define	LED_RJ45_ORANGE	(1 << 5) // 1000Mbit connection LED (orange)
+#define	LED_RJ45_GREEN	(1 << 6) // 100Mbit connection LED (green)
 
 #define output_regs ((output_regs_t *) SETTING_REGS_BASE)
 

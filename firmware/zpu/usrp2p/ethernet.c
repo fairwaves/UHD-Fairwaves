@@ -65,12 +65,13 @@ ed_set_mac_speed(int speed)
 static void
 ed_link_up(int speed)
 {
+  char led = speed==1000?LED_RJ45_ORANGE:LED_RJ45_GREEN;
   // putstr("ed_link_up: "); puthex16_nl(speed);
 
   ed_set_mac_speed(speed);
 
-	//turn on link LED for USRP2P
-	hal_set_leds(LED_RJ45, LED_RJ45);
+  //turn on link LED for USRP2P
+  hal_set_leds(led, led);
 
 
   if (ed_callback)		// fire link changed callback
@@ -82,8 +83,9 @@ ed_link_down(void)
 {
   // putstr("ed_link_down\n");
 
-	//turn off link LED for USRP2P
-	hal_set_leds(0, LED_RJ45);
+  //turn off link LED for USRP2P
+  hal_set_leds(0, LED_RJ45_ORANGE);
+  hal_set_leds(0, LED_RJ45_GREEN);
 
   if (ed_callback)		// fire link changed callback
     (*ed_callback)(0);
