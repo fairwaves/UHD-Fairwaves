@@ -93,6 +93,7 @@ module u2plus_umtrx
    output MDC,
    output PHY_RESETn,
    output ETH_LED,
+   output ETH_LEDG,
    
    // SRAM
    inout [35:0] RAM_D,
@@ -278,8 +279,13 @@ module u2plus_umtrx
    IOBUF sda_pin(.O(sda_pad_i), .IO(SDA), .I(sda_pad_o), .T(sda_pad_oen_o));
 
    // LEDs are active low outputs
+`ifndef UMTRX
    wire [5:0] leds_int;
    assign     {ETH_LED,leds} = {6'b011111 ^ leds_int};  // drive low to turn on leds
+`else
+   wire [6:0] leds_int;
+   assign     {ETH_LEDG,ETH_LED,leds} = {7'b0011111 ^ leds_int};  // drive low to turn on leds
+`endif // !`ifndef UMTRX
    
    // SPI
    wire       miso, mosi, sclk;
