@@ -24,8 +24,8 @@
 using namespace uhd;
 using namespace uhd::usrp;
 using namespace boost::assign;
-dboard_iface::sptr make_lms_dboard_iface(usrp2_iface::sptr);
 
+dboard_iface::sptr make_lms_dboard_iface(usrp2_iface::sptr);
 
 static const uhd::dict<dboard_iface::unit_t, int> unit_to_spi_dev = map_list_of 
     (dboard_iface::UNIT_TX, SPI_SS_TX_DB) 
@@ -41,14 +41,16 @@ public:
     ~lms_dboard_iface(void) {}; //NOP
 
 // LMS-specific functions
-    void brute_test();
-    void write_addr_data(uint8_t, uint8_t, uint8_t);    
+    void reg_dump();
+    void write_addr_data(uint8_t, uint8_t, uint8_t);
     uint32_t read_addr(uint8_t lms, uint8_t addr);
+    uint32_t write_n_check(uint8_t, uint8_t, uint8_t);
 
 // functions from parent class
     void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
 	_iface->write_spi(unit_to_spi_dev[unit], config, data, num_bits);
     }
+    
     boost::uint32_t read_write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
         return _iface->read_spi(unit_to_spi_dev[unit], config, data, num_bits);
     }

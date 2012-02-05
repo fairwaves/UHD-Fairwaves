@@ -18,26 +18,32 @@
 #include "lms_dboard_iface.hpp"
 #include "usrp2_iface.hpp"
 
-// Make Function
+// Make function
 
 dboard_iface::sptr make_lms_dboard_iface(usrp2_iface::sptr iface) {
     return dboard_iface::sptr(new lms_dboard_iface(iface));
 }
 
-// test routines:
+// SPI low-level functions
+
 uint32_t lms_dboard_iface::read_addr(uint8_t lms, uint8_t addr) {
     if(addr > 127) return 0; // incorrect address, 7 bit long expected
-    return _iface->read_spi(lms, spi_config_t::EDGE_RISE, addr<<8, 16);    
+    return _iface->read_spi(lms, spi_config_t::EDGE_RISE, addr << 8, 16);    
+}
+
+uint32_t lms_dboard_iface::write_n_check(uint8_t lms, uint8_t addr, uint8_t data) {
+    write_addr_data(lms, addr, data);
+    return read_addr(lms, addr);
 }
 
 void lms_dboard_iface::write_addr_data(uint8_t lms, uint8_t addr, uint8_t data) {
-    if(addr < 128) { // correct address is 7 bit long expected
-        uint16_t command = ((uint16_t)addr << 8) | (uint16_t)data;
+    if(addr < 128) { // 1st bit is 1 (means 'write'), than address, than value
+        uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         _iface->write_spi(lms, spi_config_t::EDGE_RISE, command, 16);
     }
 }
 
-void lms_dboard_iface::brute_test() {
+void lms_dboard_iface::reg_dump() {
     for (int i = 0; i < 128; i++) {
         printf("i=%x LMS1=%x LMS2=%x\t", i, read_addr(1, i), read_addr(2, i));
 	if(read_addr(1, i) == read_addr(2, i)) printf("OK\n"); else printf("DIFF\n");
