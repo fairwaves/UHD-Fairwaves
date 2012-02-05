@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
 #include "usrp2_impl.hpp"
 #include "fw_common.h"
 #include "apply_corrections.hpp"
@@ -35,6 +34,8 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio.hpp> //used for htonl and ntohl
+#include <uhd/usrp/dboard_iface.hpp>
+#include "lms_dboard_iface.hpp"
 
 using namespace uhd;
 using namespace uhd::usrp;
@@ -421,12 +422,15 @@ usrp2_impl::usrp2_impl(const device_addr_t &_device_addr){
         case usrp2_iface::USRP2_REV4:
             _tree->create<std::string>(rx_codec_path / "name").set("ltc2284");
             break;
-
+	case usrp2_iface::UMTRX_REV0:
+	    _tree->create<std::string>(rx_codec_path / "name").set("RX-LMS");
+	    break;
         case usrp2_iface::USRP_NXXX:
             _tree->create<std::string>(rx_codec_path / "name").set("??????");
             break;
         }
-        _tree->create<std::string>(tx_codec_path / "name").set("ad9777");
+        if(_mbc[mb].iface->get_rev()) _tree->create<std::string>(tx_codec_path / "name").set("TX-LMS");
+        else _tree->create<std::string>(tx_codec_path / "name").set("ad9777");
 
         ////////////////////////////////////////////////////////////////
         // create gpsdo control objects
@@ -594,7 +598,17 @@ usrp2_impl::usrp2_impl(const device_addr_t &_device_addr){
             .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "gdb", _1));
 
         //create a new dboard interface and manager
-        _mbc[mb].dboard_iface = make_usrp2_dboard_iface(_mbc[mb].iface, _mbc[mb].clock);
+	if (usrp2_iface::UMTRX_REV0 == _mbc[mb].iface->get_rev()) {
+	    _mbc[mb].dboard_iface = make_lms_dboard_iface(_mbc[mb].iface);
+// FIXME: UMTRX EVIL HACK
+	    lms_dboard_iface _lms_face = lms_dboard_iface(_mbc[mb].iface);
+	    _lms_face.brute_test();
+//	    _mbc[mb].dboard_iface.write_addr_data(1, 0x57, 0x14);
+//	    _mbc[mb].dboard_iface.write_addr_data(2, 0x57, 0x14);
+	}
+	else
+            _mbc[mb].dboard_iface = make_usrp2_dboard_iface(_mbc[mb].iface, _mbc[mb].clock);
+            
         _tree->create<dboard_iface::sptr>(mb_path / "dboards/A/iface").set(_mbc[mb].dboard_iface);
         _mbc[mb].dboard_manager = dboard_manager::make(
             rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
@@ -721,7 +735,7 @@ void usrp2_impl::update_clock_source(const std::string &mb, const std::string &s
         else throw uhd::value_error("unhandled clock configuration reference source: " + source);
         _mbc[mb].clock->enable_external_ref(source != "internal");
         break;
-
+    case usrp2_iface::UMTRX_REV0:
     case usrp2_iface::USRP_NXXX: break;
     }
 
@@ -741,7 +755,7 @@ void usrp2_impl::update_clock_source(const std::string &mb, const std::string &s
         case usrp2_iface::USRP2_REV4:
             _mbc[mb].clock->set_mimo_clock_delay(mimo_clock_delay_usrp2_rev4);
             break;
-
+	case usrp2_iface::UMTRX_REV0:
         default: break; //not handled
         }
     }
