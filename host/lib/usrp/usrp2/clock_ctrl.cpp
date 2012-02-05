@@ -126,7 +126,7 @@ public:
             _ad9510_regs.divider_high_cycles_out6 = high - 1;
             _ad9510_regs.bypass_divider_out5 = 0;
             break;
-
+    case usrp2_iface::UMTRX_REV0:break;//FIXME???
         default:
             break;
         }
@@ -138,6 +138,7 @@ public:
     //uses output clock 7 (cmos)
     void enable_rx_dboard_clock(bool enb){
         switch(_iface->get_rev()) {
+    	    case usrp2_iface::UMTRX_REV0:break;
             case usrp2_iface::USRP_N200_R4:
             case usrp2_iface::USRP_N210_R4:
                 _ad9510_regs.power_down_lvds_cmos_out7 = enb? 0 : 1;
@@ -183,6 +184,7 @@ public:
     //and output clock 5 (lvds) on N200/N210 r4
     void enable_tx_dboard_clock(bool enb){
         switch(_iface->get_rev()) {
+	case usrp2_iface::UMTRX_REV0: break;
         case usrp2_iface::USRP_N200_R4:
         case usrp2_iface::USRP_N210_R4:
           _ad9510_regs.power_down_lvds_cmos_out5 = enb? 0 : 1;
@@ -203,7 +205,8 @@ public:
           break;
 
         default:
-          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
+// UMTRX: add enforcement option to write to uknown device (with empty eeprom)
+//          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
           break;
         }
 

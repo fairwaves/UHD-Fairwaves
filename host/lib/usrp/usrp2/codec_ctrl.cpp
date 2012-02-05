@@ -93,7 +93,7 @@ public:
             this->send_ads62p44_reg(0x14);
             this->set_rx_analog_gain(1);
             break;
-
+	case usrp2_iface::UMTRX_REV0:
         case usrp2_iface::USRP_NXXX: break;
         }
     }
@@ -118,7 +118,7 @@ public:
             _ads62p44_regs.power_down = ads62p44_regs_t::POWER_DOWN_GLOBAL_PD;
             this->send_ads62p44_reg(0x14);
             break;
-
+	case usrp2_iface::UMTRX_REV0:
         case usrp2_iface::USRP_NXXX: break;
         }
     )}
@@ -145,6 +145,7 @@ public:
 
     void set_rx_digital_gain(double gain) {  //fine digital gain
         switch(_iface->get_rev()){
+        case usrp2_iface::UMTRX_REV0:
         case usrp2_iface::USRP_N200:
         case usrp2_iface::USRP_N210:
         case usrp2_iface::USRP_N200_R4:
@@ -159,6 +160,7 @@ public:
 
     void set_rx_digital_fine_gain(double gain) { //gain correction      
         switch(_iface->get_rev()){
+        case usrp2_iface::UMTRX_REV0:
         case usrp2_iface::USRP_N200:
         case usrp2_iface::USRP_N210:
         case usrp2_iface::USRP_N200_R4:
@@ -173,6 +175,7 @@ public:
 
     void set_rx_analog_gain(bool /*gain*/) { //turns on/off analog 3.5dB preamp
         switch(_iface->get_rev()){
+        case usrp2_iface::UMTRX_REV0:
         case usrp2_iface::USRP_N200:
         case usrp2_iface::USRP_N210:
         case usrp2_iface::USRP_N200_R4:

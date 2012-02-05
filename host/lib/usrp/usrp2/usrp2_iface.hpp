@@ -51,6 +51,7 @@ public:
         USRP_N200_R4 = 201,
         USRP_N210 = 210,
         USRP_N210_R4 = 211,
+        UMTRX_REV0 = 64000,
         USRP_NXXX = 0
     };
 

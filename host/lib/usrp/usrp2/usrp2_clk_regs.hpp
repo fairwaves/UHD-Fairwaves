@@ -50,6 +50,7 @@ public:
         serdes = 4;
         tx_db = 5;
         break;
+    case usrp2_iface::UMTRX_REV0:
     case usrp2_iface::USRP_NXXX:
         //dont throw, it may be unitialized
         break;
