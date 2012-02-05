@@ -600,11 +600,10 @@ usrp2_impl::usrp2_impl(const device_addr_t &_device_addr){
         //create a new dboard interface and manager
 	if (usrp2_iface::UMTRX_REV0 == _mbc[mb].iface->get_rev()) {
 	    _mbc[mb].dboard_iface = make_lms_dboard_iface(_mbc[mb].iface);
-// FIXME: UMTRX EVIL HACK
-	    lms_dboard_iface _lms_face = lms_dboard_iface(_mbc[mb].iface);
-	    _lms_face.brute_test();
-//	    _mbc[mb].dboard_iface.write_addr_data(1, 0x57, 0x14);
-//	    _mbc[mb].dboard_iface.write_addr_data(2, 0x57, 0x14);
+// FIXME: UMTRX EVIL HACK for DEBUG
+	    lms_dboard_iface _lms_iface = lms_dboard_iface(_mbc[mb].iface);
+//	    _lms_iface.reg_dump();
+//    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x3A), _lms_iface.write_n_check(2, 0x5, 0x3A));
 	}
 	else
             _mbc[mb].dboard_iface = make_usrp2_dboard_iface(_mbc[mb].iface, _mbc[mb].clock);
