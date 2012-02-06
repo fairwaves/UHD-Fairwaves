@@ -34,11 +34,18 @@ size_t spi_flash_log2_memory_size(void)
         uint32_t id = spi_flash_rdid();
         uint8_t type = (id >> 8) & 0xff;
         uint8_t size = (id >> 0) & 0xff;
-        if (type != 0x20) abort();
+        printf("\nflash type=%d size=%d\n", type, size);
+        if (type != 0x20 && type != 0x40){
+            putstr("\nWrong flash type. Achtung!\n");
+            abort();
+        }
         _spi_flash_log2_memory_size = size;
     }
     if (_spi_flash_log2_memory_size < 22 ||
-        _spi_flash_log2_memory_size > 24 ) abort();
+        _spi_flash_log2_memory_size > 24 ){
+        putstr("\nWrong flash size. Achtung!\n");
+        abort();
+    }
     return _spi_flash_log2_memory_size;
 }
 
