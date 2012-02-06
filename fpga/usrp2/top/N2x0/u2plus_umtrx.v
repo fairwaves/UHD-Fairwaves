@@ -27,21 +27,21 @@ module u2plus_umtrx
    // ADC 1
    input ADC_CLK_O1,
    input RX1IQSEL,
-   input RX1_EN,
+   output RX1_EN,
    input [11:0] RX1D,
    // ADC 2
    input ADC_CLK_O2,
    input RX2IQSEL,
-   input RX2_EN,
+   output RX2_EN,
    input [11:0] RX2D,
    // DAC 1
    input TX1CLK,
-   input TX1EN,
+   output TX1EN,
    output reg TX1IQSEL,
    output reg [11:0] TX1D,
    // DAC 2
    input TX2CLK,
-   input TX2EN,
+   output TX2EN,
    output reg TX2IQSEL,
    output reg [11:0] TX2D,
    //LMS 1 Control
@@ -182,6 +182,10 @@ module u2plus_umtrx
 `else
    // Interface to ADC of LMS
    reg [13:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
+
+   assign RX1_EN = 1'b1;
+   assign RX2_EN = 1'b1;
+
    always @(posedge dsp_clk)
      begin
          LMS1nRST = 1'b1;
@@ -412,6 +416,10 @@ module u2plus_umtrx
    always @(negedge dsp_clk) DACB <= dac_a_int;
 `else
    // Interface to DAC of LMS
+
+   assign TX1EN = 1'b1;
+   assign TX2EN = 1'b1;
+
    reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
    always @(negedge dsp_clk)
    begin
