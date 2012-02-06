@@ -82,6 +82,9 @@ typedef struct {
 #define SPI_SS_LMS2    2
 #define SPI_SS_DAC     4
 
+#define LMS_RD_CMD(addr) ((uint16_t)(addr)<<8)
+#define LMS_WR_CMD(addr, val) ( 0x8000 | ((uint16_t)(addr)<<8) | (val) )
+
 // Masks for different parts of CTRL reg
 #define SPI_CTRL_ASS      (1<<13)
 #define SPI_CTRL_IE       (1<<12)
