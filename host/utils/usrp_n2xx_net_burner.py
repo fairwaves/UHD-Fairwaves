@@ -41,12 +41,21 @@ USRP2_FW_PROTO_VERSION = 7 #should be unused after r6
 
 #from bootloader_utils.h
 
-FPGA_IMAGE_SIZE_BYTES = 1572864
-FW_IMAGE_SIZE_BYTES = 31744
-SAFE_FPGA_IMAGE_LOCATION_ADDR = 0x00000000
-SAFE_FW_IMAGE_LOCATION_ADDR = 0x003F0000
-PROD_FPGA_IMAGE_LOCATION_ADDR = 0x00180000
-PROD_FW_IMAGE_LOCATION_ADDR = 0x00300000
+class USRP_CONST:
+    FPGA_IMAGE_SIZE_BYTES = 1572864
+    FW_IMAGE_SIZE_BYTES = 31744
+    SAFE_FPGA_IMAGE_LOCATION_ADDR = 0x00000000
+    SAFE_FW_IMAGE_LOCATION_ADDR = 0x003F0000
+    PROD_FPGA_IMAGE_LOCATION_ADDR = 0x00180000
+    PROD_FW_IMAGE_LOCATION_ADDR = 0x00300000
+
+class UMTRX_CONST:
+    FPGA_IMAGE_SIZE_BYTES = 2464964
+    FW_IMAGE_SIZE_BYTES = 0x3fff
+    SAFE_FPGA_IMAGE_LOCATION_ADDR = 0x00000000
+    SAFE_FW_IMAGE_LOCATION_ADDR = 0x006F0000
+    PROD_FPGA_IMAGE_LOCATION_ADDR = 0x00300000
+    PROD_FW_IMAGE_LOCATION_ADDR = 0x00600000
 
 FLASH_DATA_PACKET_SIZE = 256
 
@@ -57,10 +66,11 @@ FLASH_IP_FMT =   '!LLLL260x'
 FLASH_HW_REV_FMT = '!LLLL260x'
 
 n2xx_revs = {
-             0x0a00: ["n200_r3", "n200_r2"],
-             0x0a10: ["n200_r4"],
-             0x0a01: ["n210_r3", "n210_r2"],
-             0x0a11: ["n210_r4"]
+             0x0a00: (["n200_r3", "n200_r2"], USRP_CONST()),
+             0x0a10: (["n200_r4"], USRP_CONST()),
+             0x0a01: (["n210_r3", "n210_r2"], USRP_CONST()),
+             0x0a11: (["n210_r4"], USRP_CONST()),
+             0xfa00: (["umtrx"], UMTRX_CONST())
             }
 
 class update_id_t:
@@ -282,21 +292,23 @@ class burner_socket(object):
         (flash_size, sector_size) = self.get_flash_info()
         hw_rev = self.get_hw_rev()
 
-        if n2xx_revs.has_key(hw_rev): print("Hardware type: %s" % n2xx_revs[hw_rev][0])
+        if n2xx_revs.has_key(hw_rev): print("Hardware type: %s" % n2xx_revs[hw_rev][0][0])
         print("Flash size: %i\nSector size: %i\n" % (flash_size, sector_size))
 
         if fpga:
             #validate fpga image name against hardware rev
             if(check_rev and hw_rev != 0 and not any(name in fpga for name in n2xx_revs[hw_rev])):
-                raise Exception("Error: incorrect FPGA image version. Please use the correct image for device %s" % n2xx_revs[hw_rev][0])
+                raise Exception("Error: incorrect FPGA image version. Please use the correct image for device %s" % n2xx_revs[hw_rev][0][0])
 
-            if safe: image_location = SAFE_FPGA_IMAGE_LOCATION_ADDR
-            else:    image_location = PROD_FPGA_IMAGE_LOCATION_ADDR
+            hw_const = n2xx_revs[hw_rev][1]
+
+            if safe: image_location = hw_const.SAFE_FPGA_IMAGE_LOCATION_ADDR
+            else:    image_location = hw_const.PROD_FPGA_IMAGE_LOCATION_ADDR
 
             fpga_file = open(fpga, 'rb')
             fpga_image = fpga_file.read()
 
-            if len(fpga_image) > FPGA_IMAGE_SIZE_BYTES:
+            if len(fpga_image) > hw_const.FPGA_IMAGE_SIZE_BYTES:
                 raise Exception("Error: FPGA image file too large.")
 
             if not is_valid_fpga_image(fpga_image):
@@ -307,20 +319,22 @@ class burner_socket(object):
 
             print("Begin FPGA write: this should take about 1 minute...")
             start_time = time.time()
-            self.erase_image(image_location, FPGA_IMAGE_SIZE_BYTES)
+            self.erase_image(image_location, hw_const.FPGA_IMAGE_SIZE_BYTES)
             self.write_image(fpga_image, image_location)
             self.verify_image(fpga_image, image_location)
             print("Time elapsed: %f seconds"%(time.time() - start_time))
             print("\n\n")
 
         if fw:
-            if safe: image_location = SAFE_FW_IMAGE_LOCATION_ADDR
-            else:    image_location = PROD_FW_IMAGE_LOCATION_ADDR
+            hw_const = n2xx_revs[hw_rev][1]
+
+            if safe: image_location = hw_const.SAFE_FW_IMAGE_LOCATION_ADDR
+            else:    image_location = hw_const.PROD_FW_IMAGE_LOCATION_ADDR
 
             fw_file = open(fw, 'rb')
             fw_image = fw_file.read()
 
-            if len(fw_image) > FW_IMAGE_SIZE_BYTES:
+            if len(fw_image) > hw_const.FW_IMAGE_SIZE_BYTES:
                 raise Exception("Error: Firmware image file too large.")
 
             if not is_valid_fw_image(fw_image):
@@ -331,7 +345,7 @@ class burner_socket(object):
 
             print("Begin firmware write: this should take about 1 second...")
             start_time = time.time()
-            self.erase_image(image_location, FW_IMAGE_SIZE_BYTES)
+            self.erase_image(image_location, hw_const.FW_IMAGE_SIZE_BYTES)
             self.write_image(fw_image, image_location)
             self.verify_image(fw_image, image_location)
             print("Time elapsed: %f seconds"%(time.time() - start_time))
@@ -501,13 +515,16 @@ if __name__=='__main__':
     burner = burner_socket(addr=options.addr)
 
     if options.read:
+        hw_rev = burner.get_hw_rev()
+        hw_const = n2xx_revs[hw_rev][1]
+
         if options.fw:
             file = options.fw
             if os.path.isfile(file):
                 response = raw_input("File already exists -- overwrite? (y/n) ")
                 if response != "y": sys.exit(0)
-            size = FW_IMAGE_SIZE_BYTES
-            addr = SAFE_FW_IMAGE_LOCATION_ADDR if options.overwrite_safe else PROD_FW_IMAGE_LOCATION_ADDR
+            size = hw_const.FW_IMAGE_SIZE_BYTES
+            addr = hw_const.SAFE_FW_IMAGE_LOCATION_ADDR if options.overwrite_safe else hw_const.PROD_FW_IMAGE_LOCATION_ADDR
             burner.read_image(file, size, addr)
 
         if options.fpga:
@@ -515,8 +532,8 @@ if __name__=='__main__':
             if os.path.isfile(file):
                 response = raw_input("File already exists -- overwrite? (y/n) ")
                 if response != "y": sys.exit(0)
-            size = FPGA_IMAGE_SIZE_BYTES
-            addr = SAFE_FPGA_IMAGE_LOCATION_ADDR if options.overwrite_safe else PROD_FPGA_IMAGE_LOCATION_ADDR
+            size = hw_const.FPGA_IMAGE_SIZE_BYTES
+            addr = hw_const.SAFE_FPGA_IMAGE_LOCATION_ADDR if options.overwrite_safe else hw_const.PROD_FPGA_IMAGE_LOCATION_ADDR
             burner.read_image(file, size, addr)
 
     else: burner.burn_fw(fw=options.fw, fpga=options.fpga, reset=options.reset, safe=options.overwrite_safe, check_rev=not options.dont_check_rev)
