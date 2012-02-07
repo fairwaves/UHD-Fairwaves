@@ -513,7 +513,7 @@ if __name__=='__main__':
         if options.fpga:
             file = options.fpga
             if os.path.isfile(file):
-                response = input("File already exists -- overwrite? (y/n) ")
+                response = raw_input("File already exists -- overwrite? (y/n) ")
                 if response != "y": sys.exit(0)
             size = FPGA_IMAGE_SIZE_BYTES
             addr = SAFE_FPGA_IMAGE_LOCATION_ADDR if options.overwrite_safe else PROD_FPGA_IMAGE_LOCATION_ADDR
