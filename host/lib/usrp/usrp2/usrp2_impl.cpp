@@ -602,8 +602,11 @@ usrp2_impl::usrp2_impl(const device_addr_t &_device_addr){
 	    _mbc[mb].dboard_iface = make_lms_dboard_iface(_mbc[mb].iface);
 // FIXME: UMTRX EVIL HACK for DEBUG
 	    lms_dboard_iface _lms_iface = lms_dboard_iface(_mbc[mb].iface);
-//	    _lms_iface.reg_dump();
-//    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x3A), _lms_iface.write_n_check(2, 0x5, 0x3A));
+	    bool rise = false;
+    printf("read LMS1=%x LMS2=%x\n", _lms_iface.read_addr(1, 0x5, rise), _lms_iface.read_addr(2, 0x5, rise));
+    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x32, rise), _lms_iface.write_n_check(2, 0x5, 0x32, rise));
+    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x3A, rise), _lms_iface.write_n_check(2, 0x5, 0x3A, rise));
+	    _lms_iface.reg_dump(rise);    
 	}
 	else
             _mbc[mb].dboard_iface = make_usrp2_dboard_iface(_mbc[mb].iface, _mbc[mb].clock);

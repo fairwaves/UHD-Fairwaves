@@ -25,27 +25,29 @@ dboard_iface::sptr make_lms_dboard_iface(usrp2_iface::sptr iface) {
 }
 
 // SPI low-level functions
-
-uint32_t lms_dboard_iface::read_addr(uint8_t lms, uint8_t addr) {
+// spi_config_t::EDGE_RISE is used by default
+uint32_t lms_dboard_iface::read_addr(uint8_t lms, uint8_t addr, bool rise) {
     if(addr > 127) return 0; // incorrect address, 7 bit long expected
-    return _iface->read_spi(lms, spi_config_t::EDGE_RISE, addr << 8, 16);    
+    if(rise) return _iface->read_spi(lms, spi_config_t::EDGE_RISE, addr << 8, 16);
+    return _iface->read_spi(lms, spi_config_t::EDGE_FALL, addr << 8, 16);
 }
 
-uint32_t lms_dboard_iface::write_n_check(uint8_t lms, uint8_t addr, uint8_t data) {
-    write_addr_data(lms, addr, data);
-    return read_addr(lms, addr);
+uint32_t lms_dboard_iface::write_n_check(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
+    write_addr_data(lms, addr, data, rise);
+    return read_addr(lms, addr, rise);
 }
 
-void lms_dboard_iface::write_addr_data(uint8_t lms, uint8_t addr, uint8_t data) {
+void lms_dboard_iface::write_addr_data(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
     if(addr < 128) { // 1st bit is 1 (means 'write'), than address, than value
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        _iface->write_spi(lms, spi_config_t::EDGE_RISE, command, 16);
+        if(rise) _iface->write_spi(lms, spi_config_t::EDGE_RISE, command, 16);
+        else _iface->write_spi(lms, spi_config_t::EDGE_FALL, command, 16);
     }
 }
 
-void lms_dboard_iface::reg_dump() {
+void lms_dboard_iface::reg_dump(bool rise) {
     for (int i = 0; i < 128; i++) {
-        printf("i=%x LMS1=%x LMS2=%x\t", i, read_addr(1, i), read_addr(2, i));
-	if(read_addr(1, i) == read_addr(2, i)) printf("OK\n"); else printf("DIFF\n");
+        printf("i=%x LMS1=%x LMS2=%x\t", i, read_addr(1, i, rise), read_addr(2, i, rise));
+	if(read_addr(1, i, rise) == read_addr(2, i, rise)) printf("OK\n"); else printf("DIFF\n");
     }
 }

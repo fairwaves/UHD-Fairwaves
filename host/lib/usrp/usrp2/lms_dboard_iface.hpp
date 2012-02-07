@@ -41,10 +41,10 @@ public:
     ~lms_dboard_iface(void) {}; //NOP
 
 // LMS-specific functions
-    void reg_dump();
-    void write_addr_data(uint8_t, uint8_t, uint8_t);
-    uint32_t read_addr(uint8_t lms, uint8_t addr);
-    uint32_t write_n_check(uint8_t, uint8_t, uint8_t);
+    void reg_dump(bool rise = true);
+    void write_addr_data(uint8_t, uint8_t, uint8_t, bool rise = true);
+    uint32_t read_addr(uint8_t lms, uint8_t addr, bool rise = true);
+    uint32_t write_n_check(uint8_t, uint8_t, uint8_t, bool rise = true);
 
 // functions from parent class
     void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
