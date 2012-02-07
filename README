@@ -13,6 +13,22 @@ Among other changes it includes ICAP and other assorted FPGA timing issues:
 * Modify ./fpga/usrp2/top/N2x0/u2plus_umtrx.v and u2plus_core.v to connect clk_icap (not connected for non-UmTRX designs)
 * Change ISE tool settings based on smartXplorer parameters that meet timing and modify Makefile.UmTRX accordingly.
 
+Implementation
+==============
+
+host/lib/usrp/dboard/db_lms.cpp - standard UHD description of UmTRX embedded dboard (including frequency range and so on).
+host/lib/usrp/usrp2/lms_dboard_iface.* - implementation of UmTRX-specifix dboard interface.
+host/lib/usrp/usrp2/usrp2_impl.cpp - the place where SPI debug functions could be inserted into 
+    so they are triggered upon multi_usrp init.
+    
+Testing
+=======
+
+Insert your SPI debug calls into usrp2_impl.cpp, run make in host/build/utils/ and run following command to trigger debug:
+./usrp_burn_mb_eeprom --key hardware 2>&1 > test.out
+
+This command will not modify anything on dboard or LMS unless specifically asked to in usrp2_impl.cpp
+
 Notes
 =====
 
