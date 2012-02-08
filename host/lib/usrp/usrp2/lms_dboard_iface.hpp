@@ -18,6 +18,8 @@
 #define LMS_DBOARD_IFACE_HPP
 
 #include <boost/assign/list_of.hpp>
+#include <uhd/utils/log.hpp>                                                                                                    
+#include <uhd/utils/msg.hpp>
 #include <uhd/usrp/dboard_iface.hpp>
 #include "usrp2_iface.hpp"
 
@@ -63,23 +65,23 @@ public:
     }
 
 // dummy functions to make compiler happy
-    void write_aux_dac(unit_t, aux_dac_t, double) {};
-    double read_aux_adc(unit_t, aux_adc_t) { return 0; };
+    void write_aux_dac(unit_t, aux_dac_t, double) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    double read_aux_adc(unit_t, aux_adc_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
 
-    void _set_pin_ctrl(unit_t, boost::uint16_t) {};
-    void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) {};
-    void _set_gpio_ddr(unit_t, boost::uint16_t) {};
-    void _set_gpio_out(unit_t, boost::uint16_t) {};
+    void _set_pin_ctrl(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    void _set_gpio_ddr(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    void _set_gpio_out(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
 
-    void set_gpio_debug(unit_t, int) {};
-    boost::uint16_t read_gpio(unit_t) { return 0; };
-    void write_i2c(boost::uint8_t, const byte_vector_t &) {};
-    byte_vector_t read_i2c(boost::uint8_t, size_t) { byte_vector_t FIXME; return FIXME; };
-    void set_clock_rate(unit_t, double) {};
-    double get_clock_rate(unit_t) { return 0; };
-    std::vector<double> get_clock_rates(unit_t) { std::vector<double> FIXME; return FIXME; };
-    void set_clock_enabled(unit_t, bool) {};
-    double get_codec_rate(unit_t) { return 0; };
+    void set_gpio_debug(unit_t, int) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    boost::uint16_t read_gpio(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
+    void write_i2c(boost::uint8_t, const byte_vector_t &) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    byte_vector_t read_i2c(boost::uint8_t, size_t) { byte_vector_t FIXME; UHD_LOGV(always) << "FIXME: Not Implemented."; return FIXME; };
+    void set_clock_rate(unit_t, double) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    double get_clock_rate(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
+    std::vector<double> get_clock_rates(unit_t) { std::vector<double> FIXME; UHD_LOGV(always) << "FIXME: Not Implemented."; return FIXME; };
+    void set_clock_enabled(unit_t, bool) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+    double get_codec_rate(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
 };
 
 #endif 
