@@ -21,6 +21,9 @@
 #include <uhd/utils/log.hpp>                                                                                                    
 #include <uhd/utils/msg.hpp>
 #include <uhd/usrp/dboard_iface.hpp>
+#undef NDEBUG //evil hack for debug
+#include <cassert>
+#include <iostream>
 #include "usrp2_iface.hpp"
 
 using namespace uhd;
@@ -50,8 +53,16 @@ public:
 
 // functions from parent class
     void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
+	std::cerr << "write_spi(... "<< data <<", "<< num_bits <<") called.\n";
 	_iface->write_spi(unit_to_spi_dev[unit], config, data, num_bits);
     }
+
+/**/
+    boost::uint32_t read_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
+	std::cerr << "read_spi(... "<< data <<", "<< num_bits <<") called.\n";
+        return _iface->read_spi(unit_to_spi_dev[unit], config, data, num_bits);
+    }
+/**/
     
     boost::uint32_t read_write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
         return _iface->read_spi(unit_to_spi_dev[unit], config, data, num_bits);
@@ -65,23 +76,30 @@ public:
     }
 
 // dummy functions to make compiler happy
-    void write_aux_dac(unit_t, aux_dac_t, double) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    double read_aux_adc(unit_t, aux_adc_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
+    void write_aux_dac(unit_t, aux_dac_t, double) { assert(0); std::cerr << "FIXME: void write_aux_dac(unit_t, aux_dac_t, double) Not Implemented.\n"; };
+    double read_aux_adc(unit_t, aux_adc_t) { assert(0); std::cerr << "FIXME: double read_aux_adc(unit_t, aux_adc_t) Not Implemented.\n"; return 0; };
 
-    void _set_pin_ctrl(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    void _set_gpio_ddr(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    void _set_gpio_out(unit_t, boost::uint16_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
+// called by set_nice_dboard_if() indirectly
+    void _set_pin_ctrl(unit_t, boost::uint16_t) { std::cerr << "FIXME: void _set_pin_ctrl(unit_t, boost::uint16_t) Not Implemented.\n"; };
+    void _set_gpio_ddr(unit_t, boost::uint16_t) { std::cerr << "FIXME: void _set_gpio_ddr(unit_t, boost::uint16_t) Not Implemented.\n"; };
+    void _set_gpio_out(unit_t, boost::uint16_t) { std::cerr << "FIXME: void _set_gpio_out(unit_t, boost::uint16_t) Not Implemented.\n"; };
 
-    void set_gpio_debug(unit_t, int) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    boost::uint16_t read_gpio(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
-    void write_i2c(boost::uint8_t, const byte_vector_t &) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    byte_vector_t read_i2c(boost::uint8_t, size_t) { byte_vector_t FIXME; UHD_LOGV(always) << "FIXME: Not Implemented."; return FIXME; };
-    void set_clock_rate(unit_t, double) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    double get_clock_rate(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
-    std::vector<double> get_clock_rates(unit_t) { std::vector<double> FIXME; UHD_LOGV(always) << "FIXME: Not Implemented."; return FIXME; };
-    void set_clock_enabled(unit_t, bool) { UHD_LOGV(always) << "FIXME: Not Implemented."; };
-    double get_codec_rate(unit_t) { UHD_LOGV(always) << "FIXME: Not Implemented."; return 0; };
+// called by set_nice_dboard_if() directly
+    void set_clock_enabled(unit_t, bool) { std::cerr << "FIXME: void set_clock_enabled(unit_t, bool) Not Implemented.\n"; };
+
+    void set_pin_ctrl(unit_t, boost::uint16_t) { std::cerr << "FIXME: void set_pin_ctrl(unit_t, boost::uint16_t) Not Implemented.\n"; };
+    void set_gpio_ddr(unit_t, boost::uint16_t) { std::cerr << "FIXME: void set_gpio_ddr(unit_t, boost::uint16_t) Not Implemented.\n"; };
+    void set_gpio_out(unit_t, boost::uint16_t) { std::cerr << "FIXME: void set_gpio_out(unit_t, boost::uint16_t) Not Implemented.\n"; };
+
+    void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) { assert(0); std::cerr << "FIXME: void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) Not Implemented.\n"; };
+    void set_gpio_debug(unit_t, int) { assert(0); std::cerr << "FIXME: void set_gpio_debug(unit_t, int) Not Implemented.\n"; };
+    boost::uint16_t read_gpio(unit_t) { assert(0); std::cerr << "FIXME: boost::uint16_t read_gpio(unit_t) Not Implemented.\n"; return 0; };
+    void write_i2c(boost::uint8_t, const byte_vector_t &) { assert(0); std::cerr << "FIXME: void write_i2c(boost::uint8_t, const byte_vector_t &) Not Implemented.\n"; };
+    byte_vector_t read_i2c(boost::uint8_t, size_t) { assert(0); byte_vector_t FIXME; std::cerr << "FIXME: byte_vector_t read_i2c(boost::uint8_t, size_t) Not Implemented.\n"; return FIXME; };
+    void set_clock_rate(unit_t, double) { assert(0); std::cerr << "FIXME: void set_clock_rate(unit_t, double) Not Implemented.\n"; };
+    double get_clock_rate(unit_t) { assert(0); std::cerr << "FIXME: double get_clock_rate(unit_t) Not Implemented.\n"; return 0; };
+    std::vector<double> get_clock_rates(unit_t) { assert(0); std::vector<double> FIXME; std::cerr << "FIXME: std::vector<double> get_clock_rates(unit_t) Not Implemented.\n"; return FIXME; };
+    double get_codec_rate(unit_t) { assert(0); std::cerr << "FIXME: double get_codec_rate(unit_t) Not Implemented.\n"; return 0; };
 };
 
 #endif 

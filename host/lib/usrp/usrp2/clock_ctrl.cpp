@@ -206,7 +206,7 @@ public:
 
         default:
 // UMTRX: add enforcement option to write to uknown device (with empty eeprom)
-//          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
+          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
           break;
         }
 
@@ -334,7 +334,8 @@ private:
      */
     void write_reg(boost::uint8_t addr){
         boost::uint32_t data = _ad9510_regs.get_write_reg(addr);
-        _iface->write_spi(SPI_SS_AD9510, spi_config_t::EDGE_RISE, data, 24);
+	if (usrp2_iface::UMTRX_REV0 != _iface->get_rev())
+            _iface->write_spi(SPI_SS_AD9510, spi_config_t::EDGE_RISE, data, 24);
     }
 
     /*!
