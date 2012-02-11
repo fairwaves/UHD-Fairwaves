@@ -271,6 +271,7 @@ static zero_copy_if::sptr make_xport(
     return xport;
 }
 
+
 /***********************************************************************
  * Structors
  **********************************************************************/
@@ -604,6 +605,89 @@ usrp2_impl::usrp2_impl(const device_addr_t &_device_addr){
 	    lms_dboard_iface _lms_iface = lms_dboard_iface(_mbc[mb].iface);
 	    bool rise = true;
     printf("read LMS1=%x LMS2=%x\n", _lms_iface.read_addr(1, 0x4, rise), _lms_iface.read_addr(2, 0x4, rise));
+    
+    
+    _lms_iface.reg_dump();
+    
+    //TX Enable
+    _lms_iface.write_addr(1, 0x05, (1<<5) | (1<<4) | (1<<3) | (1<<1));     //STXEN
+    _lms_iface.write_addr(1, 0x09, 1);
+    //RF Settings
+//    _lms_iface.write_addr(1, 0x45, 15);     //VGA2GAIN=15
+//    _lms_iface.write_addr(1, 0x42, -10-(-35)); //VGA1GAIN=-10
+
+
+    _lms_iface.write_addr(1, 0x40, 0x02);
+    _lms_iface.write_addr(1, 0x41, 0x19);
+    _lms_iface.write_addr(1, 0x42, 0x80);
+    _lms_iface.write_addr(1, 0x43, 0x80);
+    _lms_iface.write_addr(1, 0x44, 0x0B);
+    _lms_iface.write_addr(1, 0x45, 0x80);
+    _lms_iface.write_addr(1, 0x46, 0x00);
+    _lms_iface.write_addr(1, 0x47, 0x40);
+    _lms_iface.write_addr(1, 0x48, 0x0C);
+    _lms_iface.write_addr(1, 0x49, 0x0C);
+    _lms_iface.write_addr(1, 0x4A, 0x18);
+    _lms_iface.write_addr(1, 0x4B, 0x50);
+    _lms_iface.write_addr(1, 0x4C, 0x00);
+    _lms_iface.write_addr(1, 0x4D, 0x00);
+
+    //TX PLL
+    _lms_iface.reg_dump();
+    
+    //Calck NINT, NFRAC
+    {
+    int64_t ref_clock = 26000000;
+    int64_t out_clock = 925000000;
+    struct vco_sel { int64_t max; int8_t value; } freqsel[] = {
+	{ 0.93*1000000000, 0x3e },
+	{ 1.1425*1000000000, 0x25 },
+	{ 1.3475*1000000000, 0x2d } };
+    
+    int i;
+    int8_t found_freqsel = -1;
+    for (i=0;i<(int)sizeof(freqsel)/sizeof(freqsel[0]);i++) {
+	if (out_clock <= freqsel[i].max) {
+	    found_freqsel=freqsel[i].value; break;
+	}
+    }
+    
+    if (found_freqsel != -1) {
+        int64_t vco_x = 1 << ((found_freqsel & 0x7) - 3);
+        int64_t nint = vco_x * out_clock / ref_clock;
+        int64_t nfrack = (1<<23) * (vco_x * out_clock - nint * ref_clock) / ref_clock;
+        
+        printf("FREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n",
+    		(int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
+    		
+    	
+    	_lms_iface.write_addr(1, 0x10, (nint>>1)&0xff);     //NINT[8:1]
+    	_lms_iface.write_addr(1, 0x11, ((nfrack>>16)&0x7f) | ((nint&0x1)<<7));     //NINT[0]NFRACK[22:16]
+    	_lms_iface.write_addr(1, 0x12, (nfrack>>8)&0xff);     //NFRACK[15:8]
+    	_lms_iface.write_addr(1, 0x13, (nfrack)&0xff);     //NFRACK[7:0]
+    	
+    	_lms_iface.write_addr(1, 0x15, found_freqsel<<2);
+    
+        _lms_iface.reg_dump();
+        
+        //POLL VOVCO
+        for (i=0;i<64;i++) {
+            _lms_iface.write_addr(1, 0x19, 0x80 | i);
+            usleep(50);
+            int comp = _lms_iface.read_addr(1,0x1a);
+            
+            printf("VOVCO[%d]=%x\n", i, comp);
+        }
+
+	_lms_iface.write_addr(1, 0x19, 0x80 | 52);
+    }
+    
+    
+    }
+    
+    
+    _lms_iface.reg_dump();
+    
 //    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x32, rise), _lms_iface.write_n_check(2, 0x5, 0x32, rise));
 //    printf("written LMS1=%x LMS2=%x\n", _lms_iface.write_n_check(1, 0x5, 0x3A, rise), _lms_iface.write_n_check(2, 0x5, 0x3A, rise));
 //	    _lms_iface.reg_dump(rise);    
