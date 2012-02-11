@@ -33,11 +33,11 @@ uint32_t lms_dboard_iface::read_addr(uint8_t lms, uint8_t addr, bool rise) {
 }
 
 uint32_t lms_dboard_iface::write_n_check(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
-    write_addr_data(lms, addr, data, rise);
+    write_addr(lms, addr, data, rise);
     return read_addr(lms, addr, rise);
 }
 
-void lms_dboard_iface::write_addr_data(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
+void lms_dboard_iface::write_addr(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
     if(addr < 128) { // 1st bit is 1 (means 'write'), than address, than value
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         if(rise) _iface->write_spi(lms, spi_config_t::EDGE_RISE, command, 16);

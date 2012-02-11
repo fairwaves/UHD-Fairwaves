@@ -47,7 +47,7 @@ public:
 
 // LMS-specific functions
     void reg_dump(bool rise = true);
-    void write_addr_data(uint8_t, uint8_t, uint8_t, bool rise = true);
+    void write_addr(uint8_t lms, uint8_t addr, uint8_t value, bool rise = true);
     uint32_t read_addr(uint8_t lms, uint8_t addr, bool rise = true);
     uint32_t write_n_check(uint8_t, uint8_t, uint8_t, bool rise = true);
 
