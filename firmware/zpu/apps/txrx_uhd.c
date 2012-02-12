@@ -141,6 +141,11 @@ static void handle_udp_ctrl_packet(
         memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
         break;
 
+    case UMTRX_CTRL_ID_REQUEST:
+        ctrl_data_out.id = UMTRX_CTRL_ID_RESPONSE;
+        memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
+        break;
+
 #ifndef NO_SPI_I2C
     /*******************************************************************
      * SPI
