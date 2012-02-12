@@ -73,6 +73,9 @@ typedef enum{
     //USRP2_CTRL_ID_FOR_SURE, //TODO error condition enums
     //USRP2_CTRL_ID_SUX_MAN,
 
+    UMTRX_CTRL_ID_REQUEST = 'u',
+    UMTRX_CTRL_ID_RESPONSE = 'U',
+
     USRP2_CTRL_ID_WAZZUP_BRO = 'a',
     USRP2_CTRL_ID_WAZZUP_DUDE = 'A',
 
