@@ -19,6 +19,7 @@
 #define INCLUDED_USRP2_IMPL_HPP
 
 #include "usrp2_iface.hpp"
+#include "fw_common.h"
 #include "clock_ctrl.hpp"
 #include "codec_ctrl.hpp"
 #include "rx_frontend_core_200.hpp"
@@ -26,22 +27,32 @@
 #include "rx_dsp_core_200.hpp"
 #include "tx_dsp_core_200.hpp"
 #include "time64_core_200.hpp"
+#include <uhd/utils/log.hpp>
+#include <uhd/utils/msg.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/gps_ctrl.hpp>
 #include <uhd/device.hpp>
 #include <uhd/utils/pimpl.hpp>
+#include <uhd/utils/byteswap.hpp>
 #include <uhd/types/dict.hpp>
 #include <uhd/types/stream_cmd.hpp>
 #include <uhd/types/clock_config.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include <uhd/transport/if_addrs.hpp>
 #include <uhd/transport/vrt_if_packet.hpp>
 #include <uhd/transport/udp_simple.hpp>
 #include <uhd/transport/udp_zero_copy.hpp>
+#include <uhd/types/ranges.hpp>
+#include <uhd/exception.hpp>
+#include <uhd/utils/static.hpp>
+#include <uhd/utils/byteswap.hpp>
+#include <uhd/utils/safe_call.hpp>
 #include <uhd/usrp/dboard_manager.hpp>
 #include <uhd/usrp/subdev_spec.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/asio.hpp>
 
 static const double USRP2_LINK_RATE_BPS = 1000e6/8;
 static const double mimo_clock_delay_usrp2_rev4 = 4.18e-9;
@@ -128,5 +139,196 @@ private:
     uhd::meta_range_t get_tx_dsp_freq_range(const std::string &);
     void update_clock_source(const std::string &, const std::string &);
 };
+
+using namespace uhd;
+using namespace uhd::usrp;
+using namespace uhd::transport;
+namespace asio = boost::asio;
+
+/***********************************************************************
+ * MTU Discovery
+ **********************************************************************/
+
+struct mtu_result_t{
+    size_t recv_mtu, send_mtu;
+};
+
+static mtu_result_t determine_mtu(const std::string &addr, const mtu_result_t &user_mtu) {
+    udp_simple::sptr udp_sock = udp_simple::make_connected(
+        addr, BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
+    );
+
+    //The FPGA offers 4K buffers, and the user may manually request this.
+    //However, multiple simultaneous receives (2DSP slave + 2DSP master),
+    //require that buffering to be used internally, and this is a safe setting.
+    std::vector<boost::uint8_t> buffer(std::max(user_mtu.recv_mtu, user_mtu.send_mtu));
+    usrp2_ctrl_data_t *ctrl_data = reinterpret_cast<usrp2_ctrl_data_t *>(&buffer.front());
+    static const double echo_timeout = 0.020; //20 ms
+
+    //test holler - check if its supported in this fw version
+    ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+    ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+    ctrl_data->data.echo_args.len = htonl(sizeof(usrp2_ctrl_data_t));
+    udp_sock->send(boost::asio::buffer(buffer, sizeof(usrp2_ctrl_data_t)));
+    udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+    if (ntohl(ctrl_data->id) != USRP2_CTRL_ID_HOLLER_BACK_DUDE)
+        throw uhd::not_implemented_error("holler protocol not implemented");
+
+    size_t min_recv_mtu = sizeof(usrp2_ctrl_data_t), max_recv_mtu = user_mtu.recv_mtu;
+    size_t min_send_mtu = sizeof(usrp2_ctrl_data_t), max_send_mtu = user_mtu.send_mtu;
+
+    while (min_recv_mtu < max_recv_mtu){
+
+        size_t test_mtu = (max_recv_mtu/2 + min_recv_mtu/2 + 3) & ~3;
+
+        ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+        ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+        ctrl_data->data.echo_args.len = htonl(test_mtu);
+        udp_sock->send(boost::asio::buffer(buffer, sizeof(usrp2_ctrl_data_t)));
+
+        size_t len = udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+
+        if (len >= test_mtu) min_recv_mtu = test_mtu;
+        else                 max_recv_mtu = test_mtu - 4;
+
+    }
+
+    while (min_send_mtu < max_send_mtu){
+
+        size_t test_mtu = (max_send_mtu/2 + min_send_mtu/2 + 3) & ~3;
+
+        ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+        ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+        ctrl_data->data.echo_args.len = htonl(sizeof(usrp2_ctrl_data_t));
+        udp_sock->send(boost::asio::buffer(buffer, test_mtu));
+
+        size_t len = udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+        if (len >= sizeof(usrp2_ctrl_data_t)) len = ntohl(ctrl_data->data.echo_args.len);
+
+        if (len >= test_mtu) min_send_mtu = test_mtu;
+        else                 max_send_mtu = test_mtu - 4;
+    }
+
+    mtu_result_t mtu;
+    mtu.recv_mtu = min_recv_mtu;
+    mtu.send_mtu = min_send_mtu;
+    return mtu;
+}
+
+/***********************************************************************
+ * Discovery over the udp transport
+ **********************************************************************/
+
+static device_addrs_t usrp2_find_generic(const device_addr_t &hint_, const char * usrp_type, const usrp2_ctrl_id_t ctrl_id_response) {
+    //handle the multi-device discovery
+    device_addrs_t hints = separate_device_addr(hint_);
+    if (hints.size() > 1){
+        device_addrs_t found_devices;
+        BOOST_FOREACH(const device_addr_t &hint_i, hints){
+            device_addrs_t found_devices_i = usrp2_find_generic(hint_i, usrp_type, ctrl_id_response);
+            if (found_devices_i.size() != 1) throw uhd::value_error(str(boost::format(
+                "Could not resolve device hint \"%s\" to a single device."
+            ) % hint_i.to_string()));
+            found_devices.push_back(found_devices_i[0]);
+        }
+        return device_addrs_t(1, combine_device_addrs(found_devices));
+    }
+
+    //initialize the hint for a single device case
+    UHD_ASSERT_THROW(hints.size() <= 1);
+    hints.resize(1); //in case it was empty
+    device_addr_t hint = hints[0];
+    device_addrs_t usrp2_addrs;
+
+    //return an empty list of addresses when type is set to non-usrp2
+    if (hint.has_key("type") and hint["type"] != usrp_type) return usrp2_addrs;
+
+    //if no address was specified, send a broadcast on each interface
+    if (not hint.has_key("addr")){
+        BOOST_FOREACH(const if_addrs_t &if_addrs, get_if_addrs()){
+            //avoid the loopback device
+            if (if_addrs.inet == asio::ip::address_v4::loopback().to_string()) continue;
+
+            //create a new hint with this broadcast address
+            device_addr_t new_hint = hint;
+            new_hint["addr"] = if_addrs.bcast;
+
+            //call discover with the new hint and append results
+            device_addrs_t new_usrp2_addrs = usrp2_find_generic(new_hint, usrp_type, ctrl_id_response);
+            usrp2_addrs.insert(usrp2_addrs.begin(),
+                new_usrp2_addrs.begin(), new_usrp2_addrs.end()
+            );
+        }
+        return usrp2_addrs;
+    }
+
+    //Create a UDP transport to communicate:
+    //Some devices will cause a throw when opened for a broadcast address.
+    //We print and recover so the caller can loop through all bcast addrs.
+    udp_simple::sptr udp_transport;
+    try{
+        udp_transport = udp_simple::make_broadcast(hint["addr"], BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT));
+    }
+    catch(const std::exception &e){
+        UHD_MSG(error) << boost::format("Cannot open UDP transport on %s\n%s") % hint["addr"] % e.what() << std::endl;
+        return usrp2_addrs; //dont throw, but return empty address so caller can insert
+    }
+
+    //send a hello control packet
+    usrp2_ctrl_data_t ctrl_data_out = usrp2_ctrl_data_t();
+    ctrl_data_out.proto_ver = uhd::htonx<boost::uint32_t>(USRP2_FW_COMPAT_NUM);
+    ctrl_data_out.id = uhd::htonx<boost::uint32_t>(USRP2_CTRL_ID_WAZZUP_BRO);
+    udp_transport->send(boost::asio::buffer(&ctrl_data_out, sizeof(ctrl_data_out)));
+
+    //loop and recieve until the timeout
+    boost::uint8_t usrp2_ctrl_data_in_mem[udp_simple::mtu]; //allocate max bytes for recv
+    const usrp2_ctrl_data_t *ctrl_data_in = reinterpret_cast<const usrp2_ctrl_data_t *>(usrp2_ctrl_data_in_mem);
+    while(true){
+        size_t len = udp_transport->recv(asio::buffer(usrp2_ctrl_data_in_mem));
+        if (len > offsetof(usrp2_ctrl_data_t, data) and ntohl(ctrl_data_in->id) == ctrl_id_response) {
+
+            //make a boost asio ipv4 with the raw addr in host byte order
+            device_addr_t new_addr;
+            new_addr["type"] = usrp_type;
+            //We used to get the address from the control packet.
+            //Now now uses the socket itself to yield the address.
+            //boost::asio::ip::address_v4 ip_addr(ntohl(ctrl_data_in->data.ip_addr));
+            //new_addr["addr"] = ip_addr.to_string();
+            new_addr["addr"] = udp_transport->get_recv_addr();
+
+            //Attempt to read the name from the EEPROM and perform filtering.
+            //This operation can throw due to compatibility mismatch.
+            try{
+                usrp2_iface::sptr iface = usrp2_iface::make(udp_simple::make_connected(
+                    new_addr["addr"], BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
+                ));
+                if (iface->is_device_locked()) continue; //ignore locked devices
+                mboard_eeprom_t mb_eeprom = iface->mb_eeprom;
+                new_addr["name"] = mb_eeprom["name"];
+                new_addr["serial"] = mb_eeprom["serial"];
+            }
+            catch(const std::exception &){
+                //set these values as empty string so the device may still be found
+                //and the filter's below can still operate on the discovered device
+                new_addr["name"] = "";
+                new_addr["serial"] = "";
+            }
+
+            //filter the discovered device below by matching optional keys
+            if (
+                (not hint.has_key("name")   or hint["name"]   == new_addr["name"]) and
+                (not hint.has_key("serial") or hint["serial"] == new_addr["serial"])
+            ){
+                usrp2_addrs.push_back(new_addr);
+            }
+
+            //dont break here, it will exit the while loop
+            //just continue on to the next loop iteration
+        }
+        if (len == 0) break; //timeout
+    }
+
+    return usrp2_addrs;
+}
 
 #endif /* INCLUDED_USRP2_IMPL_HPP */
