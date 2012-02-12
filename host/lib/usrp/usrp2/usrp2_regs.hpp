@@ -71,12 +71,6 @@
 #define SPI_SS_TX_DB   128
 #define SPI_SS_ADS62P44 256 //for usrp2p
 
-////////////////////////////////////////////////
-// Masks for controlling different peripherals in UmTRX
-#define SPI_SS_LMS1    1
-#define SPI_SS_LMS2    2
-#define SPI_SS_DAC     4
-
 /////////////////////////////////////////////////
 // Misc Control
 ////////////////////////////////////////////////
