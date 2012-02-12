@@ -28,7 +28,6 @@
 #include <boost/math/special_functions/round.hpp>
 #include "ad7922_regs.hpp" //aux adc
 #include "ad5623_regs.hpp" //aux dac
-#include "lms_dboard_iface.hpp"// add UMTRX-specific dboard interface
 
 using namespace uhd;
 using namespace uhd::usrp;
@@ -102,8 +101,6 @@ dboard_iface::sptr make_usrp2_dboard_iface(
 /***********************************************************************
  * Structors
  **********************************************************************/
-//static const uhd::dict<dboard_iface::unit_t, int> unit_to_spi_dev = map_list_of (dboard_iface::UNIT_TX, SPI_SS_TX_DB) (dboard_iface::UNIT_RX, SPI_SS_RX_DB);
-
 usrp2_dboard_iface::usrp2_dboard_iface(
     usrp2_iface::sptr iface,
     usrp2_clock_ctrl::sptr clock_ctrl
@@ -111,15 +108,6 @@ usrp2_dboard_iface::usrp2_dboard_iface(
     _iface = iface;
     _clock_ctrl = clock_ctrl;
     _gpio = gpio_core_200::make(_iface, U2_REG_SR_ADDR(SR_GPIO), U2_REG_GPIO_RB);
-
-////////////////////////////////////
-//#include "lms_dboard_iface.hpp"
-//    lms_dboard_iface LMS = lms_dboard_iface(iface);
-//    LMS.brute_test();
-//    _mbc[mb].dboard_iface.write_addr_data(1, 0x57, 0x14);
-//	    _mbc[mb].dboard_iface.write_addr_data(2, 0x57, 0x14);
-//
-////////////////////////////
 
     //reset the aux dacs
     _dac_regs[UNIT_RX] = ad5623_regs_t();
@@ -203,6 +191,11 @@ void usrp2_dboard_iface::set_gpio_debug(unit_t, int){
 /***********************************************************************
  * SPI
  **********************************************************************/
+static const uhd::dict<dboard_iface::unit_t, int> unit_to_spi_dev = map_list_of
+    (dboard_iface::UNIT_TX, SPI_SS_TX_DB)
+    (dboard_iface::UNIT_RX, SPI_SS_RX_DB)
+;
+
 void usrp2_dboard_iface::write_spi(
     unit_t unit,
     const spi_config_t &config,
@@ -270,11 +263,11 @@ void usrp2_dboard_iface::write_aux_dac(unit_t unit, aux_dac_t which, double valu
 }
 
 double usrp2_dboard_iface::read_aux_adc(unit_t unit, aux_adc_t which){
- static const uhd::dict<unit_t, int> unit_to_spi_adc = map_list_of
-         (UNIT_RX, SPI_SS_RX_ADC)
-         (UNIT_TX, SPI_SS_TX_ADC)
-     ;
- 
+    static const uhd::dict<unit_t, int> unit_to_spi_adc = map_list_of
+        (UNIT_RX, SPI_SS_RX_ADC)
+        (UNIT_TX, SPI_SS_TX_ADC)
+    ;
+
     //setup spi config args
     spi_config_t config;
     config.mosi_edge = spi_config_t::EDGE_FALL;
@@ -300,4 +293,3 @@ double usrp2_dboard_iface::read_aux_adc(unit_t unit, aux_adc_t which){
     //convert to voltage and return
     return 3.3*ad7922_regs.result/4095;
 }
-
