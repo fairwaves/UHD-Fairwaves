@@ -297,7 +297,7 @@ class burner_socket(object):
 
         if fpga:
             #validate fpga image name against hardware rev
-            if(check_rev and hw_rev != 0 and not any(name in fpga for name in n2xx_revs[hw_rev])):
+            if(check_rev and hw_rev != 0 and not any(name in fpga for name in n2xx_revs[hw_rev][0])):
                 raise Exception("Error: incorrect FPGA image version. Please use the correct image for device %s" % n2xx_revs[hw_rev][0][0])
 
             hw_const = n2xx_revs[hw_rev][1]
