@@ -21,6 +21,7 @@ module vita_tx_deframer
     parameter MAXCHAN=1,
     parameter USE_TRANS_HEADER=0)
    (input clk, input reset, input clear, input clear_seqnum,
+    input dac_clk,
     input set_stb, input [7:0] set_addr, input [31:0] set_data,
     
     // To FIFO interface of Buffer Pool
@@ -96,7 +97,7 @@ module vita_tx_deframer
    wire        eop = eof | vita_eof;  // FIXME would ignoring eof allow larger VITA packets?
    wire        fifo_space;
 
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear | clear_seqnum)
        begin
 	  seqnum_reg <= 32'hFFFF_FFFF;
@@ -110,7 +111,7 @@ module vita_tx_deframer
 	    vita_seqnum_reg <= vita_seqnum;
        end // else: !if(reset | clear_seqnum)
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear)
        begin
 	  vita_state 		<= (USE_TRANS_HEADER==1) ? VITA_TRANS_HEADER : VITA_HEADER;
@@ -212,7 +213,7 @@ module vita_tx_deframer
    reg [63:0] 		      send_time;
    reg [31:0] 		      sample_a, sample_b, sample_c, sample_d;
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      case(vita_state)
        VITA_SECS :
 	 send_time[63:32] <= data_i[31:0];
@@ -220,7 +221,7 @@ module vita_tx_deframer
 	 send_time[31:0] <= data_i[31:0];
      endcase // case (vita_state)
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(vita_state == VITA_PAYLOAD)
        case(vector_phase)
 	 0: sample_a <= data_i[31:0];
@@ -231,7 +232,7 @@ module vita_tx_deframer
    
    wire 		      store = (vita_state == VITA_STORE);
    fifo_short #(.WIDTH(FIFOWIDTH)) short_tx_q
-     (.clk(clk), .reset(reset), .clear(clear),
+     (.clk(dac_clk), .reset(reset), .clear(clear),
       .datain(fifo_i), .src_rdy_i(store), .dst_rdy_o(fifo_space),
       .dataout(sample_fifo_o), .src_rdy_o(sample_fifo_src_rdy_o), .dst_rdy_i(sample_fifo_dst_rdy_i) );
 

@@ -22,6 +22,9 @@
 module u2plus_core
   (// Clocks
    input dsp_clk,
+`ifdef LMS602D_FRONTEND
+   input lms_clk,
+`endif // !`ifdef LMS602D_FRONTEND
    input wb_clk,
    input clk_icap, //ICAP timing fixes for UmTRX Spartan-6 FPGA.
    output clock_ready,
@@ -609,9 +612,19 @@ module u2plus_core
    
    rx_frontend #(.BASE(SR_RX_FRONT)) rx_frontend
      (.clk(dsp_clk),.rst(dsp_rst),
+`ifndef LMS_DSP
+     .adc_clk(dsp_clk),
+`else
+     .adc_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
+`ifndef LMS602D_FRONTEND
       .adc_a({adc_a,2'b00}),.adc_ovf_a(adc_ovf_a),
       .adc_b({adc_b,2'b00}),.adc_ovf_b(adc_ovf_b),
+`else
+      .adc_a({adc_a_0,2'b00}),.adc_ovf_a(adc_ovf_a_0),
+      .adc_b({adc_b_0,2'b00}),.adc_ovf_b(adc_ovf_b_0),
+`endif // !`ifndef LMS602D_FRONTEND
       .i_out(adc_i), .q_out(adc_q), .run(run_rx0_d1 | run_rx1_d1), .debug());
    
    // /////////////////////////////////////////////////////////////////////////
@@ -624,12 +637,13 @@ module u2plus_core
    
    dsp_core_rx #(.BASE(SR_RX_DSP0)) dsp_core_rx0
      (.clk(dsp_clk),.rst(dsp_rst),
-      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef LMS602D_FRONTEND
-      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
+`ifndef LMS_DSP
+     .adc_clk(dsp_clk),
 `else
-      .adc_i(adc_a_0),.adc_ovf_i(adc_ovf_a_0),.adc_q(adc_b_0),.adc_ovf_q(adc_ovf_b_0),
-`endif // !`ifndef LMS602D_FRONTEND
+     .adc_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
+      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
+      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
       .sample(sample_rx0), .run(run_rx0_d1), .strobe(strobe_rx0),
       .debug() );
 
@@ -656,12 +670,13 @@ module u2plus_core
    
    dsp_core_rx #(.BASE(SR_RX_DSP1)) dsp_core_rx1
      (.clk(dsp_clk),.rst(dsp_rst),
-      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef LMS602D_FRONTEND
-      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
+`ifndef LMS_DSP
+     .adc_clk(dsp_clk),
 `else
-      .adc_i(adc_a_1),.adc_ovf_i(adc_ovf_a_1),.adc_q(adc_b_1),.adc_ovf_q(adc_ovf_b_1),
-`endif // !`ifndef LMS602D_FRONTEND
+     .adc_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
+      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
+      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
       .sample(sample_rx1), .run(run_rx1_d1), .strobe(strobe_rx1),
       .debug() );
 
@@ -698,6 +713,11 @@ module u2plus_core
      ext_fifo_i1
        (.int_clk(dsp_clk),
 	.ext_clk(dsp_clk),
+`ifndef LMS_DSP
+     .dac_clk(dsp_clk),
+`else
+     .dac_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
 	.rst(dsp_rst | clear_tx),
 `ifndef NO_EXT_FIFO
 	.RAM_D_pi(RAM_D_pi),
@@ -737,6 +757,11 @@ module u2plus_core
 		   .DSP_NUMBER(0))
    vita_tx_chain
      (.clk(dsp_clk), .reset(dsp_rst),
+`ifndef LMS_DSP
+     .dac_clk(dsp_clk),
+`else
+     .dac_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .vita_time(vita_time),
       .tx_data_i(tx_data), .tx_src_rdy_i(tx_src_rdy), .tx_dst_rdy_o(tx_dst_rdy),
@@ -747,6 +772,11 @@ module u2plus_core
 
    tx_frontend #(.BASE(SR_TX_FRONT)) tx_frontend
      (.clk(dsp_clk), .rst(dsp_rst),
+`ifndef LMS_DSP
+     .dac_clk(dsp_clk),
+`else
+     .dac_clk(lms_clk),
+`endif // !`ifndef LMS_DSP
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .tx_i(tx_i), .tx_q(tx_q), .run(1'b1),
       .dac_a(dac_a), .dac_b(dac_b));
@@ -769,7 +799,7 @@ module u2plus_core
 
    wire [31:0] 	 debug_sync;
 
-   time_64bit #(.TICKS_PER_SEC(32'd100000000),.BASE(SR_TIME64)) time_64bit
+   time_64bit #(.TICKS_PER_SEC(32'd104000000),.BASE(SR_TIME64)) time_64bit
      (.clk(dsp_clk), .rst(dsp_rst), .set_stb(set_stb_dsp), .set_addr(set_addr_dsp), .set_data(set_data_dsp),
       .pps(pps_in), .vita_time(vita_time), .vita_time_pps(vita_time_pps), .pps_int(pps_int),
       .exp_time_in(exp_time_in), .exp_time_out(exp_time_out), .good_sync(good_sync), .debug(debug_sync));

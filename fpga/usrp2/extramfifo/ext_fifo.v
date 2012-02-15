@@ -39,6 +39,7 @@ module ext_fifo
     (
      input int_clk,
      input ext_clk,
+     input dac_clk,
      input rst,
      input [EXT_WIDTH-1:0] RAM_D_pi,
      output [EXT_WIDTH-1:0] RAM_D_po,
@@ -126,7 +127,7 @@ module ext_fifo
 	 fifo_xlnx_512x36_2clk_18to36 fifo_xlnx_512x36_2clk_18to36_i1 (
 								       .rst(rst),
 								       .wr_clk(ext_clk),
-								       .rd_clk(int_clk),
+								       .rd_clk(dac_clk),
 								       .din(read_data), // Bus [17 : 0]
 								       .wr_en(write_output_fifo),
 								       .rd_en(dst_rdy_i),
@@ -152,7 +153,7 @@ module ext_fifo
 	 fifo_xlnx_512x36_2clk_prog_full fifo_xlnx_32x36_2clk_prog_full_i1 (
 									    .rst(rst),
 									    .wr_clk(ext_clk),
-									    .rd_clk(int_clk),
+									    .rd_clk(dac_clk),
 									    .din(read_data), // Bus [35 : 0] 
 									    .wr_en(write_output_fifo),
 									    .rd_en(dst_rdy_i),

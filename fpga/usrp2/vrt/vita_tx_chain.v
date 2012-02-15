@@ -25,6 +25,7 @@ module vita_tx_chain
     parameter USE_TRANS_HEADER=0,
     parameter DSP_NUMBER=0)
    (input clk, input reset,
+    input dac_clk,
     input set_stb, input [7:0] set_addr, input [31:0] set_data,
     input [63:0] vita_time,
     input [35:0] tx_data_i, input tx_src_rdy_i, output tx_dst_rdy_o,
@@ -66,6 +67,7 @@ module vita_tx_chain
 		      .USE_TRANS_HEADER(USE_TRANS_HEADER)) 
    vita_tx_deframer
      (.clk(clk), .reset(reset), .clear(clear_vita), .clear_seqnum(clear_seqnum),
+      .dac_clk(dac_clk),
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .data_i(tx_data_i), .src_rdy_i(tx_src_rdy_i), .dst_rdy_o(tx_dst_rdy_o),
       .sample_fifo_o(tx1_data), .sample_fifo_src_rdy_o(tx1_src_rdy), .sample_fifo_dst_rdy_i(tx1_dst_rdy),
@@ -74,6 +76,7 @@ module vita_tx_chain
 
    vita_tx_control #(.BASE(BASE_CTRL), .WIDTH(32*MAXCHAN)) vita_tx_control
      (.clk(clk), .reset(reset), .clear(clear_vita),
+      .dac_clk(dac_clk),
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .vita_time(vita_time), .error(error), .ack(ack), .error_code(error_code),
       .sample_fifo_i(tx1_data), .sample_fifo_src_rdy_i(tx1_src_rdy), .sample_fifo_dst_rdy_o(tx1_dst_rdy),
@@ -82,6 +85,7 @@ module vita_tx_chain
    
    dsp_core_tx #(.BASE(BASE_DSP)) dsp_core_tx
      (.clk(clk),.rst(reset),
+      .dac_clk(dac_clk),
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .sample(sample_tx), .run(run), .strobe(strobe_tx),
       .tx_i(tx_i),.tx_q(tx_q),
