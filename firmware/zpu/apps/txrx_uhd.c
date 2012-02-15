@@ -273,12 +273,14 @@ static void handle_inp_packet(uint32_t *buff, size_t num_lines){
 void link_changed_callback(int speed){
     printf("\neth link changed: speed = %d\n", speed);
     if (speed != 0){
-        hal_set_leds(LED_RJ45, LED_RJ45);
+        char led = speed==1000?LED_RJ45_ORANGE:LED_RJ45_GREEN;
+        hal_set_leds(led, led);
         pkt_ctrl_set_routing_mode(PKT_CTRL_ROUTING_MODE_MASTER);
         send_gratuitous_arp();
     }
     else{
-        hal_set_leds(0x0, LED_RJ45);
+        hal_set_leds(0x0, LED_RJ45_ORANGE);
+        hal_set_leds(0x0, LED_RJ45_GREEN);
         pkt_ctrl_set_routing_mode(PKT_CTRL_ROUTING_MODE_SLAVE);
     }
 }
