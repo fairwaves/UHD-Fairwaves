@@ -92,8 +92,12 @@ public:
         usrp2_ctrl_data_t ctrl_data;
         ctrl_data.id = htonl(USRP2_CTRL_ID_WAZZUP_BRO);
         ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
-        if (ntohl(ctrl_data.id) != USRP2_CTRL_ID_WAZZUP_DUDE)
-            throw uhd::runtime_error("firmware not responding");
+        if (ntohl(ctrl_data.id) != USRP2_CTRL_ID_WAZZUP_DUDE) {
+    	    ctrl_data.id = htonl(UMTRX_CTRL_ID_REQUEST);
+    	    ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
+    	    if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE) throw uhd::runtime_error("firmware not responding");
+        }
+
         _protocol_compat = ntohl(ctrl_data.proto_ver);
 
         mb_eeprom = mboard_eeprom_t(*this, mboard_eeprom_t::MAP_N100);
