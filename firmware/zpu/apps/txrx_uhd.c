@@ -136,15 +136,17 @@ static void handle_udp_ctrl_packet(
     /*******************************************************************
      * Addressing
      ******************************************************************/
-    case USRP2_CTRL_ID_WAZZUP_BRO:
-        ctrl_data_out.id = USRP2_CTRL_ID_WAZZUP_DUDE;
-        memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
-        break;
-
+#ifdef UMTRX
     case UMTRX_CTRL_ID_REQUEST:
         ctrl_data_out.id = UMTRX_CTRL_ID_RESPONSE;
         memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
         break;
+#else
+    case USRP2_CTRL_ID_WAZZUP_BRO:
+        ctrl_data_out.id = USRP2_CTRL_ID_WAZZUP_DUDE;
+        memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
+        break;
+#endif
 
 #ifndef NO_SPI_I2C
     /*******************************************************************
