@@ -56,10 +56,10 @@ public:
 
     void _set_pin_ctrl(unit_t, boost::uint16_t) {}
     void _set_gpio_ddr(unit_t, boost::uint16_t) {}
-    void _set_gpio_out(unit_t, boost::uint16_t) { throw uhd::not_implemented_error("GPIO is not available on UmTRX"); }
+    void _set_gpio_out(unit_t, boost::uint16_t) {}
     boost::uint16_t read_gpio(unit_t) { return 0; }
     void _set_atr_reg(unit_t, atr_reg_t, boost::uint16_t) {}
-    void set_gpio_debug(unit_t, int) { throw uhd::not_implemented_error("no set_gpio_debug implemented"); }
+    void set_gpio_debug(unit_t, int) {}
 
     void write_i2c(boost::uint8_t, const byte_vector_t &) {}
     byte_vector_t read_i2c(boost::uint8_t addr, size_t num_bytes) { return _iface->read_i2c(addr, num_bytes); }

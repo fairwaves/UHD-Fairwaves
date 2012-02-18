@@ -321,7 +321,7 @@ void dboard_manager_impl::set_nice_dboard_if(void){
         (dboard_iface::UNIT_RX)
         (dboard_iface::UNIT_TX)
     ;
-#ifndef UMTRX
+
     //set nice settings on each unit
     BOOST_FOREACH(dboard_iface::unit_t unit, units){
         _iface->set_gpio_ddr(unit, 0x0000); //all inputs
@@ -329,5 +329,4 @@ void dboard_manager_impl::set_nice_dboard_if(void){
         _iface->set_pin_ctrl(unit, 0x0000); //all gpio
         _iface->set_clock_enabled(unit, false); //clock off
     }
-#endif
 }
