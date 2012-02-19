@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import re, struct, socket, subprocess
-
 ########################################################################
 # constants
 ########################################################################
@@ -24,7 +23,6 @@ UDP_CONTROL_PORT = 49152
 UDP_MAX_XFER_BYTES = 1024
 UDP_TIMEOUT = 3
 UDP_POLL_INTERVAL = 0.10 #in seconds
-
 USRP2_CONTROL_PROTO_VERSION = 11 # must match firmware proto
 
 #see fw_common.h
@@ -87,18 +85,14 @@ def enumerate_devices():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.settimeout(0.1)
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
-    print "Sending %d raw bytes" % len(out_pkt)
-    print "Sending %x, '%c'\n" % (USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
+    print "[%s] Sending %d bytes: %x, '%c'\n" % (bcast_addr, len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
     sock.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
     still_goin = True
     while(still_goin):
       try:
         pkt = sock.recv(UDP_MAX_XFER_BYTES)
-        print "Received raw %d bytes" % len(pkt)
         (proto_ver, pktid, rxseq, ip_addr) = unpack_control_ip_fmt(pkt)
-        print "Received %x, '%c', %x, %s\n" % (proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
-        if(pktid == UMTRX_CTRL_ID_RESPONSE):
-          yield socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr)))
+        print "[%s] Received %d bytes: %x, '%c', %x, %s\n" % (bcast_addr, len(pkt), proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
       except socket.timeout:
         still_goin = False
 
@@ -107,7 +101,7 @@ def enumerate_devices():
 ########################################################################
 if __name__ == '__main__':
 
-  print('Possible network devices:')
-  print('  ' + '\n  '.join(enumerate_devices()))
+  print 'broadcasting over interfaces:'
+  enumerate_devices()
   
 
