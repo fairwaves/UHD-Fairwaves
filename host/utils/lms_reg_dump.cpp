@@ -28,14 +28,14 @@ using namespace std;
 
 int UHD_SAFE_MAIN(int argc, char **argv) {
     string args;
-
+    unsigned lms;
     po::options_description desc("available options");
     desc.add_options()
         ("help", "usage instructions")
         ("args", po::value<string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("address", po::value<unsigned>(), "the address for a register (decimal)")
         ("data", po::value<unsigned>(), "the new value to be written to register (decimal), omit for reading")
-        ("lms", po::value<unsigned>()->default_value(1), "the LMS to be used (decimal), defaults to 1")
+        ("lms", po::value<unsigned>(&lms)->default_value(1), "the LMS to be used (decimal), defaults to 1")
         ("fall", "use FALL signal edge for SPI, defaults to RISE");
 // N. B: using po::value<uint8_t> causes boost to crap and ignore correct option value
 // I miss GNU/gengetopt so much...
@@ -49,21 +49,22 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
         return 1;
     }
 
-    if(vm["address"].as<unsigned>() > 127) {
+    if (vm["address"].as<unsigned>() > 127) {
 	cout << "Expected register address is [0; 127], received " << vm["address"].as<unsigned>() << "\n";
 	return 3;
     }
-    uint8_t address = vm["address"].as<unsigned>();
+    uint8_t address = vm["address"].as<unsigned>(), data;
 
-    if(vm["data"].as<unsigned>() > 255) {
-	cout << "Expected data for register is [0; 127], received " << vm["data"].as<unsigned>() << "\n";
-	return 4;
+    if (vm.count("data")) {
+	if (vm["data"].as<unsigned>() > 255) {
+	    cout << "Expected data for register is [0; 127], received " << vm["data"].as<unsigned>() << "\n";
+	    return 4;
+	}
+	data = vm["data"].as<unsigned>();
     }
-    uint8_t data = vm["data"].as<unsigned>();
-    uint8_t lms = (uint8_t)vm["lms"].as<unsigned>();
-    cerr <<"lms::"<<lms;
-    if ((1 != lms) || (2 != lms)) {
-	cerr << "Unexpected LMS number supplied: " << lms << ", only 1 & 2 are available " << vm.count("lms");
+
+    if ((1 != lms) && (2 != lms)) {
+	cerr << "Unexpected LMS number supplied: " << lms << ", only 1 & 2 are available.\n";
 	return 2;
     } 
 
