@@ -42,6 +42,12 @@ SET(util_share_sources
     usrp_burn_mb_eeprom.cpp
 )
 
+IF(ENABLE_UMTRX)
+    LIST(APPEND util_share_sources
+        lms_reg_dump.cpp
+    )
+ENDIF(ENABLE_UMTRX)
+
 IF(ENABLE_USB)
     LIST(APPEND util_share_sources
         fx2_init_eeprom.cpp
