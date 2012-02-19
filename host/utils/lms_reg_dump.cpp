@@ -65,7 +65,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
     uhd::spi_config_t front = vm.count("fall")?(uhd::spi_config_t::EDGE_FALL):(uhd::spi_config_t::EDGE_RISE);
     uhd::usrp::dboard_iface::unit_t lms_unit = (uhd::usrp::dboard_iface::unit_t)lms;
     cout << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms_unit;
-    cout << "\nCreating UmTRX device from address: " << args << "...";
+    cout << "\nCreating UmTRX device from address: " << args << "\n";
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
     uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
 
