@@ -113,7 +113,11 @@ static void handle_udp_ctrl_packet(
         if (ctrl_data_in->proto_ver) printf("!Error in control packet handler: Expected compatibility number %d, but got %d\n",
             USRP2_FW_COMPAT_NUM, ctrl_data_in->proto_ver
         );
+#ifdef UMTRX
+        ctrl_data_in_id = UMTRX_CTRL_ID_REQUEST;
+#else
         ctrl_data_in_id = USRP2_CTRL_ID_WAZZUP_BRO;
+#endif
     }
 
     //ensure that this is not a short packet
