@@ -49,7 +49,7 @@ static device::sptr usrp2_make(const device_addr_t &device_addr){
 }
 
 static device_addrs_t usrp2_find(const device_addr_t &hint_) {
-    return usrp2_find_generic(hint_, (char *)"usrp2", USRP2_CTRL_ID_WAZZUP_DUDE);
+    return usrp2_find_generic(hint_, (char *)"usrp2", USRP2_CTRL_ID_WAZZUP_BRO, USRP2_CTRL_ID_WAZZUP_DUDE);
 }
 
 UHD_STATIC_BLOCK(register_usrp2_device){

@@ -47,7 +47,7 @@ namespace asio = boost::asio;
  * Discovery over the udp transport
  **********************************************************************/
 static device_addrs_t umtrx_find(const device_addr_t &hint_) {
-    return usrp2_find_generic(hint_, (char *)"umtrx", UMTRX_CTRL_ID_RESPONSE);
+    return usrp2_find_generic(hint_, (char *)"umtrx", UMTRX_CTRL_ID_REQUEST, UMTRX_CTRL_ID_RESPONSE);
 }
 
 /***********************************************************************

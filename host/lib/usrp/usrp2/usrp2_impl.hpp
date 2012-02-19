@@ -219,13 +219,13 @@ static mtu_result_t determine_mtu(const std::string &addr, const mtu_result_t &u
  * Discovery over the udp transport
  **********************************************************************/
 
-static device_addrs_t usrp2_find_generic(const device_addr_t &hint_, const char * usrp_type, const usrp2_ctrl_id_t ctrl_id_response) {
+static device_addrs_t usrp2_find_generic(const device_addr_t &hint_, const char * usrp_type, const usrp2_ctrl_id_t ctrl_id_request, const usrp2_ctrl_id_t ctrl_id_response) {
     //handle the multi-device discovery
     device_addrs_t hints = separate_device_addr(hint_);
     if (hints.size() > 1){
         device_addrs_t found_devices;
         BOOST_FOREACH(const device_addr_t &hint_i, hints){
-            device_addrs_t found_devices_i = usrp2_find_generic(hint_i, usrp_type, ctrl_id_response);
+            device_addrs_t found_devices_i = usrp2_find_generic(hint_i, usrp_type, ctrl_id_request, ctrl_id_response);
             if (found_devices_i.size() != 1) throw uhd::value_error(str(boost::format(
                 "Could not resolve device hint \"%s\" to a single device."
             ) % hint_i.to_string()));
@@ -254,7 +254,7 @@ static device_addrs_t usrp2_find_generic(const device_addr_t &hint_, const char 
             new_hint["addr"] = if_addrs.bcast;
 
             //call discover with the new hint and append results
-            device_addrs_t new_usrp2_addrs = usrp2_find_generic(new_hint, usrp_type, ctrl_id_response);
+            device_addrs_t new_usrp2_addrs = usrp2_find_generic(new_hint, usrp_type, ctrl_id_request, ctrl_id_response);
             usrp2_addrs.insert(usrp2_addrs.begin(),
                 new_usrp2_addrs.begin(), new_usrp2_addrs.end()
             );
@@ -277,7 +277,7 @@ static device_addrs_t usrp2_find_generic(const device_addr_t &hint_, const char 
     //send a hello control packet
     usrp2_ctrl_data_t ctrl_data_out = usrp2_ctrl_data_t();
     ctrl_data_out.proto_ver = uhd::htonx<boost::uint32_t>(USRP2_FW_COMPAT_NUM);
-    ctrl_data_out.id = uhd::htonx<boost::uint32_t>(USRP2_CTRL_ID_WAZZUP_BRO);
+    ctrl_data_out.id = uhd::htonx<boost::uint32_t>(ctrl_id_request);
     udp_transport->send(boost::asio::buffer(&ctrl_data_out, sizeof(ctrl_data_out)));
 
     //loop and recieve until the timeout
