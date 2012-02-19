@@ -51,28 +51,20 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 
     if (vm["address"].as<unsigned>() > 127) {
 	cout << "Expected register address is [0; 127], received " << vm["address"].as<unsigned>() << "\n";
-	return 3;
+	return 2;
     }
-    uint8_t address = vm["address"].as<unsigned>(), data;
-
-    if (vm.count("data")) {
-	if (vm["data"].as<unsigned>() > 255) {
-	    cout << "Expected data for register is [0; 127], received " << vm["data"].as<unsigned>() << "\n";
-	    return 4;
-	}
-	data = vm["data"].as<unsigned>();
-    }
+    
+    uint8_t address = vm["address"].as<unsigned>();
 
     if ((1 != lms) && (2 != lms)) {
-	cerr << "Unexpected LMS number supplied: " << lms << ", only 1 & 2 are available.\n";
-	return 2;
+	cout << "Unexpected LMS number supplied: " << lms << ", only 1 & 2 are available.\n";
+	return 3;
     } 
 
 // establish SPI configuration
     uhd::spi_config_t front = vm.count("fall")?(uhd::spi_config_t::EDGE_FALL):(uhd::spi_config_t::EDGE_RISE);
     uhd::usrp::dboard_iface::unit_t lms_unit = (uhd::usrp::dboard_iface::unit_t)lms;
     cout << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms_unit;
-    cout << ", register " << address << "\n";
     cout << "\nCreating UmTRX device from address: " << args << "...";
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
     uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
@@ -88,6 +80,11 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 
     uhd::usrp::dboard_iface::sptr dbif = usrp->get_tx_dboard_iface(0);
     if (vm.count("data")) {
+	if (vm["data"].as<unsigned>() > 255) {
+	    cout << "Expected data for register is [0; 127], received " << vm["data"].as<unsigned>() << "\n";
+	    return 5;
+	}
+	uint8_t data = vm["data"].as<unsigned>();
         cout << "Writing " << hex << data << " to register " << hex << address << "... ";
 	cout << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
     } else {
