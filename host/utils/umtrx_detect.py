@@ -59,13 +59,13 @@ def detect(bcast_addr):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.settimeout(0.1)
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
-    print "Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
+    print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
     sock.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
     while(True):
         try:
             pkt = sock.recv(UDP_MAX_XFER_BYTES)
             (proto_ver, pktid, rxseq, ip_addr) = unpack_control_ip_fmt(pkt)
-            print "Received %d bytes: %x, '%c', %x, %s\n" % (len(pkt), proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
+            print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
         except socket.timeout:
             return
 
