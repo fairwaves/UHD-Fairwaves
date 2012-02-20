@@ -248,7 +248,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr) {
 
 umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
-        _mbc[mb].tx_dsp->set_updates(0, 0);
+//        _mbc[mb].tx_dsp->set_updates(0, 0);
     }
 )}
 
