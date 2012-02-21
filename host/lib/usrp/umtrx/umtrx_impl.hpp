@@ -18,6 +18,7 @@
 #ifndef INCLUDED_UMTRX_IMPL_HPP
 #define INCLUDED_UMTRX_IMPL_HPP
 
+#include "../usrp2/fw_common.h"
 #include "../usrp2/usrp2_iface.hpp"
 #include "../usrp2/usrp2_impl.hpp"
 #include "rx_frontend_core_200.hpp"
@@ -25,23 +26,32 @@
 #include "rx_dsp_core_200.hpp"
 #include "tx_dsp_core_200.hpp"
 #include "time64_core_200.hpp"
+#include <uhd/utils/log.hpp>
+#include <uhd/utils/msg.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/gps_ctrl.hpp>
 #include <uhd/device.hpp>
 #include <uhd/utils/pimpl.hpp>
+#include <uhd/utils/byteswap.hpp>
 #include <uhd/types/dict.hpp>
 #include <uhd/types/stream_cmd.hpp>
 #include <uhd/types/clock_config.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include <uhd/transport/if_addrs.hpp>
 #include <uhd/transport/vrt_if_packet.hpp>
 #include <uhd/transport/udp_simple.hpp>
 #include <uhd/transport/udp_zero_copy.hpp>
+#include <uhd/types/ranges.hpp>
+#include <uhd/exception.hpp>
+#include <uhd/utils/static.hpp>
+#include <uhd/utils/byteswap.hpp>
+#include <uhd/utils/safe_call.hpp>
 #include <uhd/usrp/dboard_manager.hpp>
 #include <uhd/usrp/subdev_spec.hpp>
 #include <boost/weak_ptr.hpp>
-
+#include <boost/asio.hpp>
 /*!
  * Make a UmTRX dboard interface.
  * \param iface the UmTRX interface object
@@ -75,8 +85,20 @@ class umtrx_impl : public uhd::device {
     };
     uhd::dict<std::string, mb_container_type> _mbc;
 
+    void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
+/*
+    uhd::sensor_value_t get_mimo_locked(const std::string &);
+    uhd::sensor_value_t get_ref_locked(const std::string &);
+
+    void set_rx_fe_corrections(const std::string &mb, const double);
+    void set_tx_fe_corrections(const std::string &mb, const double);
+*/
     //device properties interface
     uhd::property_tree::sptr get_tree(void) const { return _tree; }
+
+    //update spec methods are coercers until we only accept db_name == A
+    void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
+    void update_tx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
 
 public:
     umtrx_impl(const uhd::device_addr_t &);
