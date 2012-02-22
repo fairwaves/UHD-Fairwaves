@@ -46,6 +46,11 @@ IF(ENABLE_UMTRX)
     LIST(APPEND util_share_sources
         lms_reg_dump.cpp
     )
+    INSTALL(PROGRAMS
+        umtrx_detect.py
+        DESTINATION ${PKG_LIB_DIR}/utils
+        COMPONENT utilities
+    )
 ENDIF(ENABLE_UMTRX)
 
 IF(ENABLE_USB)
