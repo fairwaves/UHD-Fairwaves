@@ -24,7 +24,27 @@
 #include <iostream>
 
 namespace po = boost::program_options;
+namespace uu = uhd::usrp;
 using namespace std;
+
+uint32_t reg_read(uu::dboard_iface::sptr dbif, uu::dboard_iface::unit_t lms, uhd::spi_config_t front, uint8_t addr) {
+    return dbif->read_write_spi(lms, front, addr << 8, 16);
+}
+
+uint32_t reg_write(uu::dboard_iface::sptr dbif, uu::dboard_iface::unit_t lms, uhd::spi_config_t front, uint8_t addr, uint8_t data) {
+    return dbif->read_write_spi(lms, front, (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data, 16);
+}
+
+uu::dboard_iface::sptr get_dbif(string args) {// TX interface, card 0 hardcoded - in hardware this should be equal to RX
+    uu::multi_usrp::sptr usrp = uu::multi_usrp::make(args);
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    const string mb_name = tree->access<string>("/mboards/0/name").get();
+    if (mb_name.find("UMTRX") == string::npos and mb_name.find("UmTRX") == string::npos) {
+	cerr << "No supported hardware found.\n";
+	exit(1);
+    }
+    return usrp->get_tx_dboard_iface(0);
+}
 
 int UHD_SAFE_MAIN(int argc, char **argv) {
     string args;
@@ -37,6 +57,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
         ("data", po::value<unsigned>(), "the new value to be written to register (decimal), omit for reading")
         ("lms", po::value<unsigned>(&lms)->default_value(1), "the LMS to be used (decimal), defaults to 1")
 	("verbose,v", "print additional information besides actual register value")
+	("dump", "dump all registers from both LMS and compare results")
         ("fall", "use FALL signal edge for SPI, defaults to RISE");
 // N. B: using po::value<uint8_t> causes boost to crap and ignore correct option value
 // I miss GNU/gengetopt so much...
@@ -44,42 +65,38 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") or not vm.count("address")) {
+    if (vm.count("help") or not vm.count("address") or not vm.count("dump")) {
         cerr << boost::format("LMS register dumper, %s\n") % desc ;
         cerr << "Omit the data argument to perform a readback,\nOr specify a new data to write into the address.\n";
-        return 1;
+        return 2;
+    }
+
+    uhd::spi_config_t front = vm.count("fall")?(uhd::spi_config_t::EDGE_FALL):(uhd::spi_config_t::EDGE_RISE);
+    if (vm.count("verbose")) cerr << "Creating UmTRX device from address: " << args << "\n";
+    uu::dboard_iface::sptr dbif = get_dbif(args);
+
+    if (vm.count("dump")) {
+	for (int i = 0; i < 128; i++) {
+	    uint32_t lms1 = reg_read(dbif, (uu::dboard_iface::unit_t)1, front, i);
+	    uint32_t lms2 = reg_read(dbif, (uu::dboard_iface::unit_t)2, front, i);
+	    cout << "# " << i << ": LMS1=" << lms2 << " LMS2=" << lms2 << ((lms1 == lms2)?(" OK"):(" DIFF"));
+	}
+	return 0;
     }
 
     if (vm["address"].as<unsigned>() > 127) {
 	cerr << "Expected register address is [0; 127], received " << vm["address"].as<unsigned>() << "\n";
-	return 2;
+	return 3;
     }
     
     uint8_t address = vm["address"].as<unsigned>();
 
     if ((1 != lms) && (2 != lms)) {
 	cerr << "Unexpected LMS number supplied: " << lms << ", only 1 & 2 are available.\n";
-	return 3;
+	return 4;
     } 
 
-// establish SPI configuration
-    uhd::spi_config_t front = vm.count("fall")?(uhd::spi_config_t::EDGE_FALL):(uhd::spi_config_t::EDGE_RISE);
-    uhd::usrp::dboard_iface::unit_t lms_unit = (uhd::usrp::dboard_iface::unit_t)lms;
-    if(vm.count("verbose")) cerr << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms_unit;
-    if(vm.count("verbose")) cerr << "\nCreating UmTRX device from address: " << args << "\n";
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-
-    const uhd::fs_path mb_path = "/mboards/0";
-    const string mb_name = tree->access<std::string>(mb_path / "name").get();
-    if (mb_name.find("UMTRX") != string::npos or mb_name.find("UmTRX") != string::npos) {
-	if(vm.count("verbose")) cerr << "UmTRX detected.\n";
-    } else {
-        cerr << "No supported hardware found.\n";
-        return 4;
-    }
-// TX interface, card 0 hardcoded - in hardware this should be equal to RX
-    uhd::usrp::dboard_iface::sptr dbif = usrp->get_tx_dboard_iface(0);
+    if(vm.count("verbose")) cerr << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms << "\n"; 
 
     if (vm.count("data")) {
 	if (vm["data"].as<unsigned>() > 255) {
@@ -88,12 +105,12 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	}
 	uint8_t data = vm["data"].as<unsigned>();
         if(vm.count("verbose")) cerr << "Writing " << hex << data << " to register " << hex << address << "... ";
-	if(vm.count("verbose")) cerr << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
-	else cout << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
+	if(vm.count("verbose")) cerr << reg_write(dbif, (uu::dboard_iface::unit_t)lms, front, address, data);
+	else cout << reg_write(dbif, (uu::dboard_iface::unit_t)lms, front, address, data);
     } else {
 	if(vm.count("verbose")) cerr << "Reading register " << hex << address << "... ";
-	if(vm.count("verbose")) cerr << dbif->read_write_spi(lms_unit, front, address << 8, 16);
-	else cout << dbif->read_write_spi(lms_unit, front, address << 8, 16);
+	if(vm.count("verbose")) cerr << reg_read(dbif, (uu::dboard_iface::unit_t)lms, front, address);
+	else cout << reg_read(dbif, (uu::dboard_iface::unit_t)lms, front, address);
     }
     if(vm.count("verbose")) cerr << "\nDone.\n";
     return 0;
