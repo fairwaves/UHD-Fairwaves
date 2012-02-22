@@ -77,7 +77,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
         cerr << "No supported hardware found.\n";
         return 4;
     }
-
+// TX interface, card 0 hardcoded - in hardware this should be equal to RX
     uhd::usrp::dboard_iface::sptr dbif = usrp->get_tx_dboard_iface(0);
 
     if (vm.count("data")) {
@@ -87,12 +87,10 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	}
 	uint8_t data = vm["data"].as<unsigned>();
         cerr << "Writing " << hex << data << " to register " << hex << address << "... ";
-//	cerr << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
-	cerr << dbif->read_write_spi(uhd::usrp::dboard_iface::UNIT_TX, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
+	cerr << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
     } else {
 	cerr << "Reading register " << hex << address << "... ";
-//	cerr << dbif->read_write_spi(lms_unit, front, address << 8, 16);
-	cerr << dbif->read_write_spi(uhd::usrp::dboard_iface::UNIT_TX, front, address << 8, 16);
+	cerr << dbif->read_write_spi(lms_unit, front, address << 8, 16);
     }
     cerr << "\nDone.\n";
     return 0;

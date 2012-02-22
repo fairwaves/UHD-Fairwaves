@@ -30,12 +30,6 @@ using namespace uhd;
 using namespace uhd::usrp;
 using namespace boost::assign;
 
-static const uhd::dict<dboard_iface::unit_t, int> unit_to_spi_dev = 
-    map_list_of 
-	(dboard_iface::UNIT_TX, SPI_SS_TX_DB) 
-	(dboard_iface::UNIT_RX, SPI_SS_RX_DB);
-
-
 class umtrx_dboard_iface : public dboard_iface {
     usrp2_iface::sptr _iface;
     void _write_aux_dac(unit_t) {}
@@ -71,11 +65,11 @@ public:
     double get_codec_rate(unit_t) { return 0; }
 
     void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-	_iface->write_spi(unit_to_spi_dev[unit], config, data, num_bits);
+	_iface->write_spi(unit, config, data, num_bits);
     }
 
     boost::uint32_t read_write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-	return _iface->read_spi(unit_to_spi_dev[unit], config, data, num_bits);
+	return _iface->read_spi(unit, config, data, num_bits);
     }
 };
 
