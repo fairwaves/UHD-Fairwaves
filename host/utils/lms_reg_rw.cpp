@@ -80,7 +80,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	for (int i = 0; i < 128; i++) {
 	    uint32_t lms1 = reg_read(dbif, (uu::dboard_iface::unit_t)1, front, i);
 	    uint32_t lms2 = reg_read(dbif, (uu::dboard_iface::unit_t)2, front, i);
-	    printf("# %.3u: LMS1=%X LMS2=%X\t%s\n", i, lms1, lms2, (lms1 == lms2)?(" OK"):(" DIFF"));
+	    printf("# %.3u: LMS1=%X\tLMS2=%X\t%s\n", i, lms1, lms2, (lms1 == lms2)?(" OK"):(" DIFF"));
 	}
 	return 0;
     }
@@ -97,7 +97,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	return 4;
     } 
 
-    if(vm.count("verbose")) cerr << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms << "\n"; 
+    if(vm.count("verbose")) fprintf(stderr, "Using %s SPI on LMS unit %u\n", vm.count("fall")?("EDGE_FALL"):("EDGE_RISE"), lms);
 
     if (vm.count("data")) {
 	if (vm["data"].as<unsigned>() > 255) {
