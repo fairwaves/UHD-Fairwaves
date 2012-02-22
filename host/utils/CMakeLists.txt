@@ -44,10 +44,11 @@ SET(util_share_sources
 
 IF(ENABLE_UMTRX)
     LIST(APPEND util_share_sources
-        lms_reg_dump.cpp
+        lms_reg_rw.cpp
     )
     INSTALL(PROGRAMS
         umtrx_detect.py
+        lms_reg_dump.sh
         DESTINATION ${PKG_LIB_DIR}/utils
         COMPONENT utilities
     )
