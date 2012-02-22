@@ -36,6 +36,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
         ("address", po::value<unsigned>(), "the address for a register (decimal)")
         ("data", po::value<unsigned>(), "the new value to be written to register (decimal), omit for reading")
         ("lms", po::value<unsigned>(&lms)->default_value(1), "the LMS to be used (decimal), defaults to 1")
+	("verbose,v", "print additional information besides actual register value")
         ("fall", "use FALL signal edge for SPI, defaults to RISE");
 // N. B: using po::value<uint8_t> causes boost to crap and ignore correct option value
 // I miss GNU/gengetopt so much...
@@ -64,15 +65,15 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 // establish SPI configuration
     uhd::spi_config_t front = vm.count("fall")?(uhd::spi_config_t::EDGE_FALL):(uhd::spi_config_t::EDGE_RISE);
     uhd::usrp::dboard_iface::unit_t lms_unit = (uhd::usrp::dboard_iface::unit_t)lms;
-    cerr << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms_unit;
-    cerr << "\nCreating UmTRX device from address: " << args << "\n";
+    if(vm.count("verbose")) cerr << boost::format("Using %s SPI on LMS unit ") % (vm.count("fall")?("EDGE_FALL"):("EDGE_RISE")) << lms_unit;
+    if(vm.count("verbose")) cerr << "\nCreating UmTRX device from address: " << args << "\n";
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
     uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
 
     const uhd::fs_path mb_path = "/mboards/0";
     const string mb_name = tree->access<std::string>(mb_path / "name").get();
     if (mb_name.find("UMTRX") != string::npos or mb_name.find("UmTRX") != string::npos) {
-	cerr << "UmTRX detected.\n";
+	if(vm.count("verbose")) cerr << "UmTRX detected.\n";
     } else {
         cerr << "No supported hardware found.\n";
         return 4;
@@ -86,12 +87,14 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	    return 5;
 	}
 	uint8_t data = vm["data"].as<unsigned>();
-        cerr << "Writing " << hex << data << " to register " << hex << address << "... ";
-	cerr << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
+        if(vm.count("verbose")) cerr << "Writing " << hex << data << " to register " << hex << address << "... ";
+	if(vm.count("verbose")) cerr << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
+	else cout << dbif->read_write_spi(lms_unit, front, (((uint16_t)0x80 | (uint16_t)address) << 8) | (uint16_t)data, 16);
     } else {
-	cerr << "Reading register " << hex << address << "... ";
-	cerr << dbif->read_write_spi(lms_unit, front, address << 8, 16);
+	if(vm.count("verbose")) cerr << "Reading register " << hex << address << "... ";
+	if(vm.count("verbose")) cerr << dbif->read_write_spi(lms_unit, front, address << 8, 16);
+	else cout << dbif->read_write_spi(lms_unit, front, address << 8, 16);
     }
-    cerr << "\nDone.\n";
+    if(vm.count("verbose")) cerr << "\nDone.\n";
     return 0;
 }
