@@ -444,11 +444,10 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 */
     }
 
-    //initialize io handling
+ // internal debug routines
 //    this->io_init();
 //reg_dump();
-    //do some post-init tasks
-//    this->update_rates();
+//do some post-init tasks
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         fs_path root = "/mboards/" + mb;
 
@@ -623,51 +622,3 @@ void umtrx_impl::reg_dump(bool rise) {
 	if(read_addr(1, i, rise) == read_addr(2, i, rise)) printf("OK\n"); else printf("DIFF\n");
     }
 }
-
-/*
-void umtrx_impl::update_clock_source(const std::string &mb, const std::string &source){
-    //clock source ref 10mhz
-    switch(_mbc[mb].iface->get_rev()){
-    case usrp2_iface::USRP_N200:
-    case usrp2_iface::USRP_N210:
-    case usrp2_iface::USRP_N200_R4:
-    case usrp2_iface::USRP_N210_R4:
-        if (source == "internal")       _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x12);
-        else if (source == "external")  _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x1C);
-        else if (source == "mimo")      _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x15);
-        else throw uhd::value_error("unhandled clock configuration reference source: " + source);
-        _mbc[mb].clock->enable_external_ref(true); //umtrxP has an internal 10MHz TCXO
-        break;
-
-    case usrp2_iface::umtrx_REV3:
-    case usrp2_iface::umtrx_REV4:
-        if (source == "internal")       _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x10);
-        else if (source == "external")  _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x1C);
-        else if (source == "mimo")      _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, 0x15);
-        else throw uhd::value_error("unhandled clock configuration reference source: " + source);
-        _mbc[mb].clock->enable_external_ref(source != "internal");
-        break;
-    case usrp2_iface::USRP_NXXX: break;
-    }
-
-    //always drive the clock over serdes if not locking to it
-    _mbc[mb].clock->enable_mimo_clock_out(source != "mimo");
-
-    //set the mimo clock delay over the serdes
-    if (source != "mimo"){
-        switch(_mbc[mb].iface->get_rev()){
-        case usrp2_iface::USRP_N200:
-        case usrp2_iface::USRP_N210:
-        case usrp2_iface::USRP_N200_R4:
-        case usrp2_iface::USRP_N210_R4:
-            _mbc[mb].clock->set_mimo_clock_delay(mimo_clock_delay_usrp_n2xx);
-            break;
-
-        case usrp2_iface::umtrx_REV4:
-            _mbc[mb].clock->set_mimo_clock_delay(mimo_clock_delay_umtrx_rev4);
-            break;
-        default: break; //not handled
-        }
-    }
-}*/
-
