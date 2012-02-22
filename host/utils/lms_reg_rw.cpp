@@ -65,7 +65,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") or not vm.count("address") or not vm.count("dump")) {
+    if (vm.count("help") or not (vm.count("address") or vm.count("dump"))) {
         cerr << boost::format("LMS register dumper, %s\n") % desc ;
         cerr << "Omit the data argument to perform a readback,\nOr specify a new data to write into the address.\n";
         return 2;
