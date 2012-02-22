@@ -21,10 +21,10 @@ RW='./lms_reg_rw'
 while [ $REGS -gt 0 ]
 do
     REGS=`expr $REGS - 1`
-    LMS1=`$RW --lms 1 --address $REGS`
-    LMS1=`$RW --lms 2 --address $REGS`
-    echo -n "REG=$REGS\tLMS1=$LMS1\tLMS2=$LMS2\t"
-    if [ $LMS1 eq $LMS2]
+    LMS1=`$RW --lms 1 --address $REGS 2>/dev/null | tail -n 1`
+    LMS2=`$RW --lms 2 --address $REGS 2>/dev/null | tail -n 1`
+    echo -n "REG=$REGS \tLMS1=$LMS1 \tLMS2=$LMS2 \t"
+    if [ $LMS1 -eq $LMS2 ]
     then
 	echo "OK"
     else
