@@ -79,7 +79,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	for (int i = 0; i < 128; i++) {
 	    uint32_t lms1 = reg_read(dbif, (uu::dboard_iface::unit_t)1, front, i);
 	    uint32_t lms2 = reg_read(dbif, (uu::dboard_iface::unit_t)2, front, i);
-	    cout << "# " << i << ": LMS1=" << lms2 << " LMS2=" << lms2 << ((lms1 == lms2)?(" OK"):(" DIFF"));
+	    cout << "# " << i << ": LMS1=" << lms2 << " LMS2=" << lms2 << ((lms1 == lms2)?(" OK"):(" DIFF")) << "\n";
 	}
 	return 0;
     }
