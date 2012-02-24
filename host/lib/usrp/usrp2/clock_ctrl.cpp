@@ -203,7 +203,8 @@ public:
           break;
 
         default:
-          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
+	    std::cerr << "ERROR: enable_tx_dboard_clock: unknown hardware version\n";
+//          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
           break;
         }
 
