@@ -201,10 +201,12 @@ public:
           _ad9510_regs.lvds_cmos_select_out6 = ad9510_regs_t::LVDS_CMOS_SELECT_OUT6_CMOS;
           _ad9510_regs.output_level_lvds_out6 = ad9510_regs_t::OUTPUT_LEVEL_LVDS_OUT6_1_75MA;
           break;
+// needed to make USRP utilities like usrp_burn_mb_eeprom work with UmTRX
+	case usrp2_iface::UMTRX_REV0: break;
 
         default:
-	    std::cerr << "ERROR: enable_tx_dboard_clock: unknown hardware version\n";
-//          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
+//	    std::cerr << "ERROR: enable_tx_dboard_clock: unknown hardware version\n";
+          throw uhd::not_implemented_error("enable_tx_dboard_clock: unknown hardware version");
           break;
         }
 
