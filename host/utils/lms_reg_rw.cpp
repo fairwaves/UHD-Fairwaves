@@ -28,6 +28,8 @@ namespace po = boost::program_options;
 namespace uu = uhd::usrp;
 using namespace std;
 
+const string version = "0.0.1";
+
 uint32_t reg_read(uu::dboard_iface::sptr dbif, uu::dboard_iface::unit_t lms, uhd::spi_config_t front, uint8_t addr) {
     return dbif->read_write_spi(lms, front, addr << 8, 16);
 }
@@ -58,6 +60,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
         ("data", po::value<unsigned>(), "the new value to be written to register (decimal), omit for reading")
         ("lms", po::value<unsigned>(&lms)->default_value(1), "the LMS to be used (decimal), defaults to 1")
 	("verbose,v", "print additional information besides actual register value")
+	("version", "print version information")
 	("dump", "dump all registers from both LMS and compare results")
         ("fall", "use FALL signal edge for SPI, defaults to RISE");
 // N. B: using po::value<uint8_t> causes boost to crap and ignore correct option value
@@ -66,8 +69,9 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
+    if (vm.count("version")) cerr << boost::format("LMS register dumper version %s\n") % version;
     if (vm.count("help") or not (vm.count("address") or vm.count("dump"))) {
-        cerr << boost::format("LMS register dumper, %s\n") % desc ;
+        cerr << boost::format("Options: %s\n") % desc ;
         cerr << "Omit the data argument to perform a readback,\nOr specify a new data to write into the address.\n";
         return 2;
     }
