@@ -350,17 +350,17 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
   //          .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsp, _1));
         _tree->create<meta_range_t>(mb_path / "tx_dsps/0/rate/range")
             .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsp));
-/*  
-        _tree->create<double>(mb_path / "tx_dsps/0/rate/value")
-            .set(1e6) //some default
-            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
-            .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, 0, _1));
   
-        _tree->create<double>(mb_path / "tx_dsps/0/freq/value")
-            .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
-        _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range")
-            .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb));
-*/
+        _tree->create<double>(mb_path / "tx_dsps/0/rate/value")
+            .set(1e6); //some default
+/*            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
+            .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, 0, _1));
+*/  
+        _tree->create<double>(mb_path / "tx_dsps/0/freq/value");
+	    //          .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
+        _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range");
+//            .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb));
+
         //setup dsp flow control
         const double ups_per_sec = device_args_i.cast<double>("ups_per_sec", 20);
         const size_t send_frame_size = _mbc[mb].tx_dsp_xport->get_send_frame_size();
@@ -397,7 +397,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 
         //setup reference source props
       _tree->create<std::string>(mb_path / "clock_source/value")
-.set("100");
+.set("13");
 //            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
 
         static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external")("mimo");
@@ -412,15 +412,15 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         rx_db_eeprom.load(*_mbc[mb].iface, USRP2_I2C_ADDR_RX_DB);
         tx_db_eeprom.load(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB);
         gdb_eeprom.load(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB ^ 5);
-/*
+
         //create the properties and register subscribers
         _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/rx_eeprom")
-            .set(rx_db_eeprom)
-            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "rx", _1));
+            .set(rx_db_eeprom);
+//            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "rx", _1));
         _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/tx_eeprom")
-            .set(tx_db_eeprom)
-            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "tx", _1));
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/gdb_eeprom")
+            .set(tx_db_eeprom);
+//            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "tx", _1));
+/*        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/gdb_eeprom")
             .set(gdb_eeprom)
             .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "gdb", _1));
 */
