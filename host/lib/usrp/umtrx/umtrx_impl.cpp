@@ -266,15 +266,15 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
                 }
             }
         }
-/*
+
         ////////////////////////////////////////////////////////////////
         // and do the misc mboard sensors
         ////////////////////////////////////////////////////////////////
-        _tree->create<sensor_value_t>(mb_path / "sensors/mimo_locked")
-            .publish(boost::bind(&umtrx_impl::get_mimo_locked, this, mb));
-        _tree->create<sensor_value_t>(mb_path / "sensors/ref_locked")
-            .publish(boost::bind(&umtrx_impl::get_ref_locked, this, mb));
-*/
+//        _tree->create<sensor_value_t>(mb_path / "sensors/mimo_locked")
+//            .publish(boost::bind(&umtrx_impl::get_mimo_locked, this, mb));
+        _tree->create<sensor_value_t>(mb_path / "sensors/ref_locked");
+//            .publish(boost::bind(&umtrx_impl::get_ref_locked, this, mb));
+
         ////////////////////////////////////////////////////////////////
         // create frontend control objects
         ////////////////////////////////////////////////////////////////
@@ -394,9 +394,12 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             .subscribe(boost::bind(&time64_core_200::set_time_source, _mbc[mb].time64, _1));
         _tree->create<std::vector<std::string> >(mb_path / "time_source/options")
             .publish(boost::bind(&time64_core_200::get_time_sources, _mbc[mb].time64));
+
         //setup reference source props
-  //      _tree->create<std::string>(mb_path / "clock_source/value")
+      _tree->create<std::string>(mb_path / "clock_source/value")
+.set("100");
 //            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
+
         static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external")("mimo");
         _tree->create<std::vector<std::string> >(mb_path / "clock_source/options").set(clock_sources);
 
