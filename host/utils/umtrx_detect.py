@@ -36,6 +36,7 @@ n2xx_revs = {
   0x0a11: ["n210_r4"],
   0xfa00: ["umtrx"],
   }
+
 # remember kids: drugs are bad...
 USRP2_CTRL_ID_HUH_WHAT = ord(' ')
 USRP2_CTRL_ID_WAZZUP_BRO = ord('a')
@@ -76,7 +77,8 @@ def detect(bcast_addr):
             pkt = sock.recv(UDP_MAX_XFER_BYTES)
             (proto_ver, pktid, rxseq, ip_addr) = unpack_control_ip_fmt(pkt)
             print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
-            return True
+            if pktid == UMTRX_CTRL_ID_RESPONSE:
+                return True
         except socket.timeout:
             return False
 
