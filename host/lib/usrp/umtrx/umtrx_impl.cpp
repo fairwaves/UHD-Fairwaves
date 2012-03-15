@@ -16,6 +16,8 @@
 //
 #include "umtrx_impl.hpp"
 #include "../usrp2/fw_common.h"
+#include "../../transport/super_recv_packet_handler.hpp"
+#include "../../transport/super_send_packet_handler.hpp"
 #include "apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>
@@ -31,6 +33,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio.hpp> //used for htonl and ntohl
@@ -441,6 +444,11 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 
  // internal debug routines
 //    this->io_init();
+    //allocate streamer weak ptrs containers
+    BOOST_FOREACH(const std::string &mb, _mbc.keys()) {
+        _mbc[mb].rx_streamers.resize(_mbc[mb].rx_dsps.size());
+        _mbc[mb].tx_streamers.resize(1);// known to be 1 dsp
+    }
 //reg_dump();
 //do some post-init tasks
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
@@ -553,17 +561,141 @@ void umtrx_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev
     BOOST_FOREACH(const std::string &mb, _mbc.keys()) nchan += _mbc[mb].tx_chan_occ;
 }
 
+static const size_t vrt_send_header_offset_words32 = 1;
+
 /***********************************************************************
  * Receive streamer
  **********************************************************************/
-rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &) {
-    rx_streamer::sptr my_streamer;
+rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_){
+    stream_args_t args = args_;
+
+    //setup defaults for unspecified values
+    args.otw_format = args.otw_format.empty()? "sc16" : args.otw_format;
+    args.channels = args.channels.empty()? std::vector<size_t>(1, 0) : args.channels;
+    const unsigned sc8_scalar = unsigned(args.args.cast<double>("scalar", 0x400));
+
+    //calculate packet size
+    static const size_t hdr_size = 0
+        + vrt::max_if_hdr_words32*sizeof(boost::uint32_t)
+        + sizeof(vrt::if_packet_info_t().tlr) //forced to have trailer
+        - sizeof(vrt::if_packet_info_t().cid) //no class id ever used
+    ;
+    const size_t bpp = _mbc[_mbc.keys().front()].rx_dsp_xports[0]->get_recv_frame_size() - hdr_size;
+    const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
+
+    //make the new streamer given the samples per packet
+    boost::shared_ptr<sph::recv_packet_streamer> my_streamer = boost::make_shared<sph::recv_packet_streamer>(spp);
+
+    //init some streamer stuff
+    my_streamer->resize(args.channels.size());
+    my_streamer->set_vrt_unpacker(&vrt::if_hdr_unpack_be);
+
+    //set the converter
+    uhd::convert::id_type id;
+    id.input_format = args.otw_format + "_item32_be";
+    id.num_inputs = 1;
+    id.output_format = args.cpu_format;
+    id.num_outputs = 1;
+    my_streamer->set_converter(id);
+
+    //bind callbacks for the handler
+    for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++){
+        const size_t chan = args.channels[chan_i];
+        size_t num_chan_so_far = 0;
+        BOOST_FOREACH(const std::string &mb, _mbc.keys()){
+            num_chan_so_far += _mbc[mb].rx_chan_occ;
+            if (chan < num_chan_so_far){
+                const size_t dsp = chan + _mbc[mb].rx_chan_occ - num_chan_so_far;
+                _mbc[mb].rx_dsps[dsp]->set_nsamps_per_packet(spp); //seems to be a good place to set this
+                if (not args.args.has_key("noclear")) _mbc[mb].rx_dsps[dsp]->clear();
+                _mbc[mb].rx_dsps[dsp]->set_format(args.otw_format, sc8_scalar);
+                my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
+                    &zero_copy_if::get_recv_buff, _mbc[mb].rx_dsp_xports[dsp], _1
+                ), true /*flush*/);
+                _mbc[mb].rx_streamers[dsp] = my_streamer; //store weak pointer
+                break;
+            }
+        }
+    }
+
+    //set the packet threshold to be an entire socket buffer's worth
+    const size_t packets_per_sock_buff = size_t(50e6/_mbc[_mbc.keys().front()].rx_dsp_xports[0]->get_recv_frame_size());
+    my_streamer->set_alignment_failure_threshold(packets_per_sock_buff);
+
+    //sets all tick and samp rates on this streamer
+    this->update_rates();
+
     return my_streamer;
 }
 
-uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &) { 
-    uhd::tx_streamer::sptr FIXME; return FIXME; 
+/***********************************************************************
+ * Transmit streamer
+ **********************************************************************/
+tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_){
+    stream_args_t args = args_;
+
+    //setup defaults for unspecified values
+    args.otw_format = args.otw_format.empty()? "sc16" : args.otw_format;
+    args.channels = args.channels.empty()? std::vector<size_t>(1, 0) : args.channels;
+
+    if (args.otw_format != "sc16"){
+        throw uhd::value_error("USRP TX cannot handle requested wire format: " + args.otw_format);
+    }
+
+    //calculate packet size
+    static const size_t hdr_size = 0
+        + vrt::max_if_hdr_words32*sizeof(boost::uint32_t)
+        + vrt_send_header_offset_words32*sizeof(boost::uint32_t)
+        - sizeof(vrt::if_packet_info_t().cid) //no class id ever used
+    ;
+    const size_t bpp = _mbc[_mbc.keys().front()].tx_dsp_xport->get_send_frame_size() - hdr_size;
+    const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
+
+    //make the new streamer given the samples per packet
+    boost::shared_ptr<sph::send_packet_streamer> my_streamer = boost::make_shared<sph::send_packet_streamer>(spp);
+
+    //init some streamer stuff
+    my_streamer->resize(args.channels.size());
+    my_streamer->set_vrt_packer(&vrt::if_hdr_pack_be, vrt_send_header_offset_words32);
+
+    //set the converter
+    uhd::convert::id_type id;
+    id.input_format = args.cpu_format;
+    id.num_inputs = 1;
+    id.output_format = args.otw_format + "_item32_be";
+    id.num_outputs = 1;
+    my_streamer->set_converter(id);
+
+    //bind callbacks for the handler
+    for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++){
+        const size_t chan = args.channels[chan_i];
+        size_t num_chan_so_far = 0;
+        size_t abs = 0;
+        BOOST_FOREACH(const std::string &mb, _mbc.keys()){
+            num_chan_so_far += _mbc[mb].tx_chan_occ;
+            if (chan < num_chan_so_far){
+                const size_t dsp = chan + _mbc[mb].tx_chan_occ - num_chan_so_far;
+                if (not args.args.has_key("noclear")){
+                    _mbc[mb].tx_dsp->clear();
+//                    _io_impl->fc_mons[abs]->clear();
+                }
+                if (args.args.has_key("underflow_policy")) _mbc[mb].tx_dsp->set_underflow_policy(args.args["underflow_policy"]);
+/*                my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
+                    &usrp2_impl::io_impl::get_send_buff, _io_impl.get(), abs, _1
+                ));
+*/                _mbc[mb].tx_streamers[dsp] = my_streamer; //store weak pointer
+                break;
+            }
+            abs += 1; //assume 1 tx dsp
+        }
+    }
+
+    //sets all tick and samp rates on this streamer
+    this->update_rates();
+
+    return my_streamer;
 }
+
 
 bool umtrx_impl::recv_async_msg(uhd::async_metadata_t &, double) { 
     return false; 
