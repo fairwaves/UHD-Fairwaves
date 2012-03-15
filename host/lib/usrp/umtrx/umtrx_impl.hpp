@@ -86,6 +86,7 @@ class umtrx_impl : public uhd::device {
     uhd::dict<std::string, mb_container_type> _mbc;
 
     void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
+    void set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom);
 /*
     uhd::sensor_value_t get_mimo_locked(const std::string &);
     uhd::sensor_value_t get_ref_locked(const std::string &);

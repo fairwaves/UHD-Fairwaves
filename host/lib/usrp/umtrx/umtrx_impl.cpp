@@ -415,11 +415,11 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 
         //create the properties and register subscribers
         _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/rx_eeprom")
-            .set(rx_db_eeprom);
-//            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "rx", _1));
+            .set(rx_db_eeprom)
+            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "rx", _1));
         _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/tx_eeprom")
-            .set(tx_db_eeprom);
-//            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "tx", _1));
+            .set(tx_db_eeprom)
+            .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "tx", _1));
 /*        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/gdb_eeprom")
             .set(gdb_eeprom)
             .subscribe(boost::bind(&umtrx_impl::set_db_eeprom, this, mb, "gdb", _1));
@@ -480,13 +480,13 @@ umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(
 void umtrx_impl::set_mb_eeprom(const std::string &mb, const uhd::usrp::mboard_eeprom_t &mb_eeprom){
     mb_eeprom.commit(*(_mbc[mb].iface), mboard_eeprom_t::MAP_N100);
 }
-/*
-void umtrx_impl::set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom){
-    if (type == "rx") db_eeprom.store(*_mbc[mb].iface, umtrx_I2C_ADDR_RX_DB);
-    if (type == "tx") db_eeprom.store(*_mbc[mb].iface, umtrx_I2C_ADDR_TX_DB);
-    if (type == "gdb") db_eeprom.store(*_mbc[mb].iface, umtrx_I2C_ADDR_TX_DB ^ 5);
-}
 
+void umtrx_impl::set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom) {
+    if (type == "rx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_RX_DB);
+    if (type == "tx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB);
+    if (type == "gdb") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB ^ 5);
+}
+/*
 sensor_value_t umtrx_impl::get_mimo_locked(const std::string &mb){
     const bool lock = (_mbc[mb].iface->peek32(U2_REG_IRQ_RB) & (1<<10)) != 0;
     return sensor_value_t("MIMO", lock, "locked", "unlocked");
