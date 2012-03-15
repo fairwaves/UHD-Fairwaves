@@ -37,8 +37,8 @@ static dboard_base::sptr make_lms_tx(dboard_base::ctor_args_t args) {
 }
 
 UHD_STATIC_BLOCK(reg_lms_dboards){
-    dboard_manager::register_dboard(0xfff0, &make_lms_tx, "LMS TX");
-    dboard_manager::register_dboard(0xfff1, &make_lms_rx, "LMS RX");
+    dboard_manager::register_dboard(0xfa07, &make_lms_tx, "LMS TX");
+    dboard_manager::register_dboard(0xfa09, &make_lms_rx, "LMS RX");
 }
 
 // LMS RX dboard configuration
