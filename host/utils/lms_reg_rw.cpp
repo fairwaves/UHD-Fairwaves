@@ -23,6 +23,7 @@
 #include <boost/format.hpp>
 #include <cstdio>
 #include <iostream>
+#include "../lib/usrp/umtrx/umtrx_regs.hpp"
 
 namespace po = boost::program_options;
 namespace uu = uhd::usrp;
@@ -117,6 +118,7 @@ int UHD_SAFE_MAIN(int argc, char **argv) {
 	if(vm.count("verbose")) cerr << reg_read(dbif, (uu::dboard_iface::unit_t)lms, front, address);
 	else cout << reg_read(dbif, (uu::dboard_iface::unit_t)lms, front, address);
     }
-    if(vm.count("verbose")) cerr << "\nDone.\n";
+    if(vm.count("verbose")) cerr << "\nDone.";
+    cerr << endl;
     return 0;
 }
