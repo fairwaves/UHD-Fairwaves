@@ -1,5 +1,5 @@
 //
-// Copyright 2010-2011 Ettus Research LLC
+// Copyright 2012 Fairwaves
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 #include "validate_subdev_spec.hpp"
 #include "../../transport/super_recv_packet_handler.hpp"
 #include "../../transport/super_send_packet_handler.hpp"
-#include "usrp2_impl.hpp"
-#include "usrp2_regs.hpp"
+#include "umtrx_impl.hpp"
+#include "umtrx_regs.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>
 #include <uhd/utils/tasks.hpp>
@@ -52,12 +52,11 @@ static const size_t vrt_send_header_offset_words32 = 1;
  * - thread loop
  * - vrt packet handler states
  **********************************************************************/
-struct usrp2_impl::io_impl{
+struct umtrx_impl::io_impl {
 
     io_impl(void):
-        async_msg_fifo(100/*messages deep*/)
+        async_msg_fifo(100) //messages deep
     {
-        /* NOP */
     }
 
     ~io_impl(void){
@@ -97,7 +96,7 @@ struct usrp2_impl::io_impl{
  * - update flow control condition count
  * - put async message packets into queue
  **********************************************************************/
-void usrp2_impl::io_impl::recv_pirate_loop(
+void umtrx_impl::io_impl::recv_pirate_loop(
     zero_copy_if::sptr err_xport, size_t index
 ){
     set_thread_priority_safe();
@@ -161,7 +160,7 @@ void usrp2_impl::io_impl::recv_pirate_loop(
 /***********************************************************************
  * Helper Functions
  **********************************************************************/
-void usrp2_impl::io_init(void){
+void umtrx_impl::io_init(void) {
     //create new io impl
     _io_impl = UHD_PIMPL_MAKE(io_impl, ());
 
@@ -185,13 +184,13 @@ void usrp2_impl::io_init(void){
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         //spawn a new pirate to plunder the recv booty
         _io_impl->pirate_tasks.push_back(task::make(boost::bind(
-            &usrp2_impl::io_impl::recv_pirate_loop, _io_impl.get(),
+            &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
             _mbc[mb].tx_dsp_xport, index++
         )));
     }
 }
-
-void usrp2_impl::update_tick_rate(const double rate){
+/*
+void umtrx_impl::update_tick_rate(const double rate){
     _io_impl->tick_rate = rate; //shadow for async msg
 
     //update the tick rate on all existing streamers -> thread safe
@@ -211,7 +210,7 @@ void usrp2_impl::update_tick_rate(const double rate){
     }
 }
 
-void usrp2_impl::update_rx_samp_rate(const std::string &mb, const size_t dsp, const double rate){
+void umtrx_impl::update_rx_samp_rate(const std::string &mb, const size_t dsp, const double rate){
     boost::shared_ptr<sph::recv_packet_streamer> my_streamer =
         boost::dynamic_pointer_cast<sph::recv_packet_streamer>(_mbc[mb].rx_streamers[dsp].lock());
     if (my_streamer.get() == NULL) return;
@@ -221,15 +220,15 @@ void usrp2_impl::update_rx_samp_rate(const std::string &mb, const size_t dsp, co
     my_streamer->set_scale_factor(adj);
 }
 
-void usrp2_impl::update_tx_samp_rate(const std::string &mb, const size_t dsp, const double rate){
+void umtrx_impl::update_tx_samp_rate(const std::string &mb, const size_t dsp, const double rate){
     boost::shared_ptr<sph::send_packet_streamer> my_streamer =
         boost::dynamic_pointer_cast<sph::send_packet_streamer>(_mbc[mb].tx_streamers[dsp].lock());
     if (my_streamer.get() == NULL) return;
 
     my_streamer->set_samp_rate(rate);
 }
-
-void usrp2_impl::update_rates(void){
+*/
+void umtrx_impl::update_rates(void){
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         fs_path root = "/mboards/" + mb;
         _tree->access<double>(root / "tick_rate").update();
@@ -244,7 +243,7 @@ void usrp2_impl::update_rates(void){
     }
 }
 
-void usrp2_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
+void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
     fs_path root = "/mboards/" + which_mb + "/dboards";
 
     //sanity checking
@@ -265,7 +264,7 @@ void usrp2_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
     BOOST_FOREACH(const std::string &mb, _mbc.keys()) nchan += _mbc[mb].rx_chan_occ;
 }
 
-void usrp2_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
+void umtrx_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
     fs_path root = "/mboards/" + which_mb + "/dboards";
 
     //sanity checking
@@ -284,7 +283,7 @@ void usrp2_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev
 /***********************************************************************
  * Async Data
  **********************************************************************/
-bool usrp2_impl::recv_async_msg(
+bool umtrx_impl::recv_async_msg(
     async_metadata_t &async_metadata, double timeout
 ){
     boost::this_thread::disable_interruption di; //disable because the wait can throw
@@ -294,7 +293,7 @@ bool usrp2_impl::recv_async_msg(
 /***********************************************************************
  * Receive streamer
  **********************************************************************/
-rx_streamer::sptr usrp2_impl::get_rx_stream(const uhd::stream_args_t &args_){
+rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_){
     stream_args_t args = args_;
 
     //setup defaults for unspecified values
@@ -359,7 +358,7 @@ rx_streamer::sptr usrp2_impl::get_rx_stream(const uhd::stream_args_t &args_){
 /***********************************************************************
  * Transmit streamer
  **********************************************************************/
-tx_streamer::sptr usrp2_impl::get_tx_stream(const uhd::stream_args_t &args_){
+tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_){
     stream_args_t args = args_;
 
     //setup defaults for unspecified values
@@ -409,7 +408,7 @@ tx_streamer::sptr usrp2_impl::get_tx_stream(const uhd::stream_args_t &args_){
                 }
                 if (args.args.has_key("underflow_policy")) _mbc[mb].tx_dsp->set_underflow_policy(args.args["underflow_policy"]);
                 my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-                    &usrp2_impl::io_impl::get_send_buff, _io_impl.get(), abs, _1
+                    &umtrx_impl::io_impl::get_send_buff, _io_impl.get(), abs, _1
                 ));
                 _mbc[mb].tx_streamers[dsp] = my_streamer; //store weak pointer
                 break;

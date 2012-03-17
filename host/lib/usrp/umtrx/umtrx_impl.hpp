@@ -96,8 +96,10 @@ class umtrx_impl : public uhd::device {
 */
     //device properties interface
     uhd::property_tree::sptr get_tree(void) const { return _tree; }
-
-    void update_rates(void) {};
+    
+    UHD_PIMPL_DECL(io_impl) _io_impl;    
+    void io_init(void);
+    void update_rates(void);
 
     //update spec methods are coercers until we only accept db_name == A
     void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
