@@ -66,15 +66,13 @@ def pack_control_fmt(proto_ver, pktid, seq):
 def pack_spi_fmt(proto_ver, pktid, seq, dev, data, miso, mosi, bits, read):
     return struct.pack(SPI_FMT, proto_ver, pktid, seq, dev, data, miso, mosi, bits, read)
 
-def read_spi(addr, lms, reg):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    sock.settimeout(0.1) 
+def read_spi(skt, addr, lms, reg):
+    skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
     out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, reg << 8, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
-    sock.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
+    skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
     while(True):
         try:
-            pkt = sock.recv(UDP_MAX_XFER_BYTES)
+            pkt = skt.recv(UDP_MAX_XFER_BYTES)
             pkt_list = unpack_format(pkt, SPI_FMT)
             if pkt_list[1] != USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE:
                 return None
@@ -83,21 +81,19 @@ def read_spi(addr, lms, reg):
         except socket.timeout:
             return None
 
-def detect(bcast_addr):
-    print 'Detecting UmTRX over %s:' % bcast_addr
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    sock.settimeout(0.1)
+def detect(skt, bcast_addr):    
+    skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
     print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
-    sock.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
+    skt.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
     while(True):
         try:
-            pkt = sock.recv(UDP_MAX_XFER_BYTES)
+            pkt = skt.recv(UDP_MAX_XFER_BYTES)
             (proto_ver, pktid, rxseq, ip_addr) = unpack_format(pkt, CONTROL_IP_FMT)
-            print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), proto_ver, pktid, rxseq, socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr))))
+            address = socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr)))
+            print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), proto_ver, pktid, rxseq, address)
             if pktid == UMTRX_CTRL_ID_RESPONSE:
-                return True
+                return address
         except socket.timeout:
             return False
 
@@ -105,7 +101,11 @@ def detect(bcast_addr):
 
 if __name__ == '__main__':
     target = sys.argv[1] if len(sys.argv) > 1 else UMTRX_BROADCAST
-    if detect(target):
-        print '0x%X' % read_spi("192.168.10.2", 1, 118)
-        print '0x%X' % read_spi("192.168.10.2", 2, 118)
+    print 'Detecting UmTRX over %s:' % target
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(0.1)
+    umtrx = detect(sock, target)
+    if umtrx:
+        print '0x%X' % read_spi(sock, umtrx, 1, 118)
+        print '0x%X' % read_spi(sock, umtrx, 2, 118)
 
