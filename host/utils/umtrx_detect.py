@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import sys, struct, socket
-# pylint: disable-msg = C0301, C0111
+# pylint: disable-msg = C0301, C0103, C0111
 
 UDP_CONTROL_PORT = 49152
 UDP_MAX_XFER_BYTES = 1024
@@ -66,36 +66,32 @@ def pack_control_fmt(proto_ver, pktid, seq):
 def pack_spi_fmt(proto_ver, pktid, seq, dev, data, miso, mosi, bits, read):
     return struct.pack(SPI_FMT, proto_ver, pktid, seq, dev, data, miso, mosi, bits, read)
 
+def recv_item(skt, fmt, chk, ind):
+    try:
+        pkt = skt.recv(UDP_MAX_XFER_BYTES)
+        pkt_list = unpack_format(pkt, fmt)
+# print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3])
+        if pkt_list[1] != chk:
+            return None
+        return pkt_list[ind]
+    except socket.timeout:
+        return None
+
 def read_spi(skt, addr, lms, reg):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
     out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, reg << 8, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
-    while(True):
-        try:
-            pkt = skt.recv(UDP_MAX_XFER_BYTES)
-            pkt_list = unpack_format(pkt, SPI_FMT)
-            if pkt_list[1] != USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE:
-                return None
-            print ' '.join(hex(x) for x in pkt_list)
-            return pkt_list[4]
-        except socket.timeout:
-            return None
+    return recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4)
 
 def detect(skt, bcast_addr):    
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
     print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
     skt.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
-    while(True):
-        try:
-            pkt = skt.recv(UDP_MAX_XFER_BYTES)
-            (proto_ver, pktid, rxseq, ip_addr) = unpack_format(pkt, CONTROL_IP_FMT)
-            address = socket.inet_ntoa(struct.pack("<L", socket.ntohl(ip_addr)))
-            print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), proto_ver, pktid, rxseq, address)
-            if pktid == UMTRX_CTRL_ID_RESPONSE:
-                return address
-        except socket.timeout:
-            return False
+    response = recv_item(skt, CONTROL_IP_FMT, UMTRX_CTRL_ID_RESPONSE, 3)
+    if response:
+        return socket.inet_ntoa(struct.pack("<L", socket.ntohl(response)))
+    return None
 
 # Specify address via command line for non-default broadcasting.
 
