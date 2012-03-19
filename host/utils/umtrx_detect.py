@@ -83,6 +83,11 @@ def read_spi(skt, addr, lms, reg):
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
     return recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4)
 
+def write_spi(skt, addr, lms, reg, data):
+    skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, (0x80 | (reg << 8)) | data, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
+    skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
+
 def detect(skt, bcast_addr):    
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
@@ -102,8 +107,8 @@ if __name__ == '__main__':
     sock.settimeout(0.1)
     umtrx = detect(sock, target)
     if umtrx:
-        for i in range(0, 127):
+        for i in range(0, 128):
             lms1 = read_spi(sock, umtrx, 1, i)
             lms2 = read_spi(sock, umtrx, 2, i)
             diff = 'OK' if lms1 == lms2 else 'DIFF'
-            print '# %.3u: LMS1=0x%X\tLMS2=0x%X\t%s' % (i, lms1, lms2, diff)
+            print '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, lms1, lms2, diff)
