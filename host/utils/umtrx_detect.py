@@ -102,6 +102,8 @@ if __name__ == '__main__':
     sock.settimeout(0.1)
     umtrx = detect(sock, target)
     if umtrx:
-        print '0x%X' % read_spi(sock, umtrx, 1, 118)
-        print '0x%X' % read_spi(sock, umtrx, 2, 118)
-
+        for i in range(0, 127):
+            lms1 = read_spi(sock, umtrx, 1, i)
+            lms2 = read_spi(sock, umtrx, 2, i)
+            diff = 'OK' if lms1 == lms2 else 'DIFF'
+            print '# %.3u: LMS1=0x%X\tLMS2=0x%X\t%s' % (i, lms1, lms2, diff)
