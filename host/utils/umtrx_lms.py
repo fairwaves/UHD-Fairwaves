@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import sys, struct, socket
+import sys, struct, socket, argparse
 # pylint: disable-msg = C0301, C0103, C0111
 
 UDP_CONTROL_PORT = 49152
@@ -23,7 +23,6 @@ UDP_MAX_XFER_BYTES = 1024
 UDP_TIMEOUT = 3
 UDP_POLL_INTERVAL = 0.10 #in seconds
 USRP2_CONTROL_PROTO_VERSION = 11 # must match firmware proto
-UMTRX_BROADCAST = '192.168.10.255' # default UmTRX network domain
 
 # see fw_common.h
 CONTROL_FMT = '!LLL24x'
@@ -89,7 +88,14 @@ def write_spi(skt, addr, lms, reg, data):
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
     recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4) # dummy read to allow socket reuse
 
-def detect(skt, bcast_addr):    
+def holler(skt, addr):
+    skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_HOLLER_AT_ME_BRO, 0)
+    skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
+    recv_item(skt, CONTROL_FMT, USRP2_CTRL_ID_HOLLER_BACK_DUDE, 4)
+
+def detect(skt, bcast_addr):
+    print 'Detecting UmTRX over %s:' % bcast_addr
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
     print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
@@ -99,14 +105,21 @@ def detect(skt, bcast_addr):
         return socket.inet_ntoa(struct.pack("<L", socket.ntohl(response)))
     return None
 
-# Specify address via command line for non-default broadcasting.
-
 if __name__ == '__main__':
-    target = sys.argv[1] if len(sys.argv) > 1 else UMTRX_BROADCAST
-    print 'Detecting UmTRX over %s:' % target
+    parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255',
+                        help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
+    group.add_argument('--umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
+    parser.add_argument('--reg', type = int, choices = range(0, 128), metavar = '0..127', help = 'LMS register number')
+    parser.add_argument('--data', type = int, help = 'data to be written into LMS register')
+    parser.add_argument('--lms', default = '1', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, default: 1')
+    args = parser.parse_args()
+    if args.data and not args.reg: # argparse do not have dependency concept for options
+        exit('<data> argument requires <reg> argument.') # gengetopt is so much better
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(0.1)
-    umtrx = detect(sock, target)
+    umtrx = args.umtrx if args.umtrx else detect(sock, args.bcast_addr)
     if umtrx:
         for i in range(0, 128):
             lms1 = read_spi(sock, umtrx, 1, i)
