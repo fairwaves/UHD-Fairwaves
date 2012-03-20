@@ -108,12 +108,12 @@ def detect(skt, bcast_addr):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = 'UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255',
-                        help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
+    group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
     parser.add_argument('--reg', type = int, choices = range(0, 128), metavar = '0..127', help = 'LMS register number')
     parser.add_argument('--data', type = int, choices = range(0, 256), metavar = '0..255', help = 'data to be written into LMS register')
     parser.add_argument('--lms', default = '1', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, default: 1')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
     if args.data and not args.reg: # argparse do not have dependency concept for options
         exit('<data> argument requires <reg> argument.') # gengetopt is so much better
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
             if args.data:
-                print write_spi(sock, umtrx, args.lms, args.reg, args.data)
+                print 'writing to %d [None indicates error]... %d' % (args.reg, write_spi(sock, umtrx, args.lms, args.reg, args.data))
             elif args.reg:
-                print read_spi(sock, umtrx, args.lms, args.reg)
+                print 'reading from %d [None indicates error]... %d' % (args.reg, read_spi(sock, umtrx, args.lms, args.reg))
             else:
                 for i in range(0, 128):
                     lms1 = read_spi(sock, umtrx, 1, i)
