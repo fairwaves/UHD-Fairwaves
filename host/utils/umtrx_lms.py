@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import sys, struct, socket, argparse
+import struct, socket, argparse
 # pylint: disable-msg = C0301, C0103, C0111
 
 UDP_CONTROL_PORT = 49152
@@ -76,17 +76,17 @@ def recv_item(skt, fmt, chk, ind):
     except socket.timeout:
         return None
 
-def read_spi(skt, addr, lms, reg):
+def spi_rw(skt, addr, lms, command):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, reg << 8, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
+    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, command, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
     return recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4)
 
+def read_spi(skt, addr, lms, reg):
+    return spi_rw(skt, addr, lms, reg << 8)
+
 def write_spi(skt, addr, lms, reg, data):
-    skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, ((0x80 | reg) << 8) | data, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 0)
-    skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
-    return recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4)
+    return spi_rw(skt, addr, lms, ((0x80 | reg) << 8) | data)
 
 def ping(skt, addr):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -106,7 +106,7 @@ def detect(skt, bcast_addr):
     return None
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.')
+    parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = 'UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255',
                         help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
