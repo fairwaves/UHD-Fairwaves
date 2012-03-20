@@ -20,7 +20,7 @@ import struct, socket, argparse
 
 UDP_CONTROL_PORT = 49152
 UDP_MAX_XFER_BYTES = 1024
-UDP_TIMEOUT = 3
+UDP_TIMEOUT = 1
 UDP_POLL_INTERVAL = 0.10 #in seconds
 USRP2_CONTROL_PROTO_VERSION = 11 # must match firmware proto
 
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     if args.data and not args.reg: # argparse do not have dependency concept for options
         exit('<data> argument requires <reg> argument.') # gengetopt is so much better
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(0.1)
+    sock.settimeout(UDP_TIMEOUT)
     umtrx = args.umtrx if args.umtrx else detect(sock, args.bcast_addr) 
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
