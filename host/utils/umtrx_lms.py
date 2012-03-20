@@ -112,7 +112,7 @@ if __name__ == '__main__':
                         help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
     parser.add_argument('--reg', type = int, choices = range(0, 128), metavar = '0..127', help = 'LMS register number')
-    parser.add_argument('--data', type = int, help = 'data to be written into LMS register')
+    parser.add_argument('--data', type = int, choices = range(0, 256), metavar = '0..255', help = 'data to be written into LMS register')
     parser.add_argument('--lms', default = '1', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, default: 1')
     args = parser.parse_args()
     if args.data and not args.reg: # argparse do not have dependency concept for options
@@ -122,10 +122,15 @@ if __name__ == '__main__':
     umtrx = args.umtrx if args.umtrx else detect(sock, args.bcast_addr) 
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
-            for i in range(0, 128):
-                lms1 = read_spi(sock, umtrx, 1, i)
-                lms2 = read_spi(sock, umtrx, 2, i)
-                diff = 'OK' if lms1 == lms2 else 'DIFF'
-                print '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, lms1, lms2, diff)
+            if args.data:
+                print write_spi(sock, umtrx, args.lms, args.reg, args.data)
+            elif args.reg:
+                print read_spi(sock, umtrx, args.lms, args.reg)
+            else:
+                for i in range(0, 128):
+                    lms1 = read_spi(sock, umtrx, 1, i)
+                    lms2 = read_spi(sock, umtrx, 2, i)
+                    diff = 'OK' if lms1 == lms2 else 'DIFF'
+                    print '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, lms1, lms2, diff)
         else:
             print 'UmTRX at %s is not responding.' % umtrx
