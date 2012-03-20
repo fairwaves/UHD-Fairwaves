@@ -70,7 +70,7 @@ def recv_item(skt, fmt, chk, ind):
     try:
         pkt = skt.recv(UDP_MAX_XFER_BYTES)
         pkt_list = unpack_format(pkt, fmt)
-# print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3])
+#        print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3])
         if pkt_list[1] != chk:
             return None
         return pkt_list[ind]
@@ -85,8 +85,9 @@ def read_spi(skt, addr, lms, reg):
 
 def write_spi(skt, addr, lms, reg, data):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, (0x80 | (reg << 8)) | data, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
+    out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, 0, lms, ((0x80 | reg) << 8) | data, SPI_EDGE_RISE, SPI_EDGE_RISE, 16, 1)
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
+    recv_item(skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4) # dummy read to allow socket reuse
 
 def detect(skt, bcast_addr):    
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
