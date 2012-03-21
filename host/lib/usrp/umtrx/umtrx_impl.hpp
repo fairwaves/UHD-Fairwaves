@@ -120,6 +120,7 @@ public:
     void write_addr(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
     uint32_t read_addr(uint8_t LMS_number, uint8_t address, bool rise = true);
     uint32_t write_n_check(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
+    bool lms_dc_calibrate(int lms_addr, int dc_addr);
 };
 
 #endif 

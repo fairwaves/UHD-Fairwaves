@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "umtrx_impl.hpp"
+#include "umtrx_regs.hpp"
 #include "../usrp2/fw_common.h"
 #include "../../transport/super_recv_packet_handler.hpp"
 #include "../../transport/super_send_packet_handler.hpp"
@@ -562,4 +563,26 @@ void umtrx_impl::reg_dump(bool rise) {
         printf("i=%x LMS1=%x LMS2=%x\t", i, read_addr(1, i, rise), read_addr(2, i, rise));
 	if(read_addr(1, i, rise) == read_addr(2, i, rise)) printf("OK\n"); else printf("DIFF\n");
     }
+}
+
+bool umtrx_impl::lms_dc_calibrate(int lms_addr, int dc_addr)
+{
+    static int try_cnt_limit = 10;
+    uint8_t reg_val;
+
+    reg_val  = LMS_BITS(1, LMS_DC_START_CLBR_SHIFT, LMS_DC_START_CLBR_MASK);
+    reg_val |= LMS_BITS(0, LMS_DC_LOAD_SHIFT, LMS_DC_LOAD_MASK);
+    reg_val |= LMS_BITS(1, LMS_DC_SRESET_SHIFT, LMS_DC_SRESET_MASK);
+    reg_val |= LMS_BITS(dc_addr, LMS_DC_ADDR_SHIFT, LMS_DC_ADDR_MASK);
+    write_addr(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
+
+    reg_val ^= LMS_BITS(1, LMS_DC_START_CLBR_SHIFT, LMS_DC_START_CLBR_MASK);
+    write_addr(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
+
+    for (int try_cnt = 0; try_cnt < try_cnt_limit; try_cnt++) {
+        usleep(10); // Docs say 6.7us (1.6us)
+        // TODO: todo                                           
+    }
+
+    return false;
 }
