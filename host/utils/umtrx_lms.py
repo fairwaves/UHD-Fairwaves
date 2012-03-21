@@ -95,12 +95,10 @@ def ping(skt, addr):
     return recv_item(skt, CONTROL_FMT, USRP2_CTRL_ID_WAZZUP_DUDE, 1)
 
 def dump(skt, addr, lms):
-    for i in range(0, 128):
-        lms.append(read_spi(skt, addr, lms, i))
-    return lms
+    return [read_spi(skt, addr, lms, x) for x in range(0, 128)]
 
 def detect(skt, bcast_addr):
-    print 'Detecting UmTRX over %s:' % bcast_addr
+#    print 'Detecting UmTRX over %s:' % bcast_addr
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
 #    print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
@@ -117,34 +115,33 @@ if __name__ == '__main__':
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
     parser.add_argument('--reg', type = int, choices = range(0, 128), metavar = '0..127', help = 'LMS register number')
     parser.add_argument('--data', type = lambda s: int(s, 16), choices = xrange(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
-    parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, if no other options are given it will dump all registers for corresponding LMS')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.2')
     args = parser.parse_args()
     if args.data:
         if not args.reg: # argparse do not have dependency concept for options
             exit('<data> argument requires <reg> argument.')
         if not args.lms: # gengetopt is so much better
             exit('<data> argument requires <lms> argument.')
-    if not args.lms:
-        args.lms = 1
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(UDP_TIMEOUT)
     umtrx = args.umtrx if args.umtrx else detect(sock, args.bcast_addr) 
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
             if args.data:
-                print 'writing to %d [None indicates error]... %d' % (args.reg, write_spi(sock, umtrx, args.lms, args.reg, args.data))
+                print 'writing to %d [None indicates error]... 0x%X' % (args.reg, write_spi(sock, umtrx, args.lms, args.reg, args.data))
             elif args.reg:
-                print 'reading from %d [None indicates error]... %d' % (args.reg, read_spi(sock, umtrx, args.lms, args.reg))        
+                print 'reading from %d [None indicates error]... 0x%X' % (args.reg, read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg))        
             elif args.lms:
                 lms_regs = dump(sock, umtrx, args.lms)
                 print 'LMS %u' % args.lms
-                print map(lambda a, b: '# %.3u: 0x%X\n' % (a, b), range(0, 128), lms_regs)
+                print ''.join(map(lambda a, b: '# %.3u: 0x%X\n' % (a, b), range(0, 128), lms_regs))
             else:
                 lms1 = dump(sock, umtrx, 1)
                 lms2 = dump(sock, umtrx, 2)
-                for i in range(0, 128):
-                    diff = 'OK' if lms1[i] == lms2[i] else 'DIFF'
-                    print '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, lms1[i], lms2[i], diff)
+                diff = map(lambda l1, l1: 'OK\n' if l1 == l1 else 'DIFF\n', lms1, lms2)
+                print ''.join(map(lambda i, l1, l2, d: '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, l1, l2, d), range(0, 128), lms1, lms2, diff))               
         else:
             print 'UmTRX at %s is not responding.' % umtrx
+    else:
+        print 'No UmTRX detected over %s' % args.bcast_addr
