@@ -139,7 +139,7 @@ if __name__ == '__main__':
             else:
                 lms1 = dump(sock, umtrx, 1)
                 lms2 = dump(sock, umtrx, 2)
-                diff = map(lambda l1, l1: 'OK\n' if l1 == l1 else 'DIFF\n', lms1, lms2)
+                diff = map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2)
                 print ''.join(map(lambda i, l1, l2, d: '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, l1, l2, d), range(0, 128), lms1, lms2, diff))               
         else:
             print 'UmTRX at %s is not responding.' % umtrx
