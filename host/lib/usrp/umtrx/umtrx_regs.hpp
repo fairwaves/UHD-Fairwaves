@@ -32,16 +32,4 @@
 #define SPI_SS_LMS2    2
 #define SPI_SS_DAC     4
 
-#define LMS_BITS(val, shift, mask) (((val)<<(shift))&(mask))
-
-#define LMS_DC_CAL_REG             0x33
-#define LMS_DC_START_CLBR_SHIFT    5
-#define LMS_DC_START_CLBR_MASK     (1<<LMS_DC_START_CLBR_SHIFT)
-#define LMS_DC_LOAD_SHIFT          4
-#define LMS_DC_LOAD_MASK           (1<<LMS_DC_LOAD_SHIFT)
-#define LMS_DC_SRESET_SHIFT        3
-#define LMS_DC_SRESET_MASK         (1<<LMS_DC_SRESET_SHIFT)
-#define LMS_DC_ADDR_SHIFT          0
-#define LMS_DC_ADDR_MASK           (7<<LMS_DC_ADDR_SHIFT)
-
 #endif

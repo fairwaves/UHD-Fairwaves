@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "umtrx_impl.hpp"
-#include "umtrx_regs.hpp"
+#include "lms_regs.hpp"
 #include "../usrp2/fw_common.h"
 #include "../../transport/super_recv_packet_handler.hpp"
 #include "../../transport/super_send_packet_handler.hpp"
@@ -585,4 +585,137 @@ bool umtrx_impl::lms_dc_calibrate(int lms_addr, int dc_addr)
     }
 
     return false;
+}
+
+void umtrx_impl::lms_init(int lms_addr) {
+    // INIT defaults
+    write_addr(lms_addr, 0x09, 0xC0);
+    write_addr(lms_addr, 0x09, 0x80);
+    write_addr(lms_addr, 0x17, 0xE0);
+    write_addr(lms_addr, 0x27, 0xE3);
+    write_addr(lms_addr, 0x64, 0x32);
+    write_addr(lms_addr, 0x70, 0x01);
+    write_addr(lms_addr, 0x79, 0x37);
+    write_addr(lms_addr, 0x59, 0x09);
+    write_addr(lms_addr, 0x47, 0x40);
+
+    // Our defaults
+//    write_addr(lms_addr, 0x16, 0x8C);
+//    write_addr(lms_addr, 0x17, 0xE3);
+//    write_addr(lms_addr, 0x18, 0x43);
+
+    //TX Enable
+    write_addr(1, 0x05, (1<<5) | (1<<4) | (1<<3) | (1<<1));     //STXEN
+    write_addr(1, 0x09, 0x81);
+    // PA off
+    write_addr(1, 0x44, (0<<3)|(1<<1)|1);
+
+    //RF Settings
+//    write_addr(1, 0x40, 0x02);
+    write_addr(1, 0x41, 0x15); // VGA1GAIN
+//    write_addr(1, 0x42, 0x80);
+//    write_addr(1, 0x43, 0x80);
+//    write_addr(1, 0x44, 0x0B);
+    write_addr(1, 0x45, 0x00); // VGA2GAIN, ENVD
+//    write_addr(1, 0x46, 0x00);
+//    write_addr(1, 0x47, 0x40);
+//    write_addr(1, 0x48, 0x0C);
+//    write_addr(1, 0x49, 0x0C);
+    // Tx RF test mode registers
+//    write_addr(1, 0x4A, 0x18);
+//    write_addr(1, 0x4B, 0x50);
+//    write_addr(1, 0x4C, 0x00);
+//    write_addr(1, 0x4D, 0x00);
+
+    //TX PLL
+    reg_dump();
+    
+    //Calck NINT, NFRAC
+    {
+    int64_t ref_clock = 26000000;
+    int64_t out_clock = 925000000;
+    struct vco_sel { int64_t max; int8_t value; } freqsel[] = {
+	{ 0.93 * 1000000000, 0x3e },
+	{ 1.1425 * 1000000000, 0x25 },
+	{ 1.3475 * 1000000000, 0x2d } };
+    
+    int8_t found_freqsel = -1;
+    for (unsigned i = 0; i < (int)sizeof(freqsel) / sizeof(freqsel[0]); i++) {
+	if (out_clock <= freqsel[i].max) {
+	    found_freqsel = freqsel[i].value; break;
+	}
+    }
+    
+    if (found_freqsel != -1) {
+        int64_t vco_x = 1 << ((found_freqsel & 0x7) - 3);
+        int64_t nint = vco_x * out_clock / ref_clock;
+        int64_t nfrack = (1<<23) * (vco_x * out_clock - nint * ref_clock) / ref_clock;
+        
+        printf("\nFREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n",
+    		(int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
+    		
+    	
+    	write_addr(1, 0x10, (nint>>1) & 0xff);     //NINT[8:1]
+    	write_addr(1, 0x11, ((nfrack>>16) & 0x7f) | ((nint&0x1)<<7));     //NINT[0]NFRACK[22:16]
+    	write_addr(1, 0x12, (nfrack>>8) & 0xff);     //NFRACK[15:8]
+    	write_addr(1, 0x13, (nfrack) & 0xff);     //NFRACK[7:0]
+    	
+    	write_addr(1, 0x15, (found_freqsel<<2) | 0x01);
+    	write_addr(1, 0x18, 0x40);
+    
+        reg_dump();
+        
+        //POLL VOVCO
+        int start_i = -1;
+        int stop_i = -1;
+        enum State { VCO_HIGH, VCO_NORM, VCO_LOW } state = VCO_HIGH;
+        
+        for (int i = 0; i < 64; i++) {
+            write_addr(1, 0x19, 0x80 | i);
+            //usleep(50);
+            int comp = read_addr(1, 0x1a);
+            switch (comp >> 6) {
+            case 0x02: //HIGH
+        	break;
+            case 0x01: //LOW
+        	if (state == VCO_NORM) {
+        	    stop_i = i - 1;
+        	    state = VCO_LOW; printf("Low\n");
+        	}
+        	break;
+            case 0x00: //NORMAL
+        	if (state == VCO_HIGH) {
+        	    start_i = i;
+        	    state = VCO_NORM; printf("Norm\n");
+        	}
+        	break;
+            default: //ERROR 
+        	printf("ERROR!!!\n");
+        	break;
+            }
+            printf("VOVCO[%d]=%x\n", i, comp);
+        }
+        
+        int avg_i = -1;
+        if (start_i == -1 || stop_i == -1) {
+    	    printf("CAN'T TUNE\n");
+        } else {
+    	    avg_i = (start_i + stop_i) / 2;
+    	}
+	
+
+	printf("START=%d STOP=%d SET=%d\n", start_i, stop_i, avg_i);
+	if (avg_i != -1)
+	    write_addr(1, 0x19, (0x80 | avg_i));
+    }
+    
+    
+    }
+    
+    //RF Settings
+    write_addr(1, 0x41, (-4+35)); // VGA1GAIN
+    write_addr(1, 0x45, (25<<3)|0x0); // VGA2GAIN, ENVD
+
+    // PA2 on
+    write_addr(1, 0x44, (2<<3)|(1<<1)|1);
 }
