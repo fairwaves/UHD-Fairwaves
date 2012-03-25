@@ -220,10 +220,10 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         // create clock control objects
         ////////////////////////////////////////////////////////////////
         _mbc[mb].clock = umtrx_clock_ctrl::make(_mbc[mb].iface);
-        _tree->create<double>(mb_path / "tick_rate")
-            .publish(boost::bind(&umtrx_clock_ctrl::get_master_clock_rate, _mbc[mb].clock))
-            .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
-*/
+*/        _tree->create<double>(mb_path / "tick_rate").set(13);
+//            .publish(boost::bind(&umtrx_clock_ctrl::get_master_clock_rate, _mbc[mb].clock))
+//            .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
+
         ////////////////////////////////////////////////////////////////
         // create codec control objects
         ////////////////////////////////////////////////////////////////
