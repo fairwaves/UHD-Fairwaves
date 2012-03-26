@@ -113,10 +113,10 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
-    parser.add_argument('--reg', type = int, choices = range(0, 128), metavar = '0..127', help = 'LMS register number')
+    parser.add_argument('--reg', type = lambda s: int(s, 16), choices = xrange(0, 0x80), metavar = '0..0x79', help = 'LMS register number')
     parser.add_argument('--data', type = lambda s: int(s, 16), choices = xrange(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
     parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, if no other options are given it will dump all registers for corresponding LMS')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.2')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.3')
     args = parser.parse_args()
     if args.data:
         if not args.reg: # argparse do not have dependency concept for options
@@ -129,18 +129,18 @@ if __name__ == '__main__':
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
             if args.data:
-                print 'writing to %d [None indicates error]... 0x%X' % (args.reg, write_spi(sock, umtrx, args.lms, args.reg, args.data))
+                print 'writing to 0x%02X [None indicates error]... 0x%02X' % (args.reg, write_spi(sock, umtrx, args.lms, args.reg, args.data))
             elif args.reg:
-                print 'reading from %d [None indicates error]... 0x%X' % (args.reg, read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg))        
+                print 'reading from 0x%02X [None indicates error]... 0x%02X' % (args.reg, read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg))        
             elif args.lms:
                 lms_regs = dump(sock, umtrx, args.lms)
                 print 'LMS %u' % args.lms
-                print ''.join(map(lambda a, b: '# %.3u: 0x%X\n' % (a, b), range(0, 128), lms_regs))
+                print ''.join(map(lambda a, b: '# 0x%02X: 0x%02X\n' % (a, b), range(0, 128), lms_regs))
             else:
                 lms1 = dump(sock, umtrx, 1)
                 lms2 = dump(sock, umtrx, 2)
                 diff = map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2)
-                print ''.join(map(lambda i, l1, l2, d: '# %.3u: LMS1=0x%X \tLMS2=0x%X\t%s' % (i, l1, l2, d), range(0, 128), lms1, lms2, diff))               
+                print ''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), range(0, 128), lms1, lms2, diff))               
         else:
             print 'UmTRX at %s is not responding.' % umtrx
     else:
