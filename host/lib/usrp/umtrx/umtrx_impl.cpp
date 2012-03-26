@@ -326,17 +326,15 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         ));
         for (size_t dspno = 0; dspno < _mbc[mb].rx_dsps.size(); dspno++){
             _mbc[mb].rx_dsps[dspno]->set_link_rate(USRP2_LINK_RATE_BPS);
-//            _tree->access<double>(mb_path / "tick_rate")
-  //              .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _mbc[mb].rx_dsps[dspno], _1));
+            _tree->access<double>(mb_path / "tick_rate")
+              .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _mbc[mb].rx_dsps[dspno], _1));
             fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
             _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
                 .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _mbc[mb].rx_dsps[dspno]));
-/*
             _tree->create<double>(rx_dsp_path / "rate/value")
-                .set(1e6) //some default
-                .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _mbc[mb].rx_dsps[dspno], _1))
-                .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, mb, dspno, _1));
-*/
+                .set(1e6); //some default
+//                .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _mbc[mb].rx_dsps[dspno], _1))
+//                .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, mb, dspno, _1));
             _tree->create<double>(rx_dsp_path / "freq/value")
                 .coerce(boost::bind(&rx_dsp_core_200::set_freq, _mbc[mb].rx_dsps[dspno], _1));
             _tree->create<meta_range_t>(rx_dsp_path / "freq/range")
