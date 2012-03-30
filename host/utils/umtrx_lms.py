@@ -192,7 +192,7 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 1.3')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.5')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
