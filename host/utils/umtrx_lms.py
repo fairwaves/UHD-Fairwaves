@@ -36,6 +36,28 @@ n2xx_revs = {
   0xfa00: ["umtrx"],
   }
 
+VCO_HIGH = 0x02
+VCO_NORM = 0x00
+VCO_LOW = 0x01
+
+FREQ_LIST = [# min, max, val
+    (0.2325e9,   0.285625e9, 0x27),
+    (0.285625e9, 0.336875e9, 0x2f),
+    (0.336875e9, 0.405e9,    0x37),
+    (0.405e9,    0.465e9,    0x3f),
+    (0.465e9,    0.57125e9,  0x26),
+    (0.57125e9,  0.67375e9,  0x2e),
+    (0.67375e9,  0.81e9,     0x36),
+    (0.81e9,     0.93e9,     0x3e),
+    (0.93e9,     1.1425e9,   0x25),
+    (1.1425e9,   1.3475e9,   0x2d),
+    (1.3475e9,   1.62e9,     0x35),
+    (1.62e9,     1.86e9,     0x3d),
+    (1.86e9,     2.285e9,    0x24),
+    (2.285e9,    2.695e9,    0x2c),
+    (2.695e9,    3.24e9,     0x34),
+    (3.24e9,     3.72e9,     0x3c)]
+
 # remember kids: drugs are bad...
 USRP2_CTRL_ID_HUH_WHAT = ord(' ')
 USRP2_CTRL_ID_WAZZUP_BRO = ord('a')
@@ -96,6 +118,66 @@ def ping(skt, addr):
 
 def dump(skt, addr, lms):
     return [read_spi(skt, addr, lms, x) for x in range(0, 128)]
+
+def select_freq(freq): # test if given freq within the range and return corresponding value
+    l = filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST)
+    return l[0][2] if len(l) else None
+
+def pll_tune(skt, addr, lms, ref_clock, out_freq):
+    freqsel = select_freq(out_freq)
+    if not freqsel:
+        return False
+    vco_x = 1 << ((freqsel & 0x7) - 3)
+    nint = vco_x * out_freq / ref_clock
+    nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock
+    print "FREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d" % (freqsel, vco_x, nint, nfrack)
+# Write NINT, NFRAC
+    write_spi(skt, addr, lms, 0x10, (nint >> 1) & 0xff) # NINT[8:1]
+    write_spi(skt, addr, lms, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)) # NINT[0] NFRACK[22:16]
+    write_spi(skt, addr, lms, 0x12, (nfrack >> 8) & 0xff) # NFRACK[15:8]
+    write_spi(skt, addr, lms, 0x13, (nfrack) & 0xff) # NFRACK[7:0]
+# Write FREQSEL
+    write_spi(skt, addr, lms, 0x15, (freqsel << 2) | 0x01) # FREQSEL[5:0] SELOUT[1:0]
+# Reset VOVCOREG, OFFDOWN to default
+    write_spi(skt, addr, lms, 0x18, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
+    write_spi(skt, addr, lms, 0x19, 0x94) # VOVCOREG[0] VCOCAP[5:0]
+# Poll VOVCO
+    start_i = -1
+    stop_i = -1
+    state = VCO_HIGH
+    for i in range(0, 64):
+        write_spi(skt, addr, lms, 0x19, 0x80 | i)
+        comp = read_spi(skt, addr, lms, 0x1a)
+        if not comp:
+            return False
+        switch = comp >> 6
+        if VCO_HIGH == switch:
+            break
+        elif VCO_LOW == switch:
+            if state == VCO_NORM:
+                stop_i = i - 1
+                state = VCO_LOW
+                print "Low"
+                break
+        elif VCO_NORM == switch:
+            if state == VCO_HIGH:
+                start_i = i
+                state = VCO_NORM
+                print "Norm"
+                break
+        else:
+            print "ERROR WHILE TUNING"
+            return False
+        print "VOVCO[%d]=%x" % (i, comp)
+
+    if start_i == -1 or stop_i == -1:
+        print "CAN'T TUNE"
+        return False
+# Tune to the middle of the found VCOCAP range
+    avg_i = (start_i + stop_i) / 2
+    print "START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i)
+    write_spi(skt, addr, lms, 0x19, 0x80 | avg_i)
+    return True
 
 def detect(skt, bcast_addr):
 #    print 'Detecting UmTRX over %s:' % bcast_addr
