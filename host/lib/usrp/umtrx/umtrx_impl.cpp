@@ -584,9 +584,8 @@ bool umtrx_impl::lms_dc_calibrate(int lms_addr, int dc_addr)
     return false;
 }
 
-bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq)
-{
-   // Supported frequency ranges and corresponding FREQSEL values.
+bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq) {
+// Supported frequency ranges and corresponding FREQSEL values.
    struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
       { 0.2325e9,   0.285625e9, 0x27 },
       { 0.285625e9, 0.336875e9, 0x2f },
@@ -622,19 +621,18 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq)
    // Calculate NINT, NFRAC
    int64_t vco_x = 1 << ((found_freqsel & 0x7) - 3);
    int64_t nint = vco_x * out_freq / ref_clock;
-   int64_t nfrack = (1<<23) * (vco_x * out_freq - nint * ref_clock) / ref_clock;
+   int64_t nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock;
 
    // DEBUG
-   printf("\nFREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n",
-          (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
+   printf("\nFREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n", (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
 
    // Write NINT, NFRAC
-   write_addr(1, 0x10, (nint>>1) & 0xff);    // NINT[8:1]
-   write_addr(1, 0x11, ((nfrack>>16) & 0x7f) | ((nint&0x1)<<7)); //NINT[0] NFRACK[22:16]
-   write_addr(1, 0x12, (nfrack>>8) & 0xff);  // NFRACK[15:8]
+   write_addr(1, 0x10, (nint >> 1) & 0xff);    // NINT[8:1]
+   write_addr(1, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] NFRACK[22:16]
+   write_addr(1, 0x12, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
    write_addr(1, 0x13, (nfrack) & 0xff);     // NFRACK[7:0]
    // Write FREQSEL
-   write_addr(1, 0x15, (found_freqsel<<2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
+   write_addr(1, 0x15, (found_freqsel << 2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
    // Reset VOVCOREG, OFFDOWN to default
    write_addr(1, 0x18, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
    write_addr(1, 0x19, 0x94); // VOVCOREG[0] VCOCAP[5:0]
@@ -672,7 +670,6 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq)
       default: //ERROR
          printf("ERROR WHILE TUNING\n");
          return false;
-         break;
       }
       printf("VOVCO[%d]=%x\n", i, comp);
    }
