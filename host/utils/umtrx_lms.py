@@ -179,6 +179,30 @@ def pll_tune(skt, addr, lms, ref_clock, out_freq):
     write_spi(skt, addr, lms, 0x19, 0x80 | avg_i)
     return True
 
+def lms_init(skt, addr, lms):
+# INIT defaults
+    write_spi(skt, addr, lms, 0x09, 0xC0)
+    write_spi(skt, addr, lms, 0x09, 0x80)
+    write_spi(skt, addr, lms, 0x17, 0xE0)
+    write_spi(skt, addr, lms, 0x27, 0xE3)
+    write_spi(skt, addr, lms, 0x64, 0x32)
+    write_spi(skt, addr, lms, 0x70, 0x01)
+    write_spi(skt, addr, lms, 0x79, 0x37)
+    write_spi(skt, addr, lms, 0x59, 0x09)
+    write_spi(skt, addr, lms, 0x47, 0x40)
+# TX Enable
+    write_spi(skt, addr, lms, 0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
+    write_spi(skt, addr, lms, 0x09, 0x81)
+    write_spi(skt, addr, lms, 0x44, (0 << 3) | (1 << 1) | 1) # PA off
+# RF Settings
+    write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
+    write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
+    pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
+# RF Settings
+    write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
+    write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
+    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
+
 def detect(skt, bcast_addr):
 #    print 'Detecting UmTRX over %s:' % bcast_addr
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
@@ -192,7 +216,7 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 1.5')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.6')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
