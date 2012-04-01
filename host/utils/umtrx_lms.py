@@ -123,7 +123,7 @@ def select_freq(freq): # test if given freq within the range and return correspo
     l = filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST)
     return l[0][2] if len(l) else None
 
-def pll_tune(skt, addr, lms, ref_clock, out_freq):
+def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     freqsel = select_freq(out_freq)
     if not freqsel:
         return False
@@ -197,7 +197,7 @@ def lms_init(skt, addr, lms):
 # RF Settings
     write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
     write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
-    pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
+    lms_pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
 # RF Settings
     write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
     write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
@@ -216,7 +216,7 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 1.7')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.8')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
@@ -253,7 +253,7 @@ if __name__ == '__main__':
             if args.lms_init:
                 lms_init(sock, umtrx, args.lms_init)
             elif args.pll_out_freq:
-                pll_tune(sock, umtrx, args.lms_init, args.pll_ref_clock, args.pll_out_freq)
+                lms_pll_tune(sock, umtrx, args.lms_init, int(args.pll_ref_clock), int(args.pll_out_freq))
             elif args.data:
                 print 'write 0x%02X to REG 0x%02X' % (write_spi(sock, umtrx, args.lms, args.reg, args.data), args.reg)
             elif args.reg:
