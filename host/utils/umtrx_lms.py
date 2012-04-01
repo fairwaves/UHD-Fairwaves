@@ -180,8 +180,8 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     return True
 
 def lms_init(skt, addr, lms):
-# INIT defaults
-    write_spi(skt, addr, lms, 0x09, 0xC0)
+    """ INIT with default values (taken from the LMS EVB software)"""
+#    write_spi(skt, addr, lms, 0x09, 0xC0) # questionable step
     write_spi(skt, addr, lms, 0x09, 0x80)
     write_spi(skt, addr, lms, 0x17, 0xE0)
     write_spi(skt, addr, lms, 0x27, 0xE3)
@@ -190,18 +190,27 @@ def lms_init(skt, addr, lms):
     write_spi(skt, addr, lms, 0x79, 0x37)
     write_spi(skt, addr, lms, 0x59, 0x09)
     write_spi(skt, addr, lms, 0x47, 0x40)
-# TX Enable
+
+def lms_tx_enable(skt, addr, lms):
+    """Enable TX"""
     write_spi(skt, addr, lms, 0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
     write_spi(skt, addr, lms, 0x09, 0x81)
-    write_spi(skt, addr, lms, 0x44, (0 << 3) | (1 << 1) | 1) # PA off
+
+def lms_pa_off(skt, addr, lms):
+    write_spi(skt, addr, lms, 0x44, (0 << 3) | (1 << 1) | 1)
+
+def lms_pa_on(skt, addr, lms, pa):
+    """ Turn on PA, 'pa' parameter is in [1..2]"""
+    write_spi(skt, addr, lms, 0x44, (pa << 3) | (1 << 1) | 1)
+    
 # RF Settings
-    write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
-    write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
-    lms_pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
+#    write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
+#    write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
+#    lms_pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
 # RF Settings
-    write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
-    write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
-    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
+#    write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
+#    write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
+#    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
 
 def detect(skt, bcast_addr):
 #    print 'Detecting UmTRX over %s:' % bcast_addr
@@ -216,33 +225,34 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 1.8')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
-    group.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')
-    parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number: 1 or 2, if no other options are given it will dump all registers for corresponding LMS')
-    group2 = parser.add_mutually_exclusive_group()
+    parser.add_argument('--version', action='version', version='%(prog)s 1.9')
+    parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number, if no other options are given it will dump all registers for corresponding LMS')
     parser.add_argument('--reg', type = lambda s: int(s, 16), choices = xrange(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
-    group2.add_argument('--data', type = lambda s: int(s, 16), choices = xrange(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
-    group2.add_argument('--lms-init', type = int, choices = range(1, 3), help = 'run init sequence for specified LMS')
-    group2.add_argument('--pll-out-freq', type = float, metavar = '[1; 5e9]', help = 'PLL frequency')
+    parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
     parser.add_argument('--pll-ref-clock', type = float, default = 26e6, help = 'PLL reference clock, 26MHz by default')
+    basic_opt = parser.add_mutually_exclusive_group()
+    basic_opt.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
+    basic_opt.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')    
+    adv_opt = parser.add_mutually_exclusive_group()
+    adv_opt.add_argument('--lms-tx-enable', action = 'store_true', help = 'enable TX for LMS')
+    adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = xrange(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
+    adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
+    adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
+    adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
+    adv_opt.add_argument('--pll-out-freq', type = float, metavar = '[1;5e9]', help = 'PLL frequency')
     args = parser.parse_args()
+    if not args.lms: # argparse do not have dependency concept for options
+        if args.data or args.pll_out_freq or args.lms_init or args.lms_pa_off or args.lms_pa_on or args.lms_tx_enable:
+            exit('--lms parameter is required for given options.') # gengetopt is so much better
     if args.data:
-        if not args.reg: # argparse do not have dependency concept for options
+        if not args.reg:
             exit('<data> argument requires <reg> argument.')
-        if not args.lms: # gengetopt is so much better
-            exit('<data> argument requires <lms> argument.')
     if args.pll_out_freq:
-        if not args.lms:
-            exit('<pll-out-freq> argument requires <lms> argument.')
         if args.reg:
             exit('--reg makes no sense with --pll-out-freq, aborting.')
         if not 1 <= args.pll_out_freq <= 5e9:
             exit('<pll-out-freq> is out of range [1; 5e9]')
     if args.lms_init:
-        if args.lms:
-            exit('--lms is confusing, please specify LMS number as a parameter to --lms-init')
         if args.reg:
             exit('--reg makes no sense with --lms-init, aborting.')
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -251,11 +261,20 @@ if __name__ == '__main__':
     if umtrx: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
             if args.lms_init:
-                lms_init(sock, umtrx, args.lms_init)
+                lms_init(sock, umtrx, args.lms)
+            elif args.lms_tx_enable:
+                lms_tx_enable(sock, umtrx, args.lms)
+            elif args.lms_pa_on:
+                lms_pa_on(sock, umtrx, args.lms, args.lms_pa_on)
+            elif args.lms_pa_off:
+                lms_pa_off(sock, umtrx, args.lms)
             elif args.pll_out_freq:
                 lms_pll_tune(sock, umtrx, args.lms_init, int(args.pll_ref_clock), int(args.pll_out_freq))
             elif args.data:
                 print 'write 0x%02X to REG 0x%02X' % (write_spi(sock, umtrx, args.lms, args.reg, args.data), args.reg)
+                if args.verify:
+                    vrfy = read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg)
+                    print 'verify value 0x%02X of REG 0x%02X: %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL')
             elif args.reg:
                 print 'read 0x%02X from REG 0x%02X' % (read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg), args.reg)
             elif args.lms:
