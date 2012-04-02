@@ -120,13 +120,13 @@ def dump(skt, addr, lms):
     return [read_spi(skt, addr, lms, x) for x in range(0, 128)]
 
 def select_freq(freq): # test if given freq within the range and return corresponding value
-#    l = [t for t in FREQ_LIST if True if t[0] < freq <= t[1] else False] # python3 suggestion
     l = filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST)
     return l[0][2] if len(l) else None
 
 def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     freqsel = select_freq(out_freq)
-    if not freqsel:
+    if freqsel is None:
+        print("Error: Output frequency is out of range")
         return False
 
     vco_x = 1 << ((freqsel & 0x7) - 3)
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
-    adv_opt.add_argument('--pll-out-freq', type = float, metavar = '[1;5e9]', help = 'PLL frequency')
+    adv_opt.add_argument('--pll-out-freq', type = float, metavar = '232.5e6..3720e6', help = 'PLL frequency')
     args = parser.parse_args()
     if not args.lms: # argparse do not have dependency concept for options
         if args.data or args.pll_out_freq or args.lms_init or args.lms_pa_off or args.lms_pa_on or args.lms_tx_enable:
@@ -251,8 +251,8 @@ if __name__ == '__main__':
     if args.pll_out_freq:
         if args.reg:
             exit('--reg makes no sense with --pll-out-freq, aborting.')
-        if not 1 <= args.pll_out_freq <= 5e9:
-            exit('<pll-out-freq> is out of range [1; 5e9]')
+        if not 232.5e6 < args.pll_out_freq <= 3720e6:
+            exit('<pll-out-freq> is out of range 232.5e6..3720e6')
     if args.lms_init:
         if args.reg:
             exit('--reg makes no sense with --lms-init, aborting.')
