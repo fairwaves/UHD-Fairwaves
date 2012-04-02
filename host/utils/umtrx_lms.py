@@ -149,27 +149,25 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     for i in range(0, 64):
         write_spi(skt, addr, lms, 0x19, 0x80 | i)
         comp = read_spi(skt, addr, lms, 0x1a)
-        if not comp:
+        if comp is None:
             return False
-        switch = comp >> 6
-        if VCO_HIGH == switch:
-            break
-        elif VCO_LOW == switch:
+        vcocap = comp >> 6
+        print("VOVCO[%d]=%x" % (i, vcocap))
+        if VCO_HIGH == vcocap:
+            pass
+        elif VCO_LOW == vcocap:
             if state == VCO_NORM:
                 stop_i = i - 1
                 state = VCO_LOW
                 print("Low")
-                break
-        elif VCO_NORM == switch:
+        elif VCO_NORM == vcocap:
             if state == VCO_HIGH:
                 start_i = i
                 state = VCO_NORM
                 print("Norm")
-                break
         else:
             print("ERROR WHILE TUNING")
             return False
-        print("VOVCO[%d]=%x" % (i, comp))
 
     if start_i == -1 or stop_i == -1:
         print("CAN'T TUNE")
@@ -269,7 +267,7 @@ if __name__ == '__main__':
             elif args.lms_pa_off:
                 lms_pa_off(sock, umtrx, args.lms)
             elif args.pll_out_freq:
-                lms_pll_tune(sock, umtrx, args.lms_init, int(args.pll_ref_clock), int(args.pll_out_freq))
+                lms_pll_tune(sock, umtrx, args.lms, int(args.pll_ref_clock), int(args.pll_out_freq))
             elif args.data:
                 wrt = write_spi(sock, umtrx, args.lms, args.reg, args.data)
                 if args.verify:
