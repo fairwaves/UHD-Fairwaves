@@ -204,7 +204,7 @@ def lms_pa_off(skt, addr, lms):
     write_spi(skt, addr, lms, 0x44, (0 << 3) | (1 << 1) | 1)
 
 def lms_pa_on(skt, addr, lms, pa):
-    """ Turn on PA, 'pa' parameter is in [1..2]"""
+    """ Turn on PA, 'pa' parameter is in [1..2] range"""
     write_spi(skt, addr, lms, 0x44, (pa << 3) | (1 << 1) | 1)
     
 # RF Settings for LO leakage tuning
