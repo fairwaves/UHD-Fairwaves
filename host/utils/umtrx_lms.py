@@ -128,21 +128,24 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     freqsel = select_freq(out_freq)
     if not freqsel:
         return False
+
     vco_x = 1 << ((freqsel & 0x7) - 3)
     nint = vco_x * out_freq / ref_clock
     nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock
     print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
-# Write NINT, NFRAC
+
+    # Write NINT, NFRAC
     write_spi(skt, addr, lms, 0x10, (nint >> 1) & 0xff) # NINT[8:1]
     write_spi(skt, addr, lms, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)) # NINT[0] NFRACK[22:16]
     write_spi(skt, addr, lms, 0x12, (nfrack >> 8) & 0xff) # NFRACK[15:8]
     write_spi(skt, addr, lms, 0x13, (nfrack) & 0xff) # NFRACK[7:0]
-# Write FREQSEL
+    # Write FREQSEL
     write_spi(skt, addr, lms, 0x15, (freqsel << 2) | 0x01) # FREQSEL[5:0] SELOUT[1:0]
-# Reset VOVCOREG, OFFDOWN to default
+    # Reset VOVCOREG, OFFDOWN to default
     write_spi(skt, addr, lms, 0x18, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
     write_spi(skt, addr, lms, 0x19, 0x94) # VOVCOREG[0] VCOCAP[5:0]
-# Poll VOVCO
+
+    # Poll VOVCO
     start_i = -1
     stop_i = -1
     state = VCO_HIGH
@@ -172,7 +175,7 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     if start_i == -1 or stop_i == -1:
         print("CAN'T TUNE")
         return False
-# Tune to the middle of the found VCOCAP range
+    # Tune to the middle of the found VCOCAP range
     avg_i = (start_i + stop_i) / 2
     print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
     write_spi(skt, addr, lms, 0x19, 0x80 | avg_i)
