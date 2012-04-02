@@ -404,7 +404,7 @@ if __name__ == '__main__':
     parser.add_argument('--reg', type = lambda s: int(s, 16), choices = range(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
     parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
     parser.add_argument('--pll-ref-clock', type = float, default = 26e6, help = 'PLL reference clock, 26MHz by default')
-    parser.add_argument('--lpf-bandwidth-code', type = lambda s: int(s, 16), choices = range(0, 0x0f), metavar = '0..0x0f', help = 'LPF bandwidth code (default: 0x0f)')
+    parser.add_argument('--lpf-bandwidth-code', type = lambda s: int(s, 16), choices = range(0, 0x10), metavar = '0..0x0f', help = 'LPF bandwidth code (default: 0x0f)')
     basic_opt = parser.add_mutually_exclusive_group()
     basic_opt.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     basic_opt.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')    
