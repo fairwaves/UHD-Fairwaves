@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import struct, socket, argparse
+import struct, socket, argparse, time
 # pylint: disable-msg = C0301, C0103, C0111
 
 UDP_CONTROL_PORT = 49152
@@ -110,6 +110,14 @@ def read_spi(skt, addr, lms, reg):
 def write_spi(skt, addr, lms, reg, data):
     return spi_rw(skt, addr, lms, ((0x80 | reg) << 8) | data)
 
+def rmw_spi(skt, addr, lms, reg, action):
+    """ Read-Modify-Write for LMS register.
+    'action' is a lambda(x) expression """
+    reg_save = read_spi(skt, addr, lms, reg)
+    reg_val = action(reg_save)
+    write_spi(skt, addr, lms, reg, reg_val)
+    return reg_save
+
 def ping(skt, addr):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_WAZZUP_BRO, 0)
@@ -198,8 +206,12 @@ def lms_init(skt, addr, lms):
 
 def lms_tx_enable(skt, addr, lms):
     """Enable TX"""
-    write_spi(skt, addr, lms, 0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
-    write_spi(skt, addr, lms, 0x09, 0x81)
+    # Enable STXEN: Soft transmit enable
+#    write_spi(skt, addr, lms, 0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
+    rmw_spi(skt, addr, lms, 0x05, lambda x: x | (1 << 3))
+    # Set Tx DSM SPI clock enabled
+#    write_spi(skt, addr, lms, 0x09, 0x81)
+    rmw_spi(skt, addr, lms, 0x09, lambda x: x | (1 << 0))
 
 def lms_pa_off(skt, addr, lms):
     write_spi(skt, addr, lms, 0x44, (0 << 3) | (1 << 1) | 1)
@@ -207,11 +219,172 @@ def lms_pa_off(skt, addr, lms):
 def lms_pa_on(skt, addr, lms, pa):
     """ Turn on PA, 'pa' parameter is in [1..2] range"""
     write_spi(skt, addr, lms, 0x44, (pa << 3) | (1 << 1) | 1)
-    
+
 # RF Settings for LO leakage tuning
 #    write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
 #    write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
 #    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
+
+def lms_general_dc_calibration(skt, addr, lms, dc_addr, calibration_reg_base):
+    """ Programming and Calibration Guide: 4.1 General DC Calibration Procedure """
+    try_cnt_limit = 10
+
+    reg_val = read_spi(skt, addr, lms, calibration_reg_base+0x03)
+    # DC_ADDR := ADDR
+    reg_val = (reg_val & 0xf8) | dc_addr
+    write_spi(skt, addr, lms, calibration_reg_base+0x03, reg_val)
+    # DC_START_CLBR := 1
+    reg_val = reg_val | (1 << 5)
+    write_spi(skt, addr, lms, calibration_reg_base+0x03, reg_val)
+    # DC_START_CLBR := 0
+    reg_val = reg_val ^ (1 << 5)
+    write_spi(skt, addr, lms, calibration_reg_base+0x03, reg_val)
+
+    for cnt in range(0, try_cnt_limit):
+#        print("cnt=%d" % cnt)
+
+        # Wait for 6.4(1.6) us
+        time.sleep(6.4e-6)
+
+        # Read DC_CLBR_DONE
+        reg_val  = read_spi(skt, addr, lms, calibration_reg_base+0x01)
+        DC_CLBR_DONE = (reg_val >> 1) & 0x1
+#        print(" DC_CLBR_DONE=%d" % DC_CLBR_DONE)
+
+        # DC_CLBR_DONE == 1?
+        if DC_CLBR_DONE:
+            continue
+
+        # Read DC_LOCK
+        reg_val  = read_spi(skt, addr, lms, calibration_reg_base+0x01)
+        DC_LOCK = (reg_val >> 2) & 0x7
+#        print(" DC_LOCK=%d" % DC_LOCK)
+
+        # DC_LOCK != 0 or 7?
+        if DC_LOCK != 0 and DC_LOCK != 7:
+            # Read DC_REGVAL
+            DC_REGVAL = read_spi(skt, addr, lms, calibration_reg_base+0x00)
+            print("DC_REGVAL = %d" % DC_REGVAL)
+            return DC_REGVAL
+
+    # PANIC: Algorithm does Not Converge!
+    print("Error: DC Offset Calibration does not converge!")
+    return None
+
+def lms_lpf_tuning_dc_calibration(skt, addr, lms):
+    """ Programming and Calibration Guide: 4.2 DC Offset Calibration of LPF Tuning Module """
+    # Save TopSPI::CLK_EN[5] Register
+    # TopSPI::CLK_EN[5] := 1
+    clk_en_save = rmw_spi(skt, addr, lms, 0x09, lambda x: x | (1 << 5))
+
+    # Perform DC Calibration Procedure in TopSPI with ADDR := 0 and get Result
+    # DCCAL := TopSPI::DC_REGVAL
+    DCCAL = lms_general_dc_calibration(skt, addr, lms, 0, 0x0)
+    if DCCAL is None:
+        # Restore TopSPI::CLK_EN[5] Register
+        write_spi(skt, addr, lms, 0x09, clk_en_save)
+        return False
+
+    # RxLPFSPI::DCO_DACCAL := DCCAL
+    rmw_spi(skt, addr, lms, 0x35, lambda x: (x & 0xc0) | DCCAL)
+
+    # TxLPFSPI::DCO_DACCAL := DCCAL
+    rmw_spi(skt, addr, lms, 0x55, lambda x: (x & 0xc0) | DCCAL)
+
+    # Restore TopSPI::CLK_EN[5] Register
+    write_spi(skt, addr, lms, 0x09, clk_en_save)
+    return True
+
+def lms_txrx_lpf_dc_calibration(skt, addr, lms, is_tx):
+    """ Programming and Calibration Guide: 4.3 TX/RX LPF DC Offset Calibration """
+    # Determine base address for control registers
+    control_reg_base = 0x30 if is_tx else 0x50
+
+    # Save TopSPI::CLK_EN Register
+    # TopSPI::CLK_EN := 1
+    clk_en_save = rmw_spi(skt, addr, lms, 0x09, lambda x: x | (1 << 1) if is_tx else x | (1 << 3))
+
+    # Perform DC Calibration Procedure in LPFSPI with ADDR := 0 (For channel I) and get Result
+    # Perform DC Calibration Procedure in LPFSPI with ADDR := 1 (For channel Q) and get Result
+    if lms_general_dc_calibration(skt, addr, lms, 0, control_reg_base) is None \
+       or lms_general_dc_calibration(skt, addr, lms, 1, control_reg_base) is None:
+        # Restore TopSPI::CLK_EN Register
+        write_spi(skt, addr, lms, 0x09, clk_en_save)
+        return False
+
+    # Restore TopSPI::CLK_EN Register
+    write_spi(skt, addr, lms, 0x09, clk_en_save)
+    return True
+
+def lms_rxvga2_dc_calibration(skt, addr, lms):
+    """ Programming and Calibration Guide: 4.4 RXVGA2 DC Offset Calibration """
+    # Set base address for control registers
+    control_reg_base = 0x60
+
+    # Save TopSPI::CLK_EN Register
+    # TopSPI::CLK_EN := 1
+    clk_en_save = rmw_spi(skt, addr, lms, 0x09, lambda x: x | (1 << 4))
+
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 0 (For DC Reference channel) and get Result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 1 (For VGA2A_I channel) and get Result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 2 (For VGA2A_Q channel) and get Result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 3 (For VGA2B_I channel) and get Result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 4 (For VGA2B_Q channel) and get Result
+    if lms_general_dc_calibration(skt, addr, lms, 0, control_reg_base) is None \
+       or lms_general_dc_calibration(skt, addr, lms, 1, control_reg_base) is None \
+       or lms_general_dc_calibration(skt, addr, lms, 2, control_reg_base) is None \
+       or lms_general_dc_calibration(skt, addr, lms, 3, control_reg_base) is None \
+       or lms_general_dc_calibration(skt, addr, lms, 4, control_reg_base) is None:
+        # Restore TopSPI::CLK_EN Register
+        write_spi(skt, addr, lms, 0x09, clk_en_save)
+        return False
+
+    # Restore TopSPI::CLK_EN Register
+    write_spi(skt, addr, lms, 0x09, clk_en_save)
+    return True
+
+def lms_lpf_bandwidth_tuning(skt, addr, lms, ref_clock, lpf_bandwidth_code):
+    """ Programming and Calibration Guide: 4.5 LPF Bandwidth Tuning.
+    Note, that this function modifies Tx PLL settings. """
+    # Save registers 0x05 and 0x09, because we will modify them during lms_tx_enable()
+    reg_save_05 = read_spi(skt, addr, lms, 0x05)
+    reg_save_09 = read_spi(skt, addr, lms, 0x09)
+
+    # Enable TxPLL and set toProduce 320MHz
+    lms_tx_enable(skt, addr, lms)
+    lms_pll_tune(skt, addr, lms, ref_clock, int(320e6))
+
+    # Use 40MHz generatedFrom TxPLL: TopSPI::CLKSEL_LPFCAL := 0
+    # Power Up LPF tuning clock generation block: TopSPI::PD_CLKLPFCAL := 0
+    reg_save_06 = rmw_spi(skt, addr, lms, 0x06, lambda x: x & ~(1 << 3) & ~(1 << 2))
+
+    # Set TopSPI::BWC_LPFCAL
+    t = rmw_spi(skt, addr, lms, 0x07, lambda x: (x & ~0x0f) | lpf_bandwidth_code)
+    print("code = %x %x %x" % (lpf_bandwidth_code, t, read_spi(skt, addr, lms, 0x07)))
+    # TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
+    rst_lpfcal_save = rmw_spi(skt, addr, lms, 0x06, lambda x: x | 0x01)
+    # ...Delay 100ns...
+    # TopSPI::RST_CAL_LPFCAL := 0 (Rst Inactive)
+    write_spi(skt, addr, lms, 0x06, rst_lpfcal_save & ~0x01)
+    # RCCAL := TopSPI::RCCAL_LPFCAL
+    RCCAL = read_spi(skt, addr, lms, 0x01) >> 5
+    print("RCCAL = %d" % RCCAL)
+    # RxLPFSPI::RCCAL_LPF := RCCAL
+    rmw_spi(skt, addr, lms, 0x56, lambda x: (x & ~(7 << 4)) | (RCCAL << 4))
+    # TxLPFSPI::RCCAL_LPF := RCCAL
+    rmw_spi(skt, addr, lms, 0x36, lambda x: (x & ~(7 << 4)) | (RCCAL << 4))
+
+    # Restore registers 0x05, 0x06 and 0x09
+    write_spi(skt, addr, lms, 0x06, reg_save_06)
+    write_spi(skt, addr, lms, 0x05, reg_save_05)
+    write_spi(skt, addr, lms, 0x09, reg_save_09)
+
+def lms_auto_calibration(sock, umtrx, lms, ref_clock, lpf_bandwidth_code):
+    lms_lpf_tuning_dc_calibration(sock, umtrx, lms)
+    lms_lpf_bandwidth_tuning(sock, umtrx, lms, ref_clock, lpf_bandwidth_code)
+    lms_txrx_lpf_dc_calibration(sock, umtrx, lms, True)
+    lms_txrx_lpf_dc_calibration(sock, umtrx, lms, False)
+    lms_rxvga2_dc_calibration(sock, umtrx, lms)
 
 def detect(skt, bcast_addr):
 #    print('Detecting UmTRX over %s:' % bcast_addr)
@@ -231,6 +404,7 @@ if __name__ == '__main__':
     parser.add_argument('--reg', type = lambda s: int(s, 16), choices = range(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
     parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
     parser.add_argument('--pll-ref-clock', type = float, default = 26e6, help = 'PLL reference clock, 26MHz by default')
+    parser.add_argument('--lpf-bandwidth-code', type = lambda s: int(s, 16), choices = range(0, 0x0f), metavar = '0..0x0f', help = 'LPF bandwidth code (default: 0x0f)')
     basic_opt = parser.add_mutually_exclusive_group()
     basic_opt.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     basic_opt.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')    
@@ -238,21 +412,29 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-tx-enable', action = 'store_true', help = 'enable TX for LMS')
     adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = range(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
     adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
-    adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
+    adv_opt.add_argument('--lms-auto-calibration', action = 'store_true', help = 'LPF Tuning, TX/RX LPF, RXVGA2 DC Offset Calibration and LPF bandwidth tuning')
+    adv_opt.add_argument('--lms-lpf-tuning-dc-calibration', action = 'store_true', help = 'DC Offset Calibration of LPF Tuning Module')
+    adv_opt.add_argument('--lms-tx-lpf-dc-calibration', action = 'store_true', help = 'TX LPF DC Offset Calibration')
+    adv_opt.add_argument('--lms-rx-lpf-dc-calibration', action = 'store_true', help = 'RX LPF DC Offset Calibration')
+    adv_opt.add_argument('--lms-rxvga2-dc-calibration', action = 'store_true', help = 'RXVGA2 DC Offset Calibration')
+    adv_opt.add_argument('--lms-lpf-bandwidth-tuning', action = 'store_true', help = 'LPF bandwidth tuning')
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
-    adv_opt.add_argument('--pll-out-freq', type = float, metavar = '232.5e6..3720e6', help = 'PLL frequency')
+    adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
+    adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
     args = parser.parse_args()
     if not args.lms: # argparse do not have dependency concept for options
-        if args.data or args.pll_out_freq or args.lms_init or args.lms_pa_off or args.lms_pa_on or args.lms_tx_enable:
+        if args.data or args.lms_tx_pll_tune or args.lms_init or args.lms_pa_off or args.lms_pa_on \
+           or args.lms_lpf_tuning_dc_calibration or args.lms_tx_lpf_dc_calibration \
+           or args.lms_rx_lpf_dc_calibration or args.lms_rxvga2_dc_calibration \
+           or args.lms_auto_calibration or args.lpf_bandwidth_tuning \
+           or args.lms_tx_enable:
             exit('--lms parameter is required for given options.') # gengetopt is so much better
     if args.data:
         if not args.reg:
             exit('<data> argument requires <reg> argument.')
-    if args.pll_out_freq:
-        if args.reg:
-            exit('--reg makes no sense with --pll-out-freq, aborting.')
-        if not 232.5e6 < args.pll_out_freq <= 3720e6:
-            exit('<pll-out-freq> is out of range 232.5e6..3720e6')
+    if args.lms_tx_pll_tune:
+        if not 232.5e6 < args.lms_tx_pll_tune <= 3720e6:
+            exit('<lms-tx-pll-tune> is out of range 232.5e6..3720e6')
     if args.lms_init:
         if args.reg:
             exit('--reg makes no sense with --lms-init, aborting.')
@@ -265,12 +447,28 @@ if __name__ == '__main__':
                 lms_init(sock, umtrx, args.lms)
             elif args.lms_tx_enable:
                 lms_tx_enable(sock, umtrx, args.lms)
+            elif args.lms_auto_calibration:
+                # 0x0f - 0.75MHz
+                lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
+                lms_auto_calibration(sock, umtrx, args.lms, int(args.pll_ref_clock), int(lpf_bw_code))
+            elif args.lms_lpf_tuning_dc_calibration:
+                lms_lpf_tuning_dc_calibration(sock, umtrx, args.lms)
+            elif args.lms_tx_lpf_dc_calibration:
+                lms_txrx_lpf_dc_calibration(sock, umtrx, args.lms, True)
+            elif args.lms_rx_lpf_dc_calibration:
+                lms_txrx_lpf_dc_calibration(sock, umtrx, args.lms, False)
+            elif args.lms_rxvga2_dc_calibration:
+                lms_rxvga2_dc_calibration(sock, umtrx, args.lms)
             elif args.lms_pa_on:
                 lms_pa_on(sock, umtrx, args.lms, args.lms_pa_on)
             elif args.lms_pa_off:
                 lms_pa_off(sock, umtrx, args.lms)
-            elif args.pll_out_freq:
-                lms_pll_tune(sock, umtrx, args.lms, int(args.pll_ref_clock), int(args.pll_out_freq))
+            elif args.lms_tx_pll_tune:
+                lms_pll_tune(sock, umtrx, args.lms, int(args.pll_ref_clock), int(args.lms_tx_pll_tune))
+            elif args.lms_lpf_bandwidth_tuning:
+                # 0x0f - 0.75MHz
+                lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
+                lms_lpf_bandwidth_tuning(sock, umtrx, args.lms, int(args.pll_ref_clock), int(lpf_bw_code))
             elif args.data:
                 wrt = write_spi(sock, umtrx, args.lms, args.reg, args.data)
                 if args.verify:
