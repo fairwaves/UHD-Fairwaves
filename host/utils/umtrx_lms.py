@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 #
 # Copyright 2012 Fairwaves
 #
@@ -91,7 +91,7 @@ def recv_item(skt, fmt, chk, ind):
     try:
         pkt = skt.recv(UDP_MAX_XFER_BYTES)
         pkt_list = unpack_format(pkt, fmt)
-#        print "Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3])
+#        print("Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3]))
         if pkt_list[1] != chk:
             return None
         return pkt_list[ind]
@@ -120,6 +120,7 @@ def dump(skt, addr, lms):
     return [read_spi(skt, addr, lms, x) for x in range(0, 128)]
 
 def select_freq(freq): # test if given freq within the range and return corresponding value
+#    l = [t for t in FREQ_LIST if True if t[0] < freq <= t[1] else False] # python3 suggestion
     l = filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST)
     return l[0][2] if len(l) else None
 
@@ -130,7 +131,7 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
     vco_x = 1 << ((freqsel & 0x7) - 3)
     nint = vco_x * out_freq / ref_clock
     nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock
-    print "FREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d" % (freqsel, vco_x, nint, nfrack)
+    print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
 # Write NINT, NFRAC
     write_spi(skt, addr, lms, 0x10, (nint >> 1) & 0xff) # NINT[8:1]
     write_spi(skt, addr, lms, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)) # NINT[0] NFRACK[22:16]
@@ -157,25 +158,25 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
             if state == VCO_NORM:
                 stop_i = i - 1
                 state = VCO_LOW
-                print "Low"
+                print("Low")
                 break
         elif VCO_NORM == switch:
             if state == VCO_HIGH:
                 start_i = i
                 state = VCO_NORM
-                print "Norm"
+                print("Norm")
                 break
         else:
-            print "ERROR WHILE TUNING"
+            print("ERROR WHILE TUNING")
             return False
-        print "VOVCO[%d]=%x" % (i, comp)
+        print("VOVCO[%d]=%x" % (i, comp))
 
     if start_i == -1 or stop_i == -1:
-        print "CAN'T TUNE"
+        print("CAN'T TUNE")
         return False
 # Tune to the middle of the found VCOCAP range
     avg_i = (start_i + stop_i) / 2
-    print "START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i)
+    print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
     write_spi(skt, addr, lms, 0x19, 0x80 | avg_i)
     return True
 
@@ -213,10 +214,10 @@ def lms_pa_on(skt, addr, lms, pa):
 #    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
 
 def detect(skt, bcast_addr):
-#    print 'Detecting UmTRX over %s:' % bcast_addr
+#    print('Detecting UmTRX over %s:' % bcast_addr)
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)    
     out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
-#    print " Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST)
+#    print(" Sending %d bytes: %x, '%c',.." % (len(out_pkt), USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST))
     skt.sendto(out_pkt, (bcast_addr, UDP_CONTROL_PORT))
     response = recv_item(skt, CONTROL_IP_FMT, UMTRX_CTRL_ID_RESPONSE, 3)
     if response:
@@ -225,9 +226,9 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 1.9')
-    parser.add_argument('--lms', type = int, choices = range(1, 3), help = 'LMS number, if no other options are given it will dump all registers for corresponding LMS')
-    parser.add_argument('--reg', type = lambda s: int(s, 16), choices = xrange(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
+    parser.add_argument('--version', action='version', version='%(prog)s 2.0')
+    parser.add_argument('--lms', type = int, choices = list(range(1, 3)), help = 'LMS number, if no other options are given it will dump all registers for corresponding LMS')
+    parser.add_argument('--reg', type = lambda s: int(s, 16), choices = range(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
     parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
     parser.add_argument('--pll-ref-clock', type = float, default = 26e6, help = 'PLL reference clock, 26MHz by default')
     basic_opt = parser.add_mutually_exclusive_group()
@@ -235,7 +236,7 @@ if __name__ == '__main__':
     basic_opt.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')    
     adv_opt = parser.add_mutually_exclusive_group()
     adv_opt.add_argument('--lms-tx-enable', action = 'store_true', help = 'enable TX for LMS')
-    adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = xrange(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
+    adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = range(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
     adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
@@ -271,22 +272,24 @@ if __name__ == '__main__':
             elif args.pll_out_freq:
                 lms_pll_tune(sock, umtrx, args.lms_init, int(args.pll_ref_clock), int(args.pll_out_freq))
             elif args.data:
-                print 'write 0x%02X to REG 0x%02X' % (write_spi(sock, umtrx, args.lms, args.reg, args.data), args.reg)
+                wrt = write_spi(sock, umtrx, args.lms, args.reg, args.data)
                 if args.verify:
                     vrfy = read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg)
-                    print 'verify value 0x%02X of REG 0x%02X: %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL')
+                    print('written 0x%02X to REG 0x%02X - %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL'))
+                else:
+                    print('write returned 0x%02X for REG 0x%02X' % (wrt, args.reg))
             elif args.reg:
-                print 'read 0x%02X from REG 0x%02X' % (read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg), args.reg)
+                print('read 0x%02X from REG 0x%02X' % (read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg), args.reg))
             elif args.lms:
                 lms_regs = dump(sock, umtrx, args.lms)
-                print 'LMS %u' % args.lms
-                print ''.join(map(lambda a, b: '# 0x%02X: 0x%02X\n' % (a, b), range(0, 128), lms_regs))
+                print('LMS %u' % args.lms)
+                print(''.join(map(lambda a, b: '# 0x%02X: 0x%02X\n' % (a, b), list(range(0, 128)), lms_regs)))
             else:
                 lms1 = dump(sock, umtrx, 1)
                 lms2 = dump(sock, umtrx, 2)
-                diff = map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2)
-                print ''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), range(0, 128), lms1, lms2, diff))               
+                diff = list(map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2))
+                print(''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), list(range(0, 128)), lms1, lms2, diff)))               
         else:
-            print 'UmTRX at %s is not responding.' % umtrx
+            print('UmTRX at %s is not responding.' % umtrx)
     else:
-        print 'No UmTRX detected over %s' % args.bcast_addr
+        print('No UmTRX detected over %s' % args.bcast_addr)
