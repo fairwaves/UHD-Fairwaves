@@ -128,7 +128,7 @@ def dump(skt, addr, lms):
     return [read_spi(skt, addr, lms, x) for x in range(0, 128)]
 
 def select_freq(freq): # test if given freq within the range and return corresponding value
-    l = filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST)
+    l = list(filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST))
     return l[0][2] if len(l) else None
 
 def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
@@ -138,8 +138,8 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
         return False
 
     vco_x = 1 << ((freqsel & 0x7) - 3)
-    nint = vco_x * out_freq / ref_clock
-    nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock
+    nint = int(vco_x * out_freq / ref_clock)
+    nfrack = int((1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock)
     print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
 
     # Write NINT, NFRAC
@@ -184,7 +184,7 @@ def lms_pll_tune(skt, addr, lms, ref_clock, out_freq):
         print("CAN'T TUNE")
         return False
     # Tune to the middle of the found VCOCAP range
-    avg_i = (start_i + stop_i) / 2
+    avg_i = int((start_i + stop_i) / 2)
     print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
     write_spi(skt, addr, lms, 0x19, 0x80 | avg_i)
     return True
