@@ -422,26 +422,27 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
     args = parser.parse_args()
-    if not args.lms: # argparse do not have dependency concept for options
-        if args.data or args.lms_tx_pll_tune or args.lms_init or args.lms_pa_off or args.lms_pa_on \
+    if args.lms is None: # argparse do not have dependency concept for options
+        if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None or args.lms_init \
+           or args.lms_pa_off or args.lms_pa_on is not None \
            or args.lms_lpf_tuning_dc_calibration or args.lms_tx_lpf_dc_calibration \
            or args.lms_rx_lpf_dc_calibration or args.lms_rxvga2_dc_calibration \
-           or args.lms_auto_calibration or args.lpf_bandwidth_tuning \
+           or args.lms_auto_calibration or args.lms_lpf_bandwidth_tuning \
            or args.lms_tx_enable:
             exit('--lms parameter is required for given options.') # gengetopt is so much better
-    if args.data:
-        if not args.reg:
+    if args.data is not None:
+        if args.reg is None:
             exit('<data> argument requires <reg> argument.')
-    if args.lms_tx_pll_tune:
+    if args.lms_tx_pll_tune is not None:
         if not 232.5e6 < args.lms_tx_pll_tune <= 3720e6:
             exit('<lms-tx-pll-tune> is out of range 232.5e6..3720e6')
     if args.lms_init:
-        if args.reg:
+        if args.reg is not None:
             exit('--reg makes no sense with --lms-init, aborting.')
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(UDP_TIMEOUT)
-    umtrx = args.umtrx if args.umtrx else detect(sock, args.bcast_addr) 
-    if umtrx: # UmTRX address established
+    umtrx = args.umtrx if args.umtrx is not None else detect(sock, args.bcast_addr)
+    if umtrx is not None: # UmTRX address established
         if ping(sock, umtrx): # UmTRX probed
             if args.lms_init:
                 lms_init(sock, umtrx, args.lms)
@@ -459,24 +460,24 @@ if __name__ == '__main__':
                 lms_txrx_lpf_dc_calibration(sock, umtrx, args.lms, False)
             elif args.lms_rxvga2_dc_calibration:
                 lms_rxvga2_dc_calibration(sock, umtrx, args.lms)
-            elif args.lms_pa_on:
+            elif args.lms_pa_on is not None:
                 lms_pa_on(sock, umtrx, args.lms, args.lms_pa_on)
             elif args.lms_pa_off:
                 lms_pa_off(sock, umtrx, args.lms)
-            elif args.lms_tx_pll_tune:
+            elif args.lms_tx_pll_tune is not None:
                 lms_pll_tune(sock, umtrx, args.lms, int(args.pll_ref_clock), int(args.lms_tx_pll_tune))
             elif args.lms_lpf_bandwidth_tuning:
                 # 0x0f - 0.75MHz
                 lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
                 lms_lpf_bandwidth_tuning(sock, umtrx, args.lms, int(args.pll_ref_clock), int(lpf_bw_code))
-            elif args.data:
+            elif args.data is not None:
                 wrt = write_spi(sock, umtrx, args.lms, args.reg, args.data)
                 if args.verify:
-                    vrfy = read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg)
+                    vrfy = read_spi(sock, umtrx, args.lms, args.reg)
                     print('written 0x%02X to REG 0x%02X - %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL'))
                 else:
                     print('write returned 0x%02X for REG 0x%02X' % (wrt, args.reg))
-            elif args.reg:
+            elif args.reg is not None:
                 print('read 0x%02X from REG 0x%02X' % (read_spi(sock, umtrx, args.lms if args.lms else 1, args.reg), args.reg))
             elif args.lms:
                 lms_regs = dump(sock, umtrx, args.lms)
