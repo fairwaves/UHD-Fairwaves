@@ -193,8 +193,13 @@ module vita_tx_control
    assign error = send_error;
    assign ack = send_ack;
 
+`ifndef LMS602D_FRONTEND
    localparam MAX_IDLE = 1000000; 
    // approx 10 ms timeout with a 100 MHz clock, but burning samples will slow that down
+`else
+   localparam MAX_IDLE = 130000; 
+   // approx 10 ms timeout with a 13 MHz clock, but burning samples will slow that down
+`endif // !`ifndef LMS602D_FRONTEND
    reg [19:0] countdown;
    
    always @(posedge dac_clk)
