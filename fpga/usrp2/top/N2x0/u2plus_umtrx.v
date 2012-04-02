@@ -190,17 +190,17 @@ module u2plus_umtrx
      begin
          LMS1nRST = 1'b1;
          if (RX1IQSEL == 1'b0)
-            adc_a_0 = {2'b00, RX1D}; //ADC_I signal
+            adc_a_0 = {RX1D, 2'b00}; //ADC_I signal
          else
-            adc_b_0 <= {2'b00, RX1D}; // ADC_Q signal
+            adc_b_0 <= {RX1D, 2'b00}; // ADC_Q signal
      end
    always @(posedge lms_clk)
      begin
          LMS2nRST = 1'b1;
          if (RX2IQSEL == 1'b0)
-            adc_a_1 = {2'b00, RX2D}; //ADC_I signal
+            adc_a_1 = {RX2D, 2'b00}; //ADC_I signal
          else
-            adc_b_1 <= {2'b00, RX2D}; // ADC_Q signal
+            adc_b_1 <= {RX2D, 2'b00}; // ADC_Q signal
      end
 `endif // !`ifndef LMS602D_FRONTEND
    
@@ -409,7 +409,7 @@ module u2plus_umtrx
 
    
    
-   wire [15:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
+   wire [11:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
 `ifndef LMS602D_FRONTEND
    // DAC A and B are swapped in schematic to facilitate clean layout
    // DAC A is also inverted in schematic to facilitate clean layout

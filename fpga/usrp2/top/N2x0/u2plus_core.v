@@ -117,9 +117,15 @@ module u2plus_core
    output adc_oe_b_1,
 `endif // !`ifndef LMS602D_FRONTEND
    
+`ifndef LMS602D_FRONTEND
    // DAC
    output [15:0] dac_a,
    output [15:0] dac_b,
+`else
+   output [11:0] dac_a,
+   output [11:0] dac_b,
+`endif // !`ifndef LMS602D_FRONTEND
+
 
    // I2C
    input scl_pad_i,

@@ -1,7 +1,11 @@
 
 module tx_frontend
   #(parameter BASE=0,
+`ifndef LMS602D_FRONTEND
     parameter WIDTH_OUT=16,
+`else
+    parameter WIDTH_OUT=12,
+`endif // !`ifndef LMS602D_FRONTEND
     parameter IQCOMP_EN=1)
    (input clk, input rst,
     input dac_clk,
