@@ -191,6 +191,9 @@ def lms_init(skt, addr, lms):
     write_spi(skt, addr, lms, 0x79, 0x37)
     write_spi(skt, addr, lms, 0x59, 0x09)
     write_spi(skt, addr, lms, 0x47, 0x40)
+    # RF Settings
+    write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
+    write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
 
 def lms_tx_enable(skt, addr, lms):
     """Enable TX"""
@@ -204,11 +207,7 @@ def lms_pa_on(skt, addr, lms, pa):
     """ Turn on PA, 'pa' parameter is in [1..2]"""
     write_spi(skt, addr, lms, 0x44, (pa << 3) | (1 << 1) | 1)
     
-# RF Settings
-#    write_spi(skt, addr, lms, 0x41, 0x15) # VGA1GAIN
-#    write_spi(skt, addr, lms, 0x45, 0x00) # VGA2GAIN, ENVD
-#    lms_pll_tune(skt, addr, lms, 26e6, 925e6) # Tune PLL
-# RF Settings
+# RF Settings for LO leakage tuning
 #    write_spi(skt, addr, lms, 0x41, (-4 + 35)) # VGA1GAIN
 #    write_spi(skt, addr, lms, 0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
 #    write_spi(skt, addr, lms, 0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
