@@ -240,8 +240,9 @@ def lms_general_dc_calibration(skt, addr, lms, dc_addr, calibration_reg_base):
     reg_val = reg_val ^ (1 << 5)
     write_spi(skt, addr, lms, calibration_reg_base+0x03, reg_val)
 
-    for cnt in range(0, try_cnt_limit):
-#        print("cnt=%d" % cnt)
+    while try_cnt_limit:
+        try_cnt_limit -= 1
+#        print("cnt=%d" % try_cnt_limit)
 
         # Wait for 6.4(1.6) us
         time.sleep(6.4e-6)
@@ -379,12 +380,12 @@ def lms_lpf_bandwidth_tuning(skt, addr, lms, ref_clock, lpf_bandwidth_code):
     write_spi(skt, addr, lms, 0x05, reg_save_05)
     write_spi(skt, addr, lms, 0x09, reg_save_09)
 
-def lms_auto_calibration(sock, umtrx, lms, ref_clock, lpf_bandwidth_code):
-    lms_lpf_tuning_dc_calibration(sock, umtrx, lms)
-    lms_lpf_bandwidth_tuning(sock, umtrx, lms, ref_clock, lpf_bandwidth_code)
-    lms_txrx_lpf_dc_calibration(sock, umtrx, lms, True)
-    lms_txrx_lpf_dc_calibration(sock, umtrx, lms, False)
-    lms_rxvga2_dc_calibration(sock, umtrx, lms)
+def lms_auto_calibration(_sock, _umtrx, lms, ref_clock, lpf_bandwidth_code):
+    lms_lpf_tuning_dc_calibration(_sock, _umtrx, lms)
+    lms_lpf_bandwidth_tuning(_sock, _umtrx, lms, ref_clock, lpf_bandwidth_code)
+    lms_txrx_lpf_dc_calibration(_sock, _umtrx, lms, True)
+    lms_txrx_lpf_dc_calibration(_sock, _umtrx, lms, False)
+    lms_rxvga2_dc_calibration(_sock, _umtrx, lms)
 
 def detect(skt, bcast_addr):
 #    print('Detecting UmTRX over %s:' % bcast_addr)
@@ -399,7 +400,7 @@ def detect(skt, bcast_addr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 2.3')
+    parser.add_argument('--version', action='version', version='%(prog)s 2.4')
     parser.add_argument('--lms', type = int, choices = list(range(1, 3)), help = 'LMS number, if no other options are given it will dump all registers for corresponding LMS')
     parser.add_argument('--reg', type = lambda s: int(s, 16), choices = range(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
     parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
@@ -411,6 +412,7 @@ if __name__ == '__main__':
     adv_opt = parser.add_mutually_exclusive_group()
     adv_opt.add_argument('--lms-tx-enable', action = 'store_true', help = 'enable TX for LMS')
     adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = range(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
+    adv_opt.add_argument('--dump', action = 'store_true', help = 'dump registers')
     adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
     adv_opt.add_argument('--lms-auto-calibration', action = 'store_true', help = 'LPF Tuning, TX/RX LPF, RXVGA2 DC Offset Calibration and LPF bandwidth tuning')
     adv_opt.add_argument('--lms-lpf-tuning-dc-calibration', action = 'store_true', help = 'DC Offset Calibration of LPF Tuning Module')
@@ -484,10 +486,13 @@ if __name__ == '__main__':
                 print('LMS %u' % args.lms)
                 print(''.join(map(lambda a, b: '# 0x%02X: 0x%02X\n' % (a, b), list(range(0, 128)), lms_regs)))
             else:
-                lms1 = dump(sock, umtrx, 1)
-                lms2 = dump(sock, umtrx, 2)
-                diff = list(map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2))
-                print(''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), list(range(0, 128)), lms1, lms2, diff)))               
+                if args.dump:
+                    lms1 = dump(sock, umtrx, 1)
+                    lms2 = dump(sock, umtrx, 2)
+                    diff = list(map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2))
+                    print(''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), list(range(0, 128)), lms1, lms2, diff)))
+                else:
+                    print('UmTRX suspected at %s' % umtrx)
         else:
             print('UmTRX at %s is not responding.' % umtrx)
     else:
