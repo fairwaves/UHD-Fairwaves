@@ -132,11 +132,11 @@ def lms_tx_enable(lms_dev):
     lms_dev.reg_set_bits(0x09, (1 << 0))
 
 def lms_pa_off(lms_dev):
-    lms_dev.reg_write(0x44, (0 << 3) | (1 << 1) | 1)
+    lms_dev.reg_clear_bits(0x44, (0x07 << 3))
 
 def lms_pa_on(lms_dev, pa):
     """ Turn on PA, 'pa' parameter is in [1..2] range"""
-    lms_dev.reg_write(0x44, (pa << 3) | (1 << 1) | 1)
+    lms_dev.reg_write_bits(0x44, (0x07 << 3), (pa << 3))
 
 # RF Settings for LO leakage tuning
 #    lms_dev.reg_write(0x41, (-4 + 35)) # VGA1GAIN
