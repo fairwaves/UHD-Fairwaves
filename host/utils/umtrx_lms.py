@@ -123,13 +123,34 @@ def lms_init(lms_dev):
     lms_dev.reg_write(0x45, 0x00) # VGA2GAIN, ENVD
 
 def lms_tx_enable(lms_dev):
-    """Enable TX"""
-    # Enable STXEN: Soft transmit enable
+    """ Enable TX """
+    # STXEN: Soft transmit enable
 #    lms_dev.reg_write(0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
     lms_dev.reg_set_bits(0x05, (1 << 3))
-    # Set Tx DSM SPI clock enabled
+    # Tx DSM SPI clock enabled
 #    lms_dev.reg_write(0x09, 0x81)
     lms_dev.reg_set_bits(0x09, (1 << 0))
+
+def lms_tx_disable(lms_dev):
+    """ Disable TX """
+    # STXEN: Soft transmit enable
+    lms_dev.reg_clear_bits(0x05, (1 << 3))
+    # Tx DSM SPI clock enabled
+    lms_dev.reg_clear_bits(0x09, (1 << 0))
+
+def lms_rx_enable(lms_dev):
+    """ Enable RX """
+    # SRXEN: Soft receive enable
+    lms_dev.reg_set_bits(0x05, (1 << 2))
+    # Rx DSM SPI clock enabled
+    lms_dev.reg_set_bits(0x09, (1 << 2))
+
+def lms_rx_disable(lms_dev):
+    """ Disable RX """
+    # SRXEN: Soft receive enable
+    lms_dev.reg_clear_bits(0x05, (1 << 2))
+    # Rx DSM SPI clock enabled
+    lms_dev.reg_clear_bits(0x09, (1 << 2))
 
 def lms_pa_off(lms_dev):
     lms_dev.reg_clear_bits(0x44, (0x07 << 3))
@@ -317,10 +338,11 @@ if __name__ == '__main__':
     basic_opt.add_argument('--detect', dest = 'bcast_addr', default = '192.168.10.255', help='broadcast domain where UmTRX should be discovered (default: 192.168.10.255)')
     basic_opt.add_argument('--umtrx-addr', dest = 'umtrx', const = '192.168.10.2', nargs='?', help = 'UmTRX address (default: 192.168.10.2)')    
     adv_opt = parser.add_mutually_exclusive_group()
-    adv_opt.add_argument('--lms-tx-enable', action = 'store_true', help = 'enable TX for LMS')
     adv_opt.add_argument('--data', type = lambda s: int(s, 16), choices = range(0, 0x100), metavar = '0..0xFF', help = 'data to be written into LMS register, hex')
     adv_opt.add_argument('--dump', action = 'store_true', help = 'dump registers')
     adv_opt.add_argument('--lms-init', action = 'store_true', help = 'run init sequence for LMS')
+    adv_opt.add_argument('--lms-tx-enable', type = int, choices = range(0, 2), help = '1 to enable TX chain, 0 to disable TX chain')
+    adv_opt.add_argument('--lms-rx-enable', type = int, choices = range(0, 2), help = '1 to enable RX chain, 0 to disable RX chain')
     adv_opt.add_argument('--lms-auto-calibration', action = 'store_true', help = 'LPF Tuning, TX/RX LPF, RXVGA2 DC Offset Calibration and LPF bandwidth tuning')
     adv_opt.add_argument('--lms-lpf-tuning-dc-calibration', action = 'store_true', help = 'DC Offset Calibration of LPF Tuning Module')
     adv_opt.add_argument('--lms-tx-lpf-dc-calibration', action = 'store_true', help = 'TX LPF DC Offset Calibration')
@@ -337,7 +359,7 @@ if __name__ == '__main__':
            or args.lms_lpf_tuning_dc_calibration or args.lms_tx_lpf_dc_calibration \
            or args.lms_rx_lpf_dc_calibration or args.lms_rxvga2_dc_calibration \
            or args.lms_auto_calibration or args.lms_lpf_bandwidth_tuning \
-           or args.lms_tx_enable:
+           or args.lms_tx_enable is not None or args.lms_tx_enable is not None:
             exit('--lms parameter is required for given options.') # gengetopt is so much better
     if args.data is not None:
         if args.reg is None:
@@ -356,8 +378,20 @@ if __name__ == '__main__':
             umtrx_lms_dev = umtrx_ctrl.umtrx_lms_device(sock, umtrx, args.lms if args.lms else 1)
             if args.lms_init:
                 lms_init(umtrx_lms_dev)
-            elif args.lms_tx_enable:
-                lms_tx_enable(umtrx_lms_dev)
+            elif args.lms_tx_enable is not None:
+                if args.lms_tx_enable == 0:
+                    lms_tx_disable(umtrx_lms_dev)
+                elif args.lms_tx_enable == 1:
+                    lms_tx_enable(umtrx_lms_dev)
+                else:
+                    print('Wrong parameter value for --lms-tx-enable')
+            elif args.lms_rx_enable is not None:
+                if args.lms_rx_enable == 0:
+                    lms_rx_disable(umtrx_lms_dev)
+                elif args.lms_rx_enable == 1:
+                    lms_rx_enable(umtrx_lms_dev)
+                else:
+                    print('Wrong parameter value for --lms-tx-enable')
             elif args.lms_auto_calibration:
                 # 0x0f - 0.75MHz
                 lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
