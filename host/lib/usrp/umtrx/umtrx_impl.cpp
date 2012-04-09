@@ -39,8 +39,6 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio.hpp> //used for htonl and ntohl
-#include <boost/math/special_functions/round.hpp>
-#include <boost/math/special_functions/sign.hpp>
 #include "validate_subdev_spec.hpp"
 #include <uhd/usrp/dboard_iface.hpp>
 
@@ -230,6 +228,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         const fs_path tx_codec_path = mb_path / "tx_codecs/A";
         _tree->create<int>(rx_codec_path / "gains"); //phony property so this dir exists
         _tree->create<int>(tx_codec_path / "gains"); //phony property so this dir exists
+        // TODO: Implement "gains" as well
+        _tree->create<std::string>(tx_codec_path / "name").set("LMS_TX");
+        _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 /*        _mbc[mb].codec = umtrx_codec_ctrl::make(_mbc[mb].iface);
         switch(_mbc[mb].iface->get_rev()){
         case usrp2_iface::USRP_N200:
@@ -239,14 +240,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
             _tree->create<std::string>(rx_codec_path / "name").set("ads62p44");
             _tree->create<meta_range_t>(rx_codec_path / "gains/digital/range").set(meta_range_t(0, 6.0, 0.5));
             _tree->create<double>(rx_codec_path / "gains/digital/value")
-                .subscribe(boost::bind(&umtrx_codec_ctrl::set_rx_digital_gain, _mbc[mb].codec, _1)).set(0);
+                .subscribe(boost::bind(&usrp2_codec_ctrl::set_rx_digital_gain, _mbc[mb].codec, _1)).set(0);
             _tree->create<meta_range_t>(rx_codec_path / "gains/fine/range").set(meta_range_t(0, 0.5, 0.05));
             _tree->create<double>(rx_codec_path / "gains/fine/value")
-                .subscribe(boost::bind(&umtrx_codec_ctrl::set_rx_digital_fine_gain, _mbc[mb].codec, _1)).set(0);
+                .subscribe(boost::bind(&usrp2_codec_ctrl::set_rx_digital_fine_gain, _mbc[mb].codec, _1)).set(0);
         }break;
 
-        case usrp2_iface::umtrx_REV3:
-        case usrp2_iface::umtrx_REV4:
+        case usrp2_iface::USRP2_REV3:
+        case usrp2_iface::USRP2_REV4:
             _tree->create<std::string>(rx_codec_path / "name").set("ltc2284");
             break;
         case usrp2_iface::USRP_NXXX:
@@ -255,8 +256,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         }
         _tree->create<std::string>(tx_codec_path / "name").set("ad9777");
 */
-_tree->create<std::string>(tx_codec_path / "name").set("LMS_TX");
-_tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         ////////////////////////////////////////////////////////////////
         // create gpsdo control objects
         ////////////////////////////////////////////////////////////////
@@ -326,7 +325,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         for (size_t dspno = 0; dspno < _mbc[mb].rx_dsps.size(); dspno++){
             _mbc[mb].rx_dsps[dspno]->set_link_rate(USRP2_LINK_RATE_BPS);
             _tree->access<double>(mb_path / "tick_rate")
-              .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _mbc[mb].rx_dsps[dspno], _1));
+                .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _mbc[mb].rx_dsps[dspno], _1));
             fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
             _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
                 .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _mbc[mb].rx_dsps[dspno]));
@@ -353,14 +352,12 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsp, _1));
         _tree->create<meta_range_t>(mb_path / "tx_dsps/0/rate/range")
             .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsp));
-  
         _tree->create<double>(mb_path / "tx_dsps/0/rate/value")
             .set(1e6) //some default
             .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
             .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, 0, _1));
-  
         _tree->create<double>(mb_path / "tx_dsps/0/freq/value");
-	    //          .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
+//            .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
         _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range");
 //            .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb));
 
@@ -397,7 +394,6 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             .subscribe(boost::bind(&time64_core_200::set_time_source, _mbc[mb].time64, _1));
         _tree->create<std::vector<std::string> >(mb_path / "time_source/options")
             .publish(boost::bind(&time64_core_200::get_time_sources, _mbc[mb].time64));
-
         //setup reference source props
       _tree->create<std::string>(mb_path / "clock_source/value");
 //            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
@@ -415,9 +411,16 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         tx_db_eeprom.id = 0xfa07;
 
         //create the properties and register subscribers
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/rx_eeprom").set(rx_db_eeprom);
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/tx_eeprom").set(tx_db_eeprom);
- 
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/rx_eeprom")
+            .set(rx_db_eeprom);
+//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "rx", _1));
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/tx_eeprom")
+            .set(tx_db_eeprom);
+//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "tx", _1));
+//        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/gdb_eeprom")
+//            .set(gdb_eeprom)
+//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "gdb", _1));
+
         //create a new dboard interface and manager
             _mbc[mb].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface);
             
@@ -438,7 +441,6 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
                 .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
         }
-
     }
 
     //initialize io handling
@@ -446,7 +448,6 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 
     //do some post-init tasks
     this->update_rates();
-
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         fs_path root = "/mboards/" + mb;
 
@@ -476,8 +477,13 @@ umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(
 void umtrx_impl::set_mb_eeprom(const std::string &mb, const uhd::usrp::mboard_eeprom_t &mb_eeprom){
     mb_eeprom.commit(*(_mbc[mb].iface), mboard_eeprom_t::MAP_N100);
 }
-
 /*
+void usrp2_impl::set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom){
+    if (type == "rx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_RX_DB);
+    if (type == "tx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB);
+    if (type == "gdb") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB ^ 5);
+}
+
 sensor_value_t umtrx_impl::get_mimo_locked(const std::string &mb){
     const bool lock = (_mbc[mb].iface->peek32(U2_REG_IRQ_RB) & (1<<10)) != 0;
     return sensor_value_t("MIMO", lock, "locked", "unlocked");
@@ -495,8 +501,10 @@ void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const double lo_fr
 void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const double lo_freq){
     apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
 }
-
 /*
+#include <boost/math/special_functions/round.hpp>
+#include <boost/math/special_functions/sign.hpp>
+
 double umtrx_impl::set_tx_dsp_freq(const std::string &mb, const double freq_){
     double new_freq = freq_;
     const double tick_rate = _tree->access<double>("/mboards/"+mb+"/tick_rate").get();

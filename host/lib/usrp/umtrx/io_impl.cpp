@@ -56,8 +56,9 @@ static const size_t vrt_send_header_offset_words32 = 1;
 struct umtrx_impl::io_impl {
 
     io_impl(void):
-        async_msg_fifo(100) //messages deep
+        async_msg_fifo(100/*messages deep*/)
     {
+        /* NOP */
     }
 
     ~io_impl(void){

@@ -53,6 +53,7 @@
 #include <uhd/usrp/subdev_spec.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
+
 /*!
  * Make a UmTRX dboard interface.
  * \param iface the UmTRX interface object
@@ -66,8 +67,27 @@ uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface);
  * Handles device properties and streaming...
  */
 class umtrx_impl : public uhd::device {
+public:
+    umtrx_impl(const uhd::device_addr_t &);
+    ~umtrx_impl(void);
+
+    //the io interface
+    uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
+    uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
+    bool recv_async_msg(uhd::async_metadata_t &, double);
+
+    // LMS-specific functions
+    void reg_dump(bool rise = true);
+    void write_addr(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
+    uint32_t read_addr(uint8_t LMS_number, uint8_t address, bool rise = true);
+    uint32_t write_n_check(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
+    bool lms_dc_calibrate(int lms_addr, int dc_addr);
+    void lms_init(int lms_addr);
+    bool lms_pll_tune(int64_t ref_clock, int64_t out_freq);
+
+private:
     uhd::property_tree::sptr _tree;
-    struct mb_container_type {
+    struct mb_container_type{
         usrp2_iface::sptr iface;
         uhd::gps_ctrl::sptr gps;
         rx_frontend_core_200::sptr rx_fe;
@@ -87,7 +107,7 @@ class umtrx_impl : public uhd::device {
     uhd::dict<std::string, mb_container_type> _mbc;
 
     void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
-    void set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom);
+    void set_db_eeprom(const std::string &, const std::string &, const uhd::usrp::dboard_eeprom_t &);
 /*
     uhd::sensor_value_t get_mimo_locked(const std::string &);
     uhd::sensor_value_t get_ref_locked(const std::string &);
@@ -95,40 +115,26 @@ class umtrx_impl : public uhd::device {
     void set_rx_fe_corrections(const std::string &mb, const double);
     void set_tx_fe_corrections(const std::string &mb, const double);
 
-
     double get_master_clock_rate() const { return 13e6; }
 
     //device properties interface
-    uhd::property_tree::sptr get_tree(void) const { return _tree; }
+    uhd::property_tree::sptr get_tree(void) const{
+        return _tree;
+    }
 
     //io impl methods and members
     UHD_PIMPL_DECL(io_impl) _io_impl;
     void io_init(void);
     void update_tick_rate(const double rate);
-    void update_rx_samp_rate(const std::string &mb, const size_t dsp, const double rate);
-    void update_tx_samp_rate(const std::string &mb, const size_t dsp, const double rate);
+    void update_rx_samp_rate(const std::string &, const size_t, const double rate);
+    void update_tx_samp_rate(const std::string &, const size_t, const double rate);
     void update_rates(void);
     //update spec methods are coercers until we only accept db_name == A
     void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
     void update_tx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
-
-public:
-    umtrx_impl(const uhd::device_addr_t &);
-    ~umtrx_impl(void);
-
-    //the IO interface
-    uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
-    uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
-    bool recv_async_msg(uhd::async_metadata_t &, double);
-
-// LMS-specific functions
-    void reg_dump(bool rise = true);
-    void write_addr(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
-    uint32_t read_addr(uint8_t LMS_number, uint8_t address, bool rise = true);
-    uint32_t write_n_check(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
-    bool lms_dc_calibrate(int lms_addr, int dc_addr);
-    void lms_init(int lms_addr);
-    bool lms_pll_tune(int64_t ref_clock, int64_t out_freq);
+    double set_tx_dsp_freq(const std::string &, const double);
+    uhd::meta_range_t get_tx_dsp_freq_range(const std::string &);
+    void update_clock_source(const std::string &, const std::string &);
 };
 
-#endif 
+#endif /* INCLUDED_UMTRX_IMPL_HPP */
