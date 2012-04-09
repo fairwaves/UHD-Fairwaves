@@ -348,7 +348,7 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-tx-lpf-dc-calibration', action = 'store_true', help = 'TX LPF DC Offset Calibration')
     adv_opt.add_argument('--lms-rx-lpf-dc-calibration', action = 'store_true', help = 'RX LPF DC Offset Calibration')
     adv_opt.add_argument('--lms-rxvga2-dc-calibration', action = 'store_true', help = 'RXVGA2 DC Offset Calibration')
-    adv_opt.add_argument('--lms-lpf-bandwidth-tuning', action = 'store_true', help = 'LPF bandwidth tuning. Specify --lpf-bandwidth-code to select specific LPF to tune.')
+    adv_opt.add_argument('--lms-lpf-bandwidth-tuning', action = 'store_true', help = 'LPF bandwidth tuning. Specify --lpf-bandwidth-code to select specific LPF to tune. WARNING: Tx PLL is tuned to 320MHz during this procedure. Don\'t forget to re-tune it back if needed.')
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
