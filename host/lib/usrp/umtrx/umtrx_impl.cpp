@@ -214,14 +214,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         _tree->create<mboard_eeprom_t>(mb_path / "eeprom")
             .set(_mbc[mb].iface->mb_eeprom)
             .subscribe(boost::bind(&umtrx_impl::set_mb_eeprom, this, mb, _1));
-/*
+
         ////////////////////////////////////////////////////////////////
         // create clock control objects
         ////////////////////////////////////////////////////////////////
-        _mbc[mb].clock = umtrx_clock_ctrl::make(_mbc[mb].iface);
-*/        _tree->create<double>(mb_path / "tick_rate").set(13);
-//            .publish(boost::bind(&umtrx_clock_ctrl::get_master_clock_rate, _mbc[mb].clock))
-//            .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
+//        _mbc[mb].clock = umtrx_clock_ctrl::make(_mbc[mb].iface);
+        _tree->create<double>(mb_path / "tick_rate")
+            .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
+            .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
 
         ////////////////////////////////////////////////////////////////
         // create codec control objects
@@ -331,9 +331,9 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
                 .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _mbc[mb].rx_dsps[dspno]));
             _tree->create<double>(rx_dsp_path / "rate/value")
-                .set(1e6); //some default
-//                .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _mbc[mb].rx_dsps[dspno], _1))
-//                .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, mb, dspno, _1));
+                .set(1e6) //some default
+                .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _mbc[mb].rx_dsps[dspno], _1))
+                .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, mb, dspno, _1));
             _tree->create<double>(rx_dsp_path / "freq/value")
                 .coerce(boost::bind(&rx_dsp_core_200::set_freq, _mbc[mb].rx_dsps[dspno], _1));
             _tree->create<meta_range_t>(rx_dsp_path / "freq/range")
@@ -349,16 +349,16 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             _mbc[mb].iface, U2_REG_SR_ADDR(SR_TX_DSP), U2_REG_SR_ADDR(SR_TX_CTRL), USRP2_TX_ASYNC_SID
         );
         _mbc[mb].tx_dsp->set_link_rate(USRP2_LINK_RATE_BPS);
-//        _tree->access<double>(mb_path / "tick_rate")
-  //          .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsp, _1));
+        _tree->access<double>(mb_path / "tick_rate")
+            .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsp, _1));
         _tree->create<meta_range_t>(mb_path / "tx_dsps/0/rate/range")
             .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsp));
   
         _tree->create<double>(mb_path / "tx_dsps/0/rate/value")
-            .set(1e6); //some default
-/*            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
+            .set(1e6) //some default
+            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
             .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, 0, _1));
-*/  
+  
         _tree->create<double>(mb_path / "tx_dsps/0/freq/value");
 	    //          .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
         _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range");
@@ -369,7 +369,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         const size_t send_frame_size = _mbc[mb].tx_dsp_xport->get_send_frame_size();
         const double ups_per_fifo = device_args_i.cast<double>("ups_per_fifo", 8.0);
         _mbc[mb].tx_dsp->set_updates(
-            (ups_per_sec > 0.0)? size_t(100e6/*approx tick rate*//ups_per_sec) : 0,
+            (ups_per_sec > 0.0)? size_t(13e6/*approx tick rate*//ups_per_sec) : 0,
             (ups_per_fifo > 0.0)? size_t(USRP2_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
         );
 
@@ -384,8 +384,8 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         _mbc[mb].time64 = time64_core_200::make(
             _mbc[mb].iface, U2_REG_SR_ADDR(SR_TIME64), time64_rb_bases, mimo_clock_sync_delay_cycles
         );
-//        _tree->access<double>(mb_path / "tick_rate")
-  //          .subscribe(boost::bind(&time64_core_200::set_tick_rate, _mbc[mb].time64, _1));
+        _tree->access<double>(mb_path / "tick_rate")
+            .subscribe(boost::bind(&time64_core_200::set_tick_rate, _mbc[mb].time64, _1));
         _tree->create<time_spec_t>(mb_path / "time/now")
             .publish(boost::bind(&time64_core_200::get_time_now, _mbc[mb].time64))
             .subscribe(boost::bind(&time64_core_200::set_time_now, _mbc[mb].time64, _1));
@@ -399,8 +399,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             .publish(boost::bind(&time64_core_200::get_time_sources, _mbc[mb].time64));
 
         //setup reference source props
-      _tree->create<std::string>(mb_path / "clock_source/value")
-.set("13");
+      _tree->create<std::string>(mb_path / "clock_source/value");
 //            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
 
         static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external")("mimo");
@@ -442,23 +441,25 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
 */
     }
 
- // internal debug routines
+    //initialize io handling
     this->io_init();
-//reg_dump();
-//do some post-init tasks
+
+    //do some post-init tasks
+    this->update_rates();
+
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         fs_path root = "/mboards/" + mb;
 
         _tree->access<subdev_spec_t>(root / "rx_subdev_spec").set(subdev_spec_t("A:" + _tree->list(root / "dboards/A/rx_frontends").at(0)));
         _tree->access<subdev_spec_t>(root / "tx_subdev_spec").set(subdev_spec_t("A:" + _tree->list(root / "dboards/A/tx_frontends").at(0)));
-//        _tree->access<std::string>(root / "clock_source/value").set("internal");
+        _tree->access<std::string>(root / "clock_source/value").set("internal");
         _tree->access<std::string>(root / "time_source/value").set("none");
 
         //GPS installed: use external ref, time, and init time spec
         if (_mbc[mb].gps.get() and _mbc[mb].gps->gps_detected()){
             UHD_MSG(status) << "Setting references to the internal GPSDO" << std::endl;
             _tree->access<std::string>(root / "time_source/value").set("external");
-//            _tree->access<std::string>(root / "clock_source/value").set("external");
+            _tree->access<std::string>(root / "clock_source/value").set("external");
             UHD_MSG(status) << "Initializing time to the internal GPSDO" << std::endl;
             _mbc[mb].time64->set_time_next_pps(time_spec_t(time_t(_mbc[mb].gps->get_sensor("gps_time").to_int()+1)));
         }

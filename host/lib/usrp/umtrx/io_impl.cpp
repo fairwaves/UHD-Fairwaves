@@ -190,7 +190,7 @@ void umtrx_impl::io_init(void) {
         )));
     }
 }
-/*
+
 void umtrx_impl::update_tick_rate(const double rate){
     _io_impl->tick_rate = rate; //shadow for async msg
 
@@ -228,7 +228,7 @@ void umtrx_impl::update_tx_samp_rate(const std::string &mb, const size_t dsp, co
 
     my_streamer->set_samp_rate(rate);
 }
-*/
+
 void umtrx_impl::update_rates(void){
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         fs_path root = "/mboards/" + mb;

@@ -95,13 +95,19 @@ class umtrx_impl : public uhd::device {
     void set_rx_fe_corrections(const std::string &mb, const double);
     void set_tx_fe_corrections(const std::string &mb, const double);
 */
+
+    double get_master_clock_rate() const { return 13e6; }
+
     //device properties interface
     uhd::property_tree::sptr get_tree(void) const { return _tree; }
-    
-    UHD_PIMPL_DECL(io_impl) _io_impl;    
-    void io_init(void);
-    void update_rates(void);
 
+    //io impl methods and members
+    UHD_PIMPL_DECL(io_impl) _io_impl;
+    void io_init(void);
+    void update_tick_rate(const double rate);
+    void update_rx_samp_rate(const std::string &mb, const size_t dsp, const double rate);
+    void update_tx_samp_rate(const std::string &mb, const size_t dsp, const double rate);
+    void update_rates(void);
     //update spec methods are coercers until we only accept db_name == A
     void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
     void update_tx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
