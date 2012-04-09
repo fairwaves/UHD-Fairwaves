@@ -426,7 +426,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
             _mbc[mb].dboard_iface, _tree->subtree(mb_path / "dboards/A")
         );
-/*
+
         //bind frontend corrections to the dboard freq props
         const fs_path db_tx_fe_path = mb_path / "dboards" / "A" / "tx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
@@ -438,7 +438,7 @@ _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
             _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
                 .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
         }
-*/
+
     }
 
     //initialize io handling
@@ -487,7 +487,7 @@ sensor_value_t umtrx_impl::get_ref_locked(const std::string &mb){
     const bool lock = (_mbc[mb].iface->peek32(U2_REG_IRQ_RB) & (1<<11)) != 0;
     return sensor_value_t("Ref", lock, "locked", "unlocked");
 }
-
+*/
 void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const double lo_freq){
     apply_rx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
 }
@@ -496,7 +496,7 @@ void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const double lo_fr
     apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
 }
 
-
+/*
 double umtrx_impl::set_tx_dsp_freq(const std::string &mb, const double freq_){
     double new_freq = freq_;
     const double tick_rate = _tree->access<double>("/mboards/"+mb+"/tick_rate").get();

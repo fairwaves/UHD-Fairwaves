@@ -91,10 +91,10 @@ class umtrx_impl : public uhd::device {
 /*
     uhd::sensor_value_t get_mimo_locked(const std::string &);
     uhd::sensor_value_t get_ref_locked(const std::string &);
-
+*/
     void set_rx_fe_corrections(const std::string &mb, const double);
     void set_tx_fe_corrections(const std::string &mb, const double);
-*/
+
 
     double get_master_clock_rate() const { return 13e6; }
 
