@@ -328,7 +328,7 @@ def lms_auto_calibration(lms_dev, ref_clock, lpf_bandwidth_code):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
-    parser.add_argument('--version', action='version', version='%(prog)s 2.4')
+    parser.add_argument('--version', action='version', version='%(prog)s 3.0')
     parser.add_argument('--lms', type = int, choices = list(range(1, 3)), help = 'LMS number, if no other options are given it will dump all registers for corresponding LMS')
     parser.add_argument('--reg', type = lambda s: int(s, 16), choices = range(0, 0x80), metavar = '0..0x79', help = 'LMS register number, hex')
     parser.add_argument('--verify', action = 'store_true', help = 'read back written register value to verify correctness')
