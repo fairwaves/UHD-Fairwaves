@@ -366,7 +366,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         const size_t send_frame_size = _mbc[mb].tx_dsp_xport->get_send_frame_size();
         const double ups_per_fifo = device_args_i.cast<double>("ups_per_fifo", 8.0);
         _mbc[mb].tx_dsp->set_updates(
-            (ups_per_sec > 0.0)? size_t(13e6/*approx tick rate*//ups_per_sec) : 0,
+            (ups_per_sec > 0.0)? size_t(get_master_clock_rate()/*approx tick rate*//ups_per_sec) : 0,
             (ups_per_fifo > 0.0)? size_t(USRP2_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
         );
 
