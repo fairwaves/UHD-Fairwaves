@@ -29,7 +29,7 @@ ADD_LIBRARY(libusrp2pfw STATIC
     spi_flash_read.c
     bootloader_utils.c
     ethernet.c
-#    xilinx_s3_icap.c
+    xilinx_s3_icap.c
     udp_fw_update.c
     u2p_init.c
 )
