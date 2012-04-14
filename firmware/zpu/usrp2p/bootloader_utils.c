@@ -61,6 +61,7 @@ void do_the_bootload_thing(void) {
 	spif_init(); //initialize SPI flash clock
 	
     bool production_image = find_safe_booted_flag();
+	printf("Production image = %d\n", production_image);
 	set_safe_booted_flag(0); //haven't booted yet
 	
 	if(BUTTON_PUSHED) { //see memory_map.h
@@ -76,8 +77,8 @@ void do_the_bootload_thing(void) {
 			mdelay(300); //so serial output can finish
 			icap_reload_fpga(PROD_FPGA_IMAGE_LOCATION_ADDR);
 		}
-		puts("No valid production FPGA image found.\nFalling through to built-in firmware.");
-		return;
+		puts("No valid production FPGA image found.\n");
+//		return;
 	}
 	if(is_valid_fw_image(PROD_FW_IMAGE_LOCATION_ADDR)) {
 		puts("Valid production firmware found. Loading...");
