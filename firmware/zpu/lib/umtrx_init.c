@@ -37,9 +37,9 @@ umtrx_init(void)
   uint32_t res;
 
   // Check LMS presense
-  res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_FALL);
+  res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS1 chip version = 0x%x\n", res);
-  res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_FALL);
+  res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS2 chip version = 0x%x\n", res);
 
 /*
@@ -48,11 +48,11 @@ umtrx_init(void)
   // register 5:
   //   DECODE 0, SRESET 1, EN 1, STXEN 1, SRXEN 1, TFWMODE 1
   val = 0x3E;
-  spi_transact(SPI_TXONLY, SPI_SS_LMS1, LMS_WR_CMD(0x05, val), 16, SPIF_PUSH_FALL|SPIF_LATCH_FALL);
-  res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x05), 16, SPIF_PUSH_FALL|SPIF_LATCH_FALL);
+  spi_transact(SPI_TXONLY, SPI_SS_LMS1, LMS_WR_CMD(0x05, val), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
+  res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x05), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS1 register readback = 0x%x\n", res);
-  spi_transact(SPI_TXONLY, SPI_SS_LMS2, LMS_WR_CMD(0x05, val), 16, SPIF_PUSH_RISE|SPIF_LATCH_RISE);
-  res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x05), 16, SPIF_PUSH_RISE|SPIF_LATCH_RISE);
+  spi_transact(SPI_TXONLY, SPI_SS_LMS2, LMS_WR_CMD(0x05, val), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
+  res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x05), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS2 register readback = 0x%x\n", res);
 */
   return true;
