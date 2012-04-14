@@ -22,7 +22,7 @@
 void mdelay(int ms){
   if (hwconfig_simulation_p()) return;
   for(int i = 0; i < ms; i++){
-    static const uint32_t num_ticks = MASTER_CLK_RATE/1000;
+    static const uint32_t num_ticks = TIME64_CLK_RATE/1000;
     const uint32_t ticks_begin = router_status->time64_ticks_rb;
     while((router_status->time64_ticks_rb - ticks_begin) < num_ticks){
       /*NOP*/
