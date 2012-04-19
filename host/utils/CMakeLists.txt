@@ -47,7 +47,8 @@ IF(ENABLE_UMTRX)
         lms_reg_rw.cpp
     )
     INSTALL(PROGRAMS
-        umtrx_detect.py
+        umtrx_ctrl.py
+        umtrx_lms.py
         lms_reg_dump.sh
         DESTINATION ${PKG_LIB_DIR}/utils
         COMPONENT utilities
