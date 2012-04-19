@@ -140,3 +140,6 @@ class umtrx_lms_device:
 
     def reg_write_bits(self, reg, mask, data):
         return self.reg_rmw(reg, lambda x: (x & ~mask) | data)
+
+    def reg_get_bits(self, reg, mask, shift):
+        return (self.reg_read(reg)&mask) >> shift
