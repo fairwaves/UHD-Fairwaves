@@ -24,14 +24,22 @@
 #include <iostream>
 #include <fstream>
 #include <complex>
+#include <csignal>
 
 namespace po = boost::program_options;
+
+/***********************************************************************
+ * Signal handlers
+ **********************************************************************/
+static bool stop_signal_called = false;
+void sig_int_handler(int){stop_signal_called = true;}
 
 template<typename samp_type> void send_from_file(
     uhd::usrp::multi_usrp::sptr usrp,
     const std::string &cpu_format,
     const std::string &file,
-    size_t samps_per_buff
+    size_t samps_per_buff,
+    bool in_loop
 ){
     //create a transmit streamer
     uhd::stream_args_t stream_args(cpu_format);
@@ -44,12 +52,16 @@ template<typename samp_type> void send_from_file(
     std::ifstream infile(file.c_str(), std::ifstream::binary);
 
     //loop until the entire file has been read
-    while(not md.end_of_burst){
+    while(not md.end_of_burst and not stop_signal_called){
 
         infile.read((char*)&buff.front(), buff.size()*sizeof(samp_type));
         size_t num_tx_samps = infile.gcount()/sizeof(samp_type);
 
-        md.end_of_burst = infile.eof();
+        if (in_loop) {
+            infile.seekg(0, std::ios::beg);
+        } else {
+            md.end_of_burst = infile.eof();
+        }
 
         tx_stream->send(&buff.front(), num_tx_samps, md);
     }
@@ -71,6 +83,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("help", "help message")
         ("args", po::value<std::string>(&args)->default_value(""), "multi uhd device address args")
         ("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
+        ("loop", "repeat data from the file infinitely")
         ("type", po::value<std::string>(&type)->default_value("short"), "sample type: double, float, or short")
         ("spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")
         ("rate", po::value<double>(&rate), "rate of outgoing samples")
@@ -161,10 +174,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         UHD_ASSERT_THROW(ref_locked.to_bool());
     }
 
+    std::signal(SIGINT, &sig_int_handler);
+    std::cout << "Press Ctrl + C to stop streaming at any time." << std::endl;
+
     //send from file
-    if (type == "double") send_from_file<std::complex<double> >(usrp, "fc64", file, spb);
-    else if (type == "float") send_from_file<std::complex<float> >(usrp, "fc32", file, spb);
-    else if (type == "short") send_from_file<std::complex<short> >(usrp, "sc16", file, spb);
+    if (type == "double") send_from_file<std::complex<double> >(usrp, "fc64", file, spb, vm.count("loop"));
+    else if (type == "float") send_from_file<std::complex<float> >(usrp, "fc32", file, spb, vm.count("loop"));
+    else if (type == "short") send_from_file<std::complex<short> >(usrp, "sc16", file, spb, vm.count("loop"));
     else throw std::runtime_error("Unknown type " + type);
 
     //finished
