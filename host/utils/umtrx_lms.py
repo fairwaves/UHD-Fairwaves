@@ -19,6 +19,8 @@ import socket, argparse, time
 import umtrx_ctrl
 # pylint: disable = C0301, C0103, C0111
 
+verbosity = 0
+
 # Constants used during PLL tuning.
 VCO_HIGH = 0x02
 VCO_NORM = 0x00
@@ -81,19 +83,19 @@ def lms_pll_tune(lms_dev, ref_clock, out_freq):
         if comp is None:
             return False
         vcocap = comp >> 6
-        print("VOVCO[%d]=%x" % (i, vcocap))
+        if verbosity > 1: print("VOVCO[%d]=%x" % (i, vcocap))
         if VCO_HIGH == vcocap:
             pass
         elif VCO_LOW == vcocap:
             if state == VCO_NORM:
                 stop_i = i - 1
                 state = VCO_LOW
-                print("Low")
+                if verbosity > 1: print("Low")
         elif VCO_NORM == vcocap:
             if state == VCO_HIGH:
                 start_i = i
                 state = VCO_NORM
-                print("Norm")
+                if verbosity > 1: print("Norm")
         else:
             print("ERROR WHILE TUNING")
             return False
@@ -158,6 +160,70 @@ def lms_pa_off(lms_dev):
 def lms_pa_on(lms_dev, pa):
     """ Turn on PA, 'pa' parameter is in [1..2] range"""
     lms_dev.reg_write_bits(0x44, (0x07 << 3), (pa << 3))
+
+def lms_set_vga1gain(lms_dev, gain):
+    """ Set VGA1 gain in dB.
+    gain is in [-4 .. -35] dB range
+    Returns the old gain value on success, None on error"""
+    if not (-35 <= gain <= -4):
+        return None
+    old_bits = lms_dev.reg_write_bits(0x41, 0x1f, 35 + gain)
+    return (old_bits & 0x1f) - 35
+
+def lms_get_vga1gain(lms_dev):
+    """ Get VGA1 gain in dB.
+    gain is in [-4 .. -35] dB range
+    Returns the gain value on success, None on error"""
+    return lms_dev.reg_get_bits(0x41, 0x1f, 0)-35
+
+def lms_set_vga2gain(lms_dev, gain):
+    """ Set VGA2 gain.
+    gain is in dB [0 .. 25]
+    Returns the old gain value on success, None on error"""
+    if not (0 <= gain <= 25):
+        return None
+    old_bits = lms_dev.reg_write_bits(0x45, (0x1f << 3), (gain << 3))
+    return old_bits >> 3
+
+def lms_get_vga2gain(lms_dev):
+    """ Get VGA2 gain in dB.
+    gain is in [0 .. 25] dB range
+    Returns the gain value on success, None on error"""
+    gain = lms_dev.reg_get_bits(0x45, (0x1f << 3), 3)
+    gain = gain if gain <= 25 else 25
+    return gain
+
+def lms_set_vga1dc_i_int(lms_dev, dc_shift_int):
+    """ Set VGA1 DC offset, I channel
+    dc_shift_int is an integer representation of the DC shift [0 .. 255]
+    DC offset = (dc_shift_int - 128) / 16
+    Returns the old gain value on success, None on error"""
+    if not (0 <= dc_shift_int <= 255):
+        return None
+    return lms_dev.reg_write_bits(0x42, 0xff, dc_shift_int)
+
+def lms_set_vga1dc_i(lms_dev, dc_shift):
+    """ Set VGA1 DC offset, I channel
+    dc_shift is an a DC shift in mV [-16 .. 15.9375]
+    Returns the old gain value on success, None on error"""
+    old_bits = lms_set_vga1dc_i_int(lms_dev, int(dc_shift*16 + 128))
+    return (float(old_bits) - 128) / 16
+
+def lms_set_vga1dc_q_int(lms_dev, dc_shift_int):
+    """ Set VGA1 DC offset, Q channel
+    dc_shift_int is an integer representation of the DC shift [0 .. 255]
+    DC offset = (dc_shift_int - 128) / 16
+    Returns the old gain value on success, None on error"""
+    if not (0 <= dc_shift_int <= 255):
+        return None
+    return lms_dev.reg_write_bits(0x43, 0xff, dc_shift_int)
+
+def lms_set_vga1dc_q(lms_dev, dc_shift):
+    """ Set VGA1 DC offset, Q channel
+    dc_shift is an a DC shift in mV [-16 .. 15.9375]
+    Returns old gan value on success, None on error"""
+    old_bits = lms_set_vga1dc_i_int(lms_dev, int(dc_shift*16 + 128))
+    return (float(old_bits) - 128) / 16
 
 # RF Settings for LO leakage tuning
 #    lms_dev.reg_write(0x41, (-4 + 35)) # VGA1GAIN
@@ -300,7 +366,7 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
 
     # Set TopSPI::BWC_LPFCAL
     t = lms_dev.reg_write_bits(0x07, 0x0f, lpf_bandwidth_code)
-    print("code = %x %x %x" % (lpf_bandwidth_code, t, lms_dev.reg_read(0x07)))
+    if verbosity >= 3: print("code = %x %x %x" % (lpf_bandwidth_code, t, lms_dev.reg_read(0x07)))
     # TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
     rst_lpfcal_save = lms_dev.reg_set_bits(0x06, 0x01)
     # ...Delay 100ns...
@@ -320,11 +386,20 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
     lms_dev.reg_write(0x09, reg_save_09)
 
 def lms_auto_calibration(lms_dev, ref_clock, lpf_bandwidth_code):
+    print("LPF Tuning...")
     lms_lpf_tuning_dc_calibration(lms_dev)
+    print("LPF Bandwidth Tuning...")
     lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code)
+    vga1gain = lms_set_vga1gain(lms_dev, -10)
+    vga2gain = lms_set_vga2gain(lms_dev, 15)
+    print("Tx LPF DC calibration...")
     lms_txrx_lpf_dc_calibration(lms_dev, True)
+    print("Rx LPF DC calibration...")
     lms_txrx_lpf_dc_calibration(lms_dev, False)
+    print("RxVGA2 DC calibration...")
     lms_rxvga2_dc_calibration(lms_dev)
+    lms_set_vga1gain(lms_dev, vga1gain)
+    lms_set_vga2gain(lms_dev, vga2gain)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
@@ -352,6 +427,12 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
+    adv_opt.add_argument('--lms-set-vga1-gain', type = int, choices = range(-35, -3), metavar = '[-35..-4]', help = 'Set VGA1 gain, in dB')
+    adv_opt.add_argument('--lms-get-vga1-gain', action = 'store_true', help = 'Get VGA1 gain, in dB')
+    adv_opt.add_argument('--lms-set-vga2-gain', type = int, choices = range(0, 26), metavar = '[0..25]', help = 'Set VGA2 gain, in dB')
+    adv_opt.add_argument('--lms-get-vga2-gain', action = 'store_true', help = 'Get VGA2 gain, in dB')
+    adv_opt.add_argument('--lms-tune-vga1-dc-i', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, I channel')
+    adv_opt.add_argument('--lms-tune-vga1-dc-q', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, Q channel')
     args = parser.parse_args()
     if args.lms is None: # argparse do not have dependency concept for options
         if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None or args.lms_init \
@@ -414,13 +495,31 @@ if __name__ == '__main__':
                 # 0x0f - 0.75MHz
                 lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
                 lms_lpf_bandwidth_tuning(umtrx_lms_dev, int(args.pll_ref_clock), int(lpf_bw_code))
+            elif args.lms_set_vga1_gain is not None:
+                lms_set_vga1gain(umtrx_lms_dev, int(args.lms_set_vga1_gain))
+            elif args.lms_get_vga1_gain:
+                gain = lms_get_vga1gain(umtrx_lms_dev)
+                print(gain)
+            elif args.lms_set_vga2_gain is not None:
+                lms_set_vga2gain(umtrx_lms_dev, int(args.lms_set_vga2_gain))
+            elif args.lms_get_vga2_gain:
+                gain = lms_get_vga2gain(umtrx_lms_dev)
+                print(gain)
+            elif args.lms_tune_vga1_dc_i:
+                for i in range(110, 130, 1):
+                    print("DC offset %f (%d)" % (float(i-128)/16, i))
+                    lms_set_vga1dc_i_int(umtrx_lms_dev, i)
+                    time.sleep(1)
+            elif args.lms_tune_vga1_dc_q:
+                for i in range(103, 150, 1):
+                    print("DC offset %f (%d)" % (float(i-128)/16, i))
+                    lms_set_vga1dc_q_int(umtrx_lms_dev, i)
+                    time.sleep(1)
             elif args.data is not None:
                 wrt = umtrx_lms_dev.reg_write(args.reg, args.data)
                 if args.verify:
                     vrfy = umtrx_lms_dev.reg_read(args.reg)
                     print('written 0x%02X to REG 0x%02X - %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL'))
-                else:
-                    print('write returned 0x%02X for REG 0x%02X' % (wrt, args.reg))
             elif args.reg is not None:
                 print('read 0x%02X from REG 0x%02X' % (umtrx_lms_dev.reg_read(args.reg), args.reg))
             elif args.lms:
