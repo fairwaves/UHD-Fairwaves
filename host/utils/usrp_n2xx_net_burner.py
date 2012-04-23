@@ -288,12 +288,39 @@ class burner_socket(object):
 
         return (self.memory_size_bytes, self.sector_size_bytes)
 
-    def burn_fw(self, fw, fpga, reset, safe, check_rev=True):
+    def burn_fw(self, fw, fpga, reset, safe, check_rev=True, erase=False):
         (flash_size, sector_size) = self.get_flash_info()
         hw_rev = self.get_hw_rev()
 
         if n2xx_revs.has_key(hw_rev): print("Hardware type: %s" % n2xx_revs[hw_rev][0][0])
         print("Flash size: %i\nSector size: %i\n" % (flash_size, sector_size))
+
+        if erase:
+            if fpga is not None:
+                hw_const = n2xx_revs[hw_rev][1]
+
+                if safe: image_location = hw_const.SAFE_FPGA_IMAGE_LOCATION_ADDR
+                else:    image_location = hw_const.PROD_FPGA_IMAGE_LOCATION_ADDR
+
+                print("Begin FPGA erase: this should take about 5 seconds...")
+                start_time = time.time()
+                self.erase_image(image_location, hw_const.FPGA_IMAGE_SIZE_BYTES)
+                print("Time elapsed: %f seconds"%(time.time() - start_time))
+                print("\n\n")
+
+            if fw is not None:
+                hw_const = n2xx_revs[hw_rev][1]
+
+                if safe: image_location = hw_const.SAFE_FW_IMAGE_LOCATION_ADDR
+                else:    image_location = hw_const.PROD_FW_IMAGE_LOCATION_ADDR
+
+                print("Begin firmware erase: this should take about 1 second...")
+                start_time = time.time()
+                self.erase_image(image_location, hw_const.FW_IMAGE_SIZE_BYTES)
+                print("Time elapsed: %f seconds"%(time.time() - start_time))
+                print("\n\n")
+
+            return
 
         if fpga:
             #validate fpga image name against hardware rev
@@ -484,6 +511,7 @@ def get_options():
     parser.add_option("--fpga", type="string",                 help="fpga image path (optional)",     default='')
     parser.add_option("--reset", action="store_true",          help="reset the device after writing", default=False)
     parser.add_option("--read", action="store_true",           help="read to file instead of write from file", default=False)
+    parser.add_option("--erase", action="store_true",          help="erase appropriate part of the flash, do not write anything", default=False)
     parser.add_option("--overwrite-safe", action="store_true", help="never ever use this option", default=False)
     parser.add_option("--dont-check-rev", action="store_true", help="disable revision checks", default=False)
     parser.add_option("--list", action="store_true",           help="list possible network devices", default=False)
@@ -504,7 +532,9 @@ if __name__=='__main__':
 
     if not options.addr: raise Exception('no address specified')
 
-    if not options.fpga and not options.fw and not options.reset: raise Exception('Must specify either a firmware image or FPGA image, and/or reset.')
+    if options.erase and (options.fpga is None and options.fw is None):
+        raise Exception('Must specify either a firmware image or FPGA image to erase.')
+    elif not options.fpga and not options.fw and not options.reset: raise Exception('Must specify either a firmware image or FPGA image, and/or reset.')
 
     if options.overwrite_safe and not options.read:
         print("Are you REALLY, REALLY sure you want to overwrite the safe image? This is ALMOST ALWAYS a terrible idea.")
@@ -536,4 +566,4 @@ if __name__=='__main__':
             addr = hw_const.SAFE_FPGA_IMAGE_LOCATION_ADDR if options.overwrite_safe else hw_const.PROD_FPGA_IMAGE_LOCATION_ADDR
             burner.read_image(file, size, addr)
 
-    else: burner.burn_fw(fw=options.fw, fpga=options.fpga, reset=options.reset, safe=options.overwrite_safe, check_rev=not options.dont_check_rev)
+    else: burner.burn_fw(fw=options.fw, fpga=options.fpga, reset=options.reset, safe=options.overwrite_safe, check_rev=not options.dont_check_rev, erase=options.erase)
