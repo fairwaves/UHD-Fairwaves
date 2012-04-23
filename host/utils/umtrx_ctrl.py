@@ -69,7 +69,7 @@ def recv_item(skt, fmt, chk, ind):
     try:
         pkt = skt.recv(UDP_MAX_XFER_BYTES)
         pkt_list = unpack_format(pkt, fmt)
-#        print("Received %d bytes: %x, '%c', %x, %s" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2], pkt_list[3]))
+#        print("Received %d bytes: %x, '%c', %x" % (len(pkt), pkt_list[0], pkt_list[1], pkt_list[2]))
         if pkt_list[1] != chk:
             return None
         return pkt_list[ind]
@@ -78,9 +78,9 @@ def recv_item(skt, fmt, chk, ind):
 
 def ping(skt, addr):
     skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_WAZZUP_BRO, 0)
+    out_pkt = pack_control_fmt(USRP2_CONTROL_PROTO_VERSION, UMTRX_CTRL_ID_REQUEST, 0)
     skt.sendto(out_pkt, (addr, UDP_CONTROL_PORT))
-    return recv_item(skt, CONTROL_FMT, USRP2_CTRL_ID_WAZZUP_DUDE, 1)
+    return recv_item(skt, CONTROL_FMT, UMTRX_CTRL_ID_RESPONSE, 1)
 
 def detect(skt, bcast_addr):
 #    print('Detecting UmTRX over %s:' % bcast_addr)
