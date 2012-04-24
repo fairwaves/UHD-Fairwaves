@@ -89,7 +89,7 @@ module vita_tx_control
 
    wire [31:0] error_policy;
    setting_reg #(.my_addr(BASE+3)) sr_error_policy
-     (.clk(clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
+     (.clk(dac_clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(error_policy),.changed());
 
    wire        policy_wait = error_policy[0];

@@ -55,19 +55,18 @@ module vita_tx_chain
    assign message = error_code;
    
    setting_reg #(.my_addr(BASE_CTRL+1)) sr
-     (.clk(clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
+     (.clk(dac_clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(),.changed(clear_vita));
 
    setting_reg #(.my_addr(BASE_CTRL+2), .at_reset(0)) sr_streamid
-     (.clk(clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
+     (.clk(dac_clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(streamid),.changed(clear_seqnum));
 
    vita_tx_deframer #(.BASE(BASE_CTRL), 
 		      .MAXCHAN(MAXCHAN), 
 		      .USE_TRANS_HEADER(USE_TRANS_HEADER)) 
    vita_tx_deframer
-     (.clk(clk), .reset(reset), .clear(clear_vita), .clear_seqnum(clear_seqnum),
-      .dac_clk(dac_clk),
+     (.clk(dac_clk), .reset(reset), .clear(clear_vita), .clear_seqnum(clear_seqnum),
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .data_i(tx_data_i), .src_rdy_i(tx_src_rdy_i), .dst_rdy_o(tx_dst_rdy_o),
       .sample_fifo_o(tx1_data), .sample_fifo_src_rdy_o(tx1_src_rdy), .sample_fifo_dst_rdy_i(tx1_dst_rdy),
@@ -84,8 +83,7 @@ module vita_tx_chain
       .debug(debug_vtc) );
    
    dsp_core_tx #(.BASE(BASE_DSP)) dsp_core_tx
-     (.clk(clk),.rst(reset),
-      .dac_clk(dac_clk),
+     (.clk(dac_clk),.rst(reset),
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .sample(sample_tx), .run(run), .strobe(strobe_tx),
       .tx_i(tx_i),.tx_q(tx_q),

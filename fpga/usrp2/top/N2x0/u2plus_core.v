@@ -527,6 +527,14 @@ module u2plus_core
    settings_bus_crossclock settings_bus_crossclock
      (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
       .clk_o(dsp_clk), .rst_o(dsp_rst), .set_stb_o(set_stb_dsp), .set_addr_o(set_addr_dsp), .set_data_o(set_data_dsp));
+`ifdef LMS_DSP
+   wire [7:0] 	set_addr_dsp_low;
+   wire [31:0] set_data_dsp_low;
+   wire set_stb_dsp_low;
+   settings_bus_crossclock settings_bus_dsp_crossclock
+     (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
+      .clk_o(lms_clk), .rst_o(), .set_stb_o(set_stb_dsp_low), .set_addr_o(set_addr_dsp_low), .set_data_o(set_data_dsp_low));
+`endif // !`ifdef LMS_DSP
    
    // Output control lines
    wire [7:0] 	 clock_outs, serdes_outs, adc_outs;
@@ -765,10 +773,11 @@ module u2plus_core
      (.clk(dsp_clk), .reset(dsp_rst),
 `ifndef LMS_DSP
      .dac_clk(dsp_clk),
+      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
 `else
      .dac_clk(lms_clk),
+      .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
 `endif // !`ifndef LMS_DSP
-      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .vita_time(vita_time),
       .tx_data_i(tx_data), .tx_src_rdy_i(tx_src_rdy), .tx_dst_rdy_o(tx_dst_rdy),
       .err_data_o(tx_err_data), .err_src_rdy_o(tx_err_src_rdy), .err_dst_rdy_i(tx_err_dst_rdy),
@@ -777,13 +786,14 @@ module u2plus_core
       .debug(debug_vt));
 
    tx_frontend #(.BASE(SR_TX_FRONT)) tx_frontend
-     (.clk(dsp_clk), .rst(dsp_rst),
+     (
 `ifndef LMS_DSP
-     .dac_clk(dsp_clk),
-`else
-     .dac_clk(lms_clk),
-`endif // !`ifndef LMS_DSP
+     .clk(dsp_clk), .rst(dsp_rst),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
+`else
+     .clk(lms_clk), .rst(dsp_rst),
+      .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
+`endif // !`ifndef LMS_DSP
       .tx_i(tx_i), .tx_q(tx_q), .run(1'b1),
       .dac_a(dac_a), .dac_b(dac_b));
          

@@ -8,7 +8,6 @@ module tx_frontend
 `endif // !`ifndef LMS602D_FRONTEND
     parameter IQCOMP_EN=1)
    (input clk, input rst,
-    input dac_clk,
     input set_stb, input [7:0] set_addr, input [31:0] set_data,
     input [23:0] tx_i, input [23:0] tx_q, input run,
     output reg [WIDTH_OUT-1:0] dac_a, output reg [WIDTH_OUT-1:0] dac_b
@@ -48,55 +47,55 @@ module tx_frontend
 	begin
 	   // IQ Balance
 	   MULT18X18S mult_mag_corr
-	     (.P(corr_i), .A(tx_i[23:6]), .B(mag_corr), .C(dac_clk), .CE(1), .R(rst) );
+	     (.P(corr_i), .A(tx_i[23:6]), .B(mag_corr), .C(clk), .CE(1), .R(rst) );
 	   
 	   MULT18X18S mult_phase_corr
-	     (.P(corr_q), .A(tx_i[23:6]), .B(phase_corr), .C(dac_clk), .CE(1), .R(rst) );
+	     (.P(corr_q), .A(tx_i[23:6]), .B(phase_corr), .C(clk), .CE(1), .R(rst) );
 	   
 	   add2_and_clip_reg #(.WIDTH(24)) add_clip_i
-	     (.clk(dac_clk), .rst(rst),
+	     (.clk(clk), .rst(rst),
 	      .in1(tx_i), .in2(corr_i[35:12]), .strobe_in(1'b1),
 	      .sum(i_bal), .strobe_out());
 	   
 	   add2_and_clip_reg #(.WIDTH(24)) add_clip_q
-	     (.clk(dac_clk), .rst(rst),
+	     (.clk(clk), .rst(rst),
 	      .in1(tx_q), .in2(corr_q[35:12]), .strobe_in(1'b1),
 	      .sum(q_bal), .strobe_out());
 
 	   // DC Offset
 	   add2_and_clip_reg #(.WIDTH(24)) add_dco_i
-	     (.clk(dac_clk), .rst(rst), .in1(i_dco), .in2(i_bal), .strobe_in(1'b1), .sum(i_ofs), .strobe_out());
+	     (.clk(clk), .rst(rst), .in1(i_dco), .in2(i_bal), .strobe_in(1'b1), .sum(i_ofs), .strobe_out());
 	   
 	   add2_and_clip_reg #(.WIDTH(24)) add_dco_q
-	     (.clk(dac_clk), .rst(rst), .in1(q_dco), .in2(q_bal), .strobe_in(1'b1), .sum(q_ofs), .strobe_out());
+	     (.clk(clk), .rst(rst), .in1(q_dco), .in2(q_bal), .strobe_in(1'b1), .sum(q_ofs), .strobe_out());
 	end // if (IQCOMP_EN==1)
       else
 	begin
 	   // DC Offset
 	   add2_and_clip_reg #(.WIDTH(24)) add_dco_i
-	     (.clk(dac_clk), .rst(rst), .in1(i_dco), .in2(tx_i), .strobe_in(1'b1), .sum(i_ofs), .strobe_out());
+	     (.clk(clk), .rst(rst), .in1(i_dco), .in2(tx_i), .strobe_in(1'b1), .sum(i_ofs), .strobe_out());
 	   
 	   add2_and_clip_reg #(.WIDTH(24)) add_dco_q
-	     (.clk(dac_clk), .rst(rst), .in1(q_dco), .in2(tx_q), .strobe_in(1'b1), .sum(q_ofs), .strobe_out());
+	     (.clk(clk), .rst(rst), .in1(q_dco), .in2(tx_q), .strobe_in(1'b1), .sum(q_ofs), .strobe_out());
 	end // else: !if(IQCOMP_EN==1)
    endgenerate
    
    // Rounding
    round_sd #(.WIDTH_IN(24),.WIDTH_OUT(WIDTH_OUT)) round_i
-     (.clk(dac_clk), .reset(rst), .in(i_ofs),.strobe_in(1'b1), .out(i_final), .strobe_out());
+     (.clk(clk), .reset(rst), .in(i_ofs),.strobe_in(1'b1), .out(i_final), .strobe_out());
 
    round_sd #(.WIDTH_IN(24),.WIDTH_OUT(WIDTH_OUT)) round_q
-     (.clk(dac_clk), .reset(rst), .in(q_ofs),.strobe_in(1'b1), .out(q_final), .strobe_out());
+     (.clk(clk), .reset(rst), .in(q_ofs),.strobe_in(1'b1), .out(q_final), .strobe_out());
 
    // Mux
-   always @(posedge dac_clk)
+   always @(posedge clk)
      case(mux_ctrl[3:0])
        0 : dac_a <= i_final;
        1 : dac_a <= q_final;
        default : dac_a <= 0;
      endcase // case (mux_ctrl[3:0])
       
-   always @(posedge dac_clk)
+   always @(posedge clk)
      case(mux_ctrl[7:4])
        0 : dac_b <= i_final;
        1 : dac_b <= q_final;

@@ -19,7 +19,6 @@
 module dsp_core_tx
   #(parameter BASE=0)
   (input clk, input rst,
-   input dac_clk,
    input set_stb, input [7:0] set_addr, input [31:0] set_data,
 
    output [23:0] tx_i, output [23:0] tx_q,
@@ -58,21 +57,21 @@ module dsp_core_tx
    reg 	       strobe_hb2 = 1;
    
    cic_strober #(.WIDTH(8))
-     cic_strober(.clock(dac_clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
+     cic_strober(.clock(clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
 		 .strobe_fast(1),.strobe_slow(strobe_cic_pre) );
    cic_strober #(.WIDTH(2))
-     hb2_strober(.clock(dac_clk),.reset(rst),.enable(run & ~rate_change),.rate(enable_hb2 ? 2 : 1),
+     hb2_strober(.clock(clk),.reset(rst),.enable(run & ~rate_change),.rate(enable_hb2 ? 2 : 1),
 		 .strobe_fast(strobe_cic_pre),.strobe_slow(strobe_hb2_pre) );
    cic_strober #(.WIDTH(2))
-     hb1_strober(.clock(dac_clk),.reset(rst),.enable(run & ~rate_change),.rate(enable_hb1 ? 2 : 1),
+     hb1_strober(.clock(clk),.reset(rst),.enable(run & ~rate_change),.rate(enable_hb1 ? 2 : 1),
 		 .strobe_fast(strobe_hb2_pre),.strobe_slow(strobe_hb1_pre) );
    
-   always @(posedge dac_clk) strobe_hb1 <= strobe_hb1_pre;
-   always @(posedge dac_clk) strobe_hb2 <= strobe_hb2_pre;
-   always @(posedge dac_clk) strobe_cic <= strobe_cic_pre;
+   always @(posedge clk) strobe_hb1 <= strobe_hb1_pre;
+   always @(posedge clk) strobe_hb2 <= strobe_hb2_pre;
+   always @(posedge clk) strobe_cic <= strobe_cic_pre;
 
    // NCO
-   always @(posedge dac_clk)
+   always @(posedge clk)
      if(rst)
        phase <= 0;
      else if(~run)
@@ -94,24 +93,24 @@ module dsp_core_tx
    //   but the default case inside hb_interp handles this
    
    hb_interp #(.IWIDTH(18),.OWIDTH(18),.ACCWIDTH(24)) hb_interp_i
-     (.clk(dac_clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in(bb_i),.stb_out(strobe_hb2),.data_out(hb1_i));
+     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in(bb_i),.stb_out(strobe_hb2),.data_out(hb1_i));
    hb_interp #(.IWIDTH(18),.OWIDTH(18),.ACCWIDTH(24)) hb_interp_q
-     (.clk(dac_clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in(bb_q),.stb_out(strobe_hb2),.data_out(hb1_q));
+     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in(bb_q),.stb_out(strobe_hb2),.data_out(hb1_q));
    
    small_hb_int #(.WIDTH(18)) small_hb_interp_i
-     (.clk(dac_clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_i),
+     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_i),
       .output_rate(interp_rate),.stb_out(strobe_cic),.data_out(hb2_i));
    small_hb_int #(.WIDTH(18)) small_hb_interp_q
-     (.clk(dac_clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_q),
+     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_q),
       .output_rate(interp_rate),.stb_out(strobe_cic),.data_out(hb2_q));
    
    cic_interp  #(.bw(18),.N(4),.log2_of_max_rate(7))
-     cic_interp_i(.clock(dac_clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
+     cic_interp_i(.clock(clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
 		  .strobe_in(strobe_cic),.strobe_out(1),
 		  .signal_in(hb2_i),.signal_out(i_interp));
    
    cic_interp  #(.bw(18),.N(4),.log2_of_max_rate(7))
-     cic_interp_q(.clock(dac_clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
+     cic_interp_q(.clock(clk),.reset(rst),.enable(run & ~rate_change),.rate(interp_rate),
 		  .strobe_in(strobe_cic),.strobe_out(1),
 		  .signal_in(hb2_q),.signal_out(q_interp));
 
@@ -123,7 +122,7 @@ module dsp_core_tx
    wire [cwidth-1:0] da_c, db_c;
    
    cordic_z24 #(.bitwidth(cwidth))
-     cordic(.clock(dac_clk), .reset(rst), .enable(run),
+     cordic(.clock(clk), .reset(rst), .enable(run),
 	    .xi({i_interp,{(cwidth-18){1'b0}}}),.yi({q_interp,{(cwidth-18){1'b0}}}),
 	    .zi(phase[31:32-zwidth]),
 	    .xo(da_c),.yo(db_c),.zo() );
@@ -132,7 +131,7 @@ module dsp_core_tx
      (.P(prod_i),    // 36-bit multiplier output
       .A(da_c[cwidth-1:cwidth-18]),    // 18-bit multiplier input
       .B({{2{scale_i[15]}},scale_i}),    // 18-bit multiplier input
-      .C(dac_clk),    // Clock input
+      .C(clk),    // Clock input
       .CE(1),  // Clock enable input
       .R(rst)     // Synchronous reset input
       );
@@ -141,7 +140,7 @@ module dsp_core_tx
      (.P(prod_q),    // 36-bit multiplier output
       .A(db_c[cwidth-1:cwidth-18]),    // 18-bit multiplier input
       .B({{2{scale_q[15]}},scale_q}),    // 18-bit multiplier input
-      .C(dac_clk),    // Clock input
+      .C(clk),    // Clock input
       .CE(1),  // Clock enable input
       .R(rst)     // Synchronous reset input
       );
