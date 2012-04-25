@@ -94,7 +94,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double rx_l
 int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::string args;
     double tx_wave_ampl, tx_offset;
-    double freq_start, freq_stop, freq_step;
+    double freq_start, freq_stop, freq_step, compl_i, compl_q, polar_i, polar_q;
     size_t nsamps;
 
     po::options_description desc("Allowed options");
@@ -104,6 +104,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
         ("tx_offset", po::value<double>(&tx_offset)->default_value(.9344e6), "TX LO offset from the RX LO in Hz")
+	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
+        ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
+	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
+        ("polar_q", po::value<double>(&polar_q), "Enforced correction for Q (polar)")
         ("freq_start", po::value<double>(&freq_start), "Frequency start in Hz (do not specify for default)")
         ("freq_stop", po::value<double>(&freq_stop), "Frequency stop in Hz (do not specify for default)")
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
@@ -127,6 +131,20 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
+    //apply manual corrections
+    if (vm.count("compl_i") and vm.count("compl_q")) {
+	std::cout << "Applying complex I/Q corrections <" << compl_i << ", " << compl_q << ">...";
+	usrp->set_rx_iq_balance(std::complex<double>(compl_i, compl_q));
+	std::cout << "done. Exit.\n";
+	return 0;
+    }
+    if (vm.count("polar_i") and vm.count("polar_q")) {
+	std::cout << "Applying polar I/Q corrections <" << polar_i << ", " << polar_q << ">...";
+	usrp->set_rx_iq_balance(std::polar<double>(polar_i, polar_q));
+	std::cout << "done. Exit.\n";
+	return 0;
+    }
 
     //set the antennas to cal
     if (not uhd::has(usrp->get_rx_antennas(), "CAL") or not uhd::has(usrp->get_tx_antennas(), "CAL")){

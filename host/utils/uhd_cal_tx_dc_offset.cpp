@@ -27,6 +27,7 @@
 #include <boost/math/special_functions/round.hpp>
 #include <iostream>
 #include <complex>
+#include <cmath>
 #include <ctime>
 
 namespace po = boost::program_options;
@@ -96,7 +97,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
 int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::string args;
     double tx_wave_freq, tx_wave_ampl, rx_offset;
-    double freq_start, freq_stop, freq_step;
+    double freq_start, freq_stop, freq_step, compl_i, compl_q, polar_i, polar_q;
     size_t nsamps;
 
     po::options_description desc("Allowed options");
@@ -107,6 +108,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(507.123e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
         ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
+	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
+        ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
+	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
+        ("polar_q", po::value<double>(&polar_q), "Enforced correction for Q (polar)")
         ("freq_start", po::value<double>(&freq_start), "Frequency start in Hz (do not specify for default)")
         ("freq_stop", po::value<double>(&freq_stop), "Frequency stop in Hz (do not specify for default)")
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
@@ -130,6 +135,20 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
+    //apply manual corrections
+    if (vm.count("compl_i") and vm.count("compl_q")) {
+	std::cout << "Applying complex I/Q corrections <" << compl_i << ", " << compl_q << ">...";
+	usrp->set_tx_dc_offset(std::complex<double>(compl_i, compl_q));
+	std::cout << "done. Exit.\n";
+	return 0;
+    }
+    if (vm.count("polar_i") and vm.count("polar_q")) {
+	std::cout << "Applying polar I/Q corrections <" << polar_i << ", " << polar_q << ">...";
+	usrp->set_tx_dc_offset(std::polar<double>(polar_i, polar_q));
+	std::cout << "done. Exit.\n";
+	return 0;
+    }
 
     //set the antennas to cal
     if (not uhd::has(usrp->get_rx_antennas(), "CAL") or not uhd::has(usrp->get_tx_antennas(), "CAL")){
