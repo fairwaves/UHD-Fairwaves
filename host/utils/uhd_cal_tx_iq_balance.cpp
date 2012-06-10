@@ -97,7 +97,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
 int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::string args;
     double tx_wave_freq, tx_wave_ampl, rx_offset;
-    double freq_start, freq_stop, freq_step, compl_i, compl_q, polar_i, polar_q;
+    double freq_start, freq_stop, freq_step, compl_i, compl_q, polar_mag, polar_phase;
     size_t nsamps;
 
     po::options_description desc("Allowed options");
@@ -110,8 +110,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
 	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
         ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
-	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
-        ("polar_q", po::value<double>(&polar_q), "Enforced correction for Q (polar)")
+	("polar_mag", po::value<double>(&polar_mag), "Enforced correction, magnitude (polar)")
+        ("polar_phase", po::value<double>(&polar_phase), "Enforced correction, phase (polar)")
         ("freq_start", po::value<double>(&freq_start), "Frequency start in Hz (do not specify for default)")
         ("freq_stop", po::value<double>(&freq_stop), "Frequency stop in Hz (do not specify for default)")
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
@@ -143,9 +143,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	std::cout << "done. Exit.\n";
 	return 0;
     }
-    if (vm.count("polar_i") and vm.count("polar_q")) {
-	std::cout << "Applying polar I/Q corrections <" << polar_i << ", " << polar_q << ">...";
-	usrp->set_tx_iq_balance(std::polar<double>(polar_i, polar_q));
+    if (vm.count("polar_mag") and vm.count("polar_phase")) {
+	std::cout << "Applying polar I/Q corrections <" << polar_mag << ", " << polar_phase << ">...";
+	usrp->set_tx_iq_balance(std::polar<double>(polar_mag, polar_phase));
 	std::cout << "done. Exit.\n";
 	return 0;
     }
