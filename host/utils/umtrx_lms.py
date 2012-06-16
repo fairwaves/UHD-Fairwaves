@@ -51,7 +51,9 @@ def select_freq(freq): # test if given freq within the range and return correspo
     l = list(filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST))
     return l[0][2] if len(l) else None
 
-def lms_pll_tune(lms_dev, ref_clock, out_freq):
+def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
+    """ Tune Tx or RX PLL to a given frequency. Which PLL to tune is selected by
+        base_reg parameter: pass 0x10 for TX and 0x20 for RX. """
     freqsel = select_freq(out_freq)
     if freqsel is None:
         print("Error: Output frequency is out of range")
@@ -63,23 +65,23 @@ def lms_pll_tune(lms_dev, ref_clock, out_freq):
     print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
 
     # Write NINT, NFRAC
-    lms_dev.reg_write(0x10, (nint >> 1) & 0xff) # NINT[8:1]
-    lms_dev.reg_write(0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)) # NINT[0] NFRACK[22:16]
-    lms_dev.reg_write(0x12, (nfrack >> 8) & 0xff) # NFRACK[15:8]
-    lms_dev.reg_write(0x13, (nfrack) & 0xff) # NFRACK[7:0]
+    lms_dev.reg_write(base_reg+0x0, (nint >> 1) & 0xff) # NINT[8:1]
+    lms_dev.reg_write(base_reg+0x1, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)) # NINT[0] NFRACK[22:16]
+    lms_dev.reg_write(base_reg+0x2, (nfrack >> 8) & 0xff) # NFRACK[15:8]
+    lms_dev.reg_write(base_reg+0x3, (nfrack) & 0xff) # NFRACK[7:0]
     # Write FREQSEL
-    lms_dev.reg_write(0x15, (freqsel << 2) | 0x01) # FREQSEL[5:0] SELOUT[1:0]
+    lms_dev.reg_write(base_reg+0x5, (freqsel << 2) | 0x01) # FREQSEL[5:0] SELOUT[1:0]
     # Reset VOVCOREG, OFFDOWN to default
-    lms_dev.reg_write(0x18, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
-    lms_dev.reg_write(0x19, 0x94) # VOVCOREG[0] VCOCAP[5:0]
+    lms_dev.reg_write(base_reg+0x8, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
+    lms_dev.reg_write(base_reg+0x9, 0x94) # VOVCOREG[0] VCOCAP[5:0]
 
     # Poll VOVCO
     start_i = -1
     stop_i = -1
     state = VCO_HIGH
     for i in range(0, 64):
-        lms_dev.reg_write(0x19, 0x80 | i)
-        comp = lms_dev.reg_read(0x1a)
+        lms_dev.reg_write(base_reg+0x9, 0x80 | i)
+        comp = lms_dev.reg_read(base_reg+0xa)
         if comp is None:
             return False
         vcocap = comp >> 6
@@ -106,8 +108,16 @@ def lms_pll_tune(lms_dev, ref_clock, out_freq):
     # Tune to the middle of the found VCOCAP range
     avg_i = int((start_i + stop_i) / 2)
     print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
-    lms_dev.reg_write(0x19, 0x80 | avg_i)
+    lms_dev.reg_write(base_reg+0x9, 0x80 | avg_i)
     return True
+
+def lms_tx_pll_tune(lms_dev, ref_clock, out_freq):
+    """ Tune TX PLL to a given frequency. """
+    return lms_txrx_pll_tune(lms_dev, 0x10, ref_clock, out_freq)
+
+def lms_rx_pll_tune(lms_dev, ref_clock, out_freq):
+    """ Tune TX PLL to a given frequency. """
+    return lms_txrx_pll_tune(lms_dev, 0x20, ref_clock, out_freq)
 
 def lms_init(lms_dev):
     """ INIT with default values (taken from the LMS EVB software)"""
@@ -358,7 +368,7 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
 
     # Enable TxPLL and set toProduce 320MHz
     lms_tx_enable(lms_dev)
-    lms_pll_tune(lms_dev, ref_clock, int(320e6))
+    lms_tx_pll_tune(lms_dev, ref_clock, int(320e6))
 
     # Use 40MHz generatedFrom TxPLL: TopSPI::CLKSEL_LPFCAL := 0
     # Power Up LPF tuning clock generation block: TopSPI::PD_CLKLPFCAL := 0
@@ -427,6 +437,7 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
     adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
     adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
+    adv_opt.add_argument('--lms-rx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Rx PLL to the given frequency')
     adv_opt.add_argument('--lms-set-vga1-gain', type = int, choices = range(-35, -3), metavar = '[-35..-4]', help = 'Set VGA1 gain, in dB')
     adv_opt.add_argument('--lms-get-vga1-gain', action = 'store_true', help = 'Get VGA1 gain, in dB')
     adv_opt.add_argument('--lms-set-vga2-gain', type = int, choices = range(0, 26), metavar = '[0..25]', help = 'Set VGA2 gain, in dB')
@@ -435,7 +446,8 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-tune-vga1-dc-q', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, Q channel')
     args = parser.parse_args()
     if args.lms is None: # argparse do not have dependency concept for options
-        if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None or args.lms_init \
+        if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None \
+           or args.lms_rx_pll_tune is not None or args.lms_init \
            or args.lms_pa_off or args.lms_pa_on is not None \
            or args.lms_lpf_tuning_dc_calibration or args.lms_tx_lpf_dc_calibration \
            or args.lms_rx_lpf_dc_calibration or args.lms_rxvga2_dc_calibration \
@@ -448,6 +460,9 @@ if __name__ == '__main__':
     if args.lms_tx_pll_tune is not None:
         if not 232.5e6 < args.lms_tx_pll_tune <= 3720e6:
             exit('<lms-tx-pll-tune> is out of range 232.5e6..3720e6')
+    if args.lms_rx_pll_tune is not None:
+        if not 232.5e6 < args.lms_rx_pll_tune <= 3720e6:
+            exit('<lms-rx-pll-tune> is out of range 232.5e6..3720e6')
     if args.lms_init:
         if args.reg is not None:
             exit('--reg makes no sense with --lms-init, aborting.')
@@ -490,7 +505,9 @@ if __name__ == '__main__':
             elif args.lms_pa_off:
                 lms_pa_off(umtrx_lms_dev)
             elif args.lms_tx_pll_tune is not None:
-                lms_pll_tune(umtrx_lms_dev, int(args.pll_ref_clock), int(args.lms_tx_pll_tune))
+                lms_tx_pll_tune(umtrx_lms_dev, int(args.pll_ref_clock), int(args.lms_tx_pll_tune))
+            elif args.lms_rx_pll_tune is not None:
+                lms_rx_pll_tune(umtrx_lms_dev, int(args.pll_ref_clock), int(args.lms_rx_pll_tune))
             elif args.lms_lpf_bandwidth_tuning:
                 # 0x0f - 0.75MHz
                 lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
