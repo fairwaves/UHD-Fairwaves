@@ -411,6 +411,14 @@ def lms_auto_calibration(lms_dev, ref_clock, lpf_bandwidth_code):
     lms_set_vga1gain(lms_dev, vga1gain)
     lms_set_vga2gain(lms_dev, vga2gain)
 
+def enable_loopback(lms_dev):
+    """ Enable loopback"""
+    lms_dev.reg_set_bits(0x35, (76)) # 
+    lms_dev.reg_set_bits(0x64, (28)) # power off RXVGA2
+    lms_dev.reg_set_bits(0x09, (192)) # RXOUTSW is closed
+    lms_dev.reg_set_bits(0x46, (1 << 2))
+    lms_dev.reg_set_bits(0x08, (1 << 4)) # LBEN_OPIN switched on
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'UmTRX LMS debugging tool.', epilog = "UmTRX is detected via broadcast unless explicit address is specified via --umtrx-addr option. 'None' returned while reading\writing indicates error in the process.")
     parser.add_argument('--version', action='version', version='%(prog)s 3.1')
@@ -444,6 +452,7 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-get-vga2-gain', action = 'store_true', help = 'Get VGA2 gain, in dB')
     adv_opt.add_argument('--lms-tune-vga1-dc-i', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, I channel')
     adv_opt.add_argument('--lms-tune-vga1-dc-q', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, Q channel')
+    adv_opt.add_argument('--enable-loopback', action = 'store_true', help = 'enable loopback')
     args = parser.parse_args()
     if args.lms is None: # argparse do not have dependency concept for options
         if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None \
@@ -539,6 +548,8 @@ if __name__ == '__main__':
                     print('written 0x%02X to REG 0x%02X - %s' % (vrfy, args.reg, 'OK' if vrfy == args.data else 'FAIL'))
             elif args.reg is not None:
                 print('read 0x%02X from REG 0x%02X' % (umtrx_lms_dev.reg_read(args.reg), args.reg))
+            elif args.enable_loopback:
+                enable_loopback(umtrx_lms_dev)
             elif args.lms:
                 lms_regs = dump(umtrx_lms_dev)
                 print('LMS %u' % args.lms)

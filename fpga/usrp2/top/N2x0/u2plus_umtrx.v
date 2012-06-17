@@ -120,7 +120,7 @@ module u2plus_umtrx
 `endif // !`ifndef UMTRX
       
    // FPGA-specific pins connections
-   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, clock_ready;
+   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, lms_clk, clock_ready;
 
 `ifndef UMTRX
    IBUFGDS clk_fpga_pin (.O(clk_fpga),.I(CLK_FPGA_P),.IB(CLK_FPGA_N));
@@ -186,21 +186,21 @@ module u2plus_umtrx
    assign RX1_EN = 1'b1;
    assign RX2_EN = 1'b1;
 
-   always @(posedge dsp_clk)
+   always @(posedge lms_clk)
      begin
          LMS1nRST = 1'b1;
          if (RX1IQSEL == 1'b0)
-            adc_a_0 = {2'b00, RX1D}; //ADC_I signal
+            adc_a_0 = {RX1D, 2'b00}; //ADC_I signal
          else
-            adc_b_0 <= {2'b00, RX1D}; // ADC_Q signal
+            adc_b_0 <= {RX1D, 2'b00}; // ADC_Q signal
      end
-   always @(posedge dsp_clk)
+   always @(posedge lms_clk)
      begin
          LMS2nRST = 1'b1;
          if (RX2IQSEL == 1'b0)
-            adc_a_1 = {2'b00, RX2D}; //ADC_I signal
+            adc_a_1 = {RX2D, 2'b00}; //ADC_I signal
          else
-            adc_b_1 <= {2'b00, RX2D}; // ADC_Q signal
+            adc_b_1 <= {RX2D, 2'b00}; // ADC_Q signal
      end
 `endif // !`ifndef LMS602D_FRONTEND
    
@@ -256,6 +256,7 @@ module u2plus_umtrx
     .clk270_100(clk270_100_buf),     // OUT 104 MHz
     .clk_fpga(clk_fpga),     // OUT 104 MHz
     .clk_icap(clk_icap),     // OUT 13 MHz, 180 deg 
+    .lms_clk(lms_clk),     // OUT 26 MHz
     // Status and control signals
     .LOCKED_OUT(LOCKED_OUT));      // OUT
 
@@ -408,7 +409,7 @@ module u2plus_umtrx
 
    
    
-   wire [15:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
+   wire [11:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
 `ifndef LMS602D_FRONTEND
    // DAC A and B are swapped in schematic to facilitate clean layout
    // DAC A is also inverted in schematic to facilitate clean layout
@@ -421,7 +422,7 @@ module u2plus_umtrx
    assign TX2EN = 1'b1;
 
    reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
-   always @(negedge dsp_clk)
+   always @(negedge lms_clk)
    begin
       dsp_clk_div2_tx = ~dsp_clk_div2_tx;
       if (dsp_clk_div2_tx)
@@ -451,6 +452,7 @@ module u2plus_umtrx
    
    u2plus_core u2p_c(.dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
+		     .lms_clk  (clk_icap),
 		     .clk_icap		(clk_icap),
 		     .clock_ready       (clock_ready),
 		     .clk_to_mac	(CLK_TO_MAC_int2),
@@ -533,8 +535,8 @@ module u2plus_umtrx
 		     .adc_on_b_1		(),
 		     .adc_oe_b_1		(),
 `endif // !`ifndef LMS602D_FRONTEND
-		     .dac_a		(dac_a_int1[15:0]),
-		     .dac_b		(dac_b_int1[15:0]),
+		     .dac_a		(dac_a_int1),
+		     .dac_b		(dac_b_int1),
 		     .scl_pad_i		(scl_pad_i),
 		     .scl_pad_o		(scl_pad_o),
 		     .scl_pad_oen_o	(scl_pad_oen_o),

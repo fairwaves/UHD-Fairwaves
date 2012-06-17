@@ -20,6 +20,7 @@ module vita_tx_control
   #(parameter BASE=0,
     parameter WIDTH=32)
    (input clk, input reset, input clear,
+    input dac_clk,
     input set_stb, input [7:0] set_addr, input [31:0] set_data,
     
     input [63:0] vita_time,
@@ -58,13 +59,13 @@ module vita_tx_control
 
    reg 	       late_qual, late_del;
 
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear)
        late_del <= 0;
      else
        late_del <= late;
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear)
        late_qual <= 0;
      else
@@ -88,7 +89,7 @@ module vita_tx_control
 
    wire [31:0] error_policy;
    setting_reg #(.my_addr(BASE+3)) sr_error_policy
-     (.clk(clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
+     (.clk(dac_clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(error_policy),.changed());
 
    wire        policy_wait = error_policy[0];
@@ -96,7 +97,7 @@ module vita_tx_control
    wire        policy_next_burst = error_policy[2];
    reg 	       send_error, send_ack;
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear)
        begin
 	  ibs_state <= IBS_IDLE;
@@ -192,11 +193,16 @@ module vita_tx_control
    assign error = send_error;
    assign ack = send_ack;
 
+`ifndef LMS602D_FRONTEND
    localparam MAX_IDLE = 1000000; 
    // approx 10 ms timeout with a 100 MHz clock, but burning samples will slow that down
+`else
+   localparam MAX_IDLE = 130000; 
+   // approx 10 ms timeout with a 13 MHz clock, but burning samples will slow that down
+`endif // !`ifndef LMS602D_FRONTEND
    reg [19:0] countdown;
    
-   always @(posedge clk)
+   always @(posedge dac_clk)
      if(reset | clear)
        begin
 	  run <= 0;
