@@ -46,4 +46,5 @@ SET(COMMON_SRCS
     ${CMAKE_SOURCE_DIR}/lib/arp_cache.c
     ${CMAKE_SOURCE_DIR}/lib/banal.c
     ${CMAKE_SOURCE_DIR}/lib/udp_uart.c
+    ${CMAKE_SOURCE_DIR}/lib/gpsdo.c
 )
