@@ -96,11 +96,13 @@ def detect(skt, bcast_addr):
 class umtrx_dev_spi:
     """ A class for talking to a device sitting on the SPI bus of UmTRX """
 
-    def __init__(self, umtrx_socket, net_address, spi_bus_number):
+    def __init__(self, umtrx_socket, net_address, spi_bus_number, out_edge=SPI_EDGE_RISE, in_edge=SPI_EDGE_RISE):
         """ spi_bus_number - a number of SPI bus to read/write """
         self.skt = umtrx_socket
         self.addr = net_address
         self.spi_num = spi_bus_number
+        self.out_edge = out_edge
+        self.in_edge = in_edge
 
     def spi_rw(self, data, num_bits, readback):
         """ Write data to SPI bus and optionally read some data back.
@@ -109,7 +111,7 @@ class umtrx_dev_spi:
         readback - 1 to read data from SPI bus, 0 to ignore data on the bus """
         self.skt.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
         out_pkt = pack_spi_fmt(USRP2_CONTROL_PROTO_VERSION, USRP2_CTRL_ID_TRANSACT_ME_SOME_SPI_BRO, \
-                               0, self.spi_num, data, SPI_EDGE_RISE, SPI_EDGE_RISE, num_bits, readback)
+                               0, self.spi_num, data, self.in_edge, self.out_edge, num_bits, readback)
         self.skt.sendto(out_pkt, (self.addr, UDP_CONTROL_PORT))
         return recv_item(self.skt, SPI_FMT, USRP2_CTRL_ID_OMG_TRANSACTED_SPI_DUDE, 4)
 
@@ -143,3 +145,12 @@ class umtrx_lms_device:
 
     def reg_get_bits(self, reg, mask, shift):
         return (self.reg_read(reg)&mask) >> shift
+
+class umtrx_vcxo_dac:
+
+	def __init__(self, umtrx_socket, net_address):
+		self.spi = umtrx_dev_spi(umtrx_socket, net_address, 4, out_edge=SPI_EDGE_FALL)
+	
+	def set_dac(self, v):
+		self.spi.spi_rw(v, 16, 0)
+
