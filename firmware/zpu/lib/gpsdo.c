@@ -87,9 +87,9 @@ static void
 _gpsdo_pid_init(void)
 {
   /* Configure loop */
-  g_pid.Pk = 16;
+  g_pid.Pk = 64;
   g_pid.Ik = 16;
-  g_pid.Dk = 8;
+  g_pid.Dk = 256; /* Seems high but we LPF PID input so d is dampened */
 
   /* Reset state */
   g_pid.val_prev = PID_TARGET;
@@ -139,6 +139,8 @@ _gpsdo_pid_step(int32_t val)
 /* Driver */
 /* ------ */
 
+static int32_t g_val_lpf = PID_TARGET;
+
 static void
 _gpsdo_irq_handler(unsigned irq)
 {
@@ -154,8 +156,15 @@ _gpsdo_irq_handler(unsigned irq)
     /* Next request */
     gpsdo_regs->csr = GPSDO_CSR_REQ;
 
-    /* Update PID */
-    _gpsdo_pid_step(val);
+    /* Check validity of value */
+    if (abs(val - PID_TARGET) < 100000)
+    {
+      /* LPF the value */
+      g_val_lpf = (g_val_lpf * 7 + val + 4) >> 3;
+
+      /* Update PID */
+      _gpsdo_pid_step(g_val_lpf);
+    }
   }
 }
 
