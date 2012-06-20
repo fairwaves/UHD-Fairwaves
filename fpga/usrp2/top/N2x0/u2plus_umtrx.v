@@ -189,7 +189,7 @@ module u2plus_umtrx
    always @(posedge lms_clk)
      begin
          LMS1nRST = 1'b1;
-         if (RX1IQSEL == 1'b0)
+         if (RX1IQSEL == 1'b1)
             adc_a_0 = {RX1D, 2'b00}; //ADC_I signal
          else
             adc_b_0 <= {RX1D, 2'b00}; // ADC_Q signal
@@ -197,7 +197,7 @@ module u2plus_umtrx
    always @(posedge lms_clk)
      begin
          LMS2nRST = 1'b1;
-         if (RX2IQSEL == 1'b0)
+         if (RX2IQSEL == 1'b1)
             adc_a_1 = {RX2D, 2'b00}; //ADC_I signal
          else
             adc_b_1 <= {RX2D, 2'b00}; // ADC_Q signal
