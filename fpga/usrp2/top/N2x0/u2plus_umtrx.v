@@ -70,7 +70,7 @@ module u2plus_umtrx
    input PPS_IN,
 
    // SPI
-   output SEN_DAC, output SCLK_DAC, input MISO_DAC,
+   output SEN_DAC, output SCLK_DAC, output MOSI_DAC,
 
    // GigE PHY
    input CLK_TO_MAC,
@@ -310,11 +310,11 @@ module u2plus_umtrx
 					     (~SEN_TX_DB & MISO_TX_DB) | (~SEN_TX_ADC & MISO_TX_ADC) |
 					     (~SEN_RX_DB & MISO_RX_DB) | (~SEN_RX_ADC & MISO_RX_ADC);
 `else
-   assign 	SCLK_DAC = sclk;
-   assign 	{SCLK1,MOSI1} 	   = ~SEN1 ? {sclk,mosi} : 2'B0;
-   assign 	{SCLK2,MOSI2} 	   = ~SEN2 ? {sclk,mosi} : 2'B0;
+   assign 	{SCLK_DAC,MOSI_DAC} = ~SEN_DAC ? {sclk,mosi} : 2'B0;
+   assign 	{SCLK1,MOSI1}       = ~SEN1    ? {sclk,mosi} : 2'B0;
+   assign 	{SCLK2,MOSI2}       = ~SEN2    ? {sclk,mosi} : 2'B0;
    
-   assign 	miso 	= (~SEN_DAC & MISO_DAC) | (~SEN1 & MISO1) | (~SEN2 & MISO2) ;
+   assign 	miso 	= (~SEN1 & MISO1) | (~SEN2 & MISO2) ;
 `endif // !`ifndef UMTRX
    
    wire 	GMII_TX_EN_unreg, GMII_TX_ER_unreg;

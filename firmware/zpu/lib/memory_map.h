@@ -39,7 +39,7 @@
 #define ROUTER_RAM_BASE     0x4000
 #define SPI_BASE            0x5000
 #define I2C_BASE            0x5400
-#define GPIO_BASE           0x5800
+#define GPSDO_BASE          0x5800
 #define READBACK_BASE       0x5C00
 #define ETH_BASE            0x6000
 #define SETTING_REGS_BASE   0x7000
@@ -137,6 +137,21 @@ typedef struct {
 #define	I2C_ST_RSVD_2	(1 << 2)	// reserved
 #define I2C_ST_TIP	(1 << 1)	// Transfer-in-progress
 #define	I2C_ST_IP	(1 << 0)	// Interrupt pending
+
+///////////////////////////////////////////////////
+// GPSDO, Slave 4
+///////////////////////////////////////////////////
+
+typedef struct {
+  volatile uint32_t csr;
+  volatile uint32_t cnt;
+} gpsdo_regs_t;
+
+#define gpsdo_regs ((gpsdo_regs_t *) GPSDO_BASE)
+
+#define GPSDO_CSR_REQ		(1 << 0)	// Snap request
+#define GPSDO_CSR_RDY		(1 << 1)	// Ready
+#define GPSDO_CSR_PPS_POL	(1 << 31)	// PPS polarity
 
 ///////////////////////////////////////////////////
 // Packet Router Status, Slave 5
@@ -363,7 +378,7 @@ typedef struct {
 // Bit numbers (LSB == 0) that correpond to interrupts into PIC
 
 #define	IRQ_BUFFER	0	// buffer manager
-#define	IRQ_ONETIME	1
+#define	IRQ_GPSDO	1
 #define	IRQ_SPI		2
 #define	IRQ_I2C		3
 #define	IRQ_PHY		4	// ethernet PHY
@@ -380,7 +395,7 @@ typedef struct {
 #define IRQ_TO_MASK(x) (1 << (x))
 
 #define PIC_BUFFER_INT    IRQ_TO_MASK(IRQ_BUFFER)
-#define PIC_ONETIME_INT   IRQ_TO_MASK(IRQ_ONETIME)
+#define PIC_GPSDO_INT     IRQ_TO_MASK(IRQ_GPSDO)
 #define PIC_SPI_INT       IRQ_TO_MASK(IRQ_SPI)
 #define PIC_I2C_INT       IRQ_TO_MASK(IRQ_I2C)
 #define PIC_PHY_INT       IRQ_TO_MASK(IRQ_PHY)

@@ -18,6 +18,7 @@
 #include "umtrx_init.h"
 #include "memory_map.h"
 #include "spi.h"
+#include "gpsdo.h"
 //#include "pic.h"
 //#include "hal_io.h"
 //#include "hal_uart.h"
@@ -41,6 +42,9 @@ umtrx_init(void)
   printf("LMS1 chip version = 0x%x\n", res);
   res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS2 chip version = 0x%x\n", res);
+
+  // Init GPSDO
+  gpsdo_init();
 
 /*
   // Enable RX and TX

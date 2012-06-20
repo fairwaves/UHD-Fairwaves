@@ -269,7 +269,7 @@ module u2plus_core
 		.s1_addr(8'b0100_0000),.s1_mask(8'b1111_0000),  // Packet Router (16-20K)
  		.s2_addr(8'b0101_0000),.s2_mask(8'b1111_1100),  // SPI
 		.s3_addr(8'b0101_0100),.s3_mask(8'b1111_1100),  // I2C
-		.s4_addr(8'b0101_1000),.s4_mask(8'b1111_1100),  // Unused
+		.s4_addr(8'b0101_1000),.s4_mask(8'b1111_1100),  // GPSDO
 		.s5_addr(8'b0101_1100),.s5_mask(8'b1111_1100),  // Readback
 		.s6_addr(8'b0110_0000),.s6_mask(8'b1111_0000),  // Ethernet MAC
 		.s7_addr(8'b0111_0000),.s7_mask(8'b1111_0000),  // Settings Bus (only uses 1K)
@@ -319,7 +319,6 @@ module u2plus_core
       .sf_dat_i(sf_dat_i),.sf_ack_i(sf_ack),.sf_err_i(0),.sf_rty_i(0));
 
    // Unused Slaves 9, b, c
-   assign s4_ack = 0;
    assign s9_ack = 0;   assign sb_ack = 0;   assign sc_ack = 0;
    
    // ////////////////////////////////////////////////////////////////////////////////////////
@@ -576,14 +575,35 @@ module u2plus_core
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp), .in(set_data_dsp),.out(led_src),.changed());
 
    assign 	 leds = (led_src & led_hw) | (~led_src & led_sw);
-   
+
+   // /////////////////////////////////////////////////////////////////////////
+   // GPSDO unit
+
+   wire gpsdo_int;
+
+   gpsdo gpsdo(
+      .pps_in(pps_in),
+      .clk_in(wb_clk),
+      .wb_adr_i(s4_adr[4:2]),
+      .wb_dat_i(s4_dat_o),
+      .wb_dat_o(s4_dat_i),
+      .wb_we_i(s4_we),
+      .wb_stb_i(s4_stb),
+      .wb_cyc_i(s4_cyc),
+      .wb_ack_o(s4_ack),
+      .wb_err_o(s4_err),
+      .wb_int_o(gpsdo_int),
+      .wb_clk_i(wb_clk),
+      .wb_rst_i(wb_rst)
+   );
+ 
    // /////////////////////////////////////////////////////////////////////////
    // Interrupt Controller, Slave #8
 
    assign irq= {{8'b0},
 		{uart_tx_int[3:0], uart_rx_int[3:0]},
 		{4'b0, clk_status, 3'b0},
-		{3'b0, PHY_INTn,i2c_int,spi_int,2'b00}};
+		{3'b0, PHY_INTn,i2c_int,spi_int,gpsdo_int,1'b0}};
    
    pic pic(.clk_i(wb_clk),.rst_i(wb_rst),.cyc_i(s8_cyc),.stb_i(s8_stb),.adr_i(s8_adr[4:2]),
 	   .we_i(s8_we),.dat_i(s8_dat_o),.dat_o(s8_dat_i),.ack_o(s8_ack),.int_o(proc_int),
