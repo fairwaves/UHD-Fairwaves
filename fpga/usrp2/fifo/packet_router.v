@@ -58,6 +58,10 @@ module packet_router
         // Output Interfaces (out of router)
         output [35:0] ser_out_data, output ser_out_valid, input ser_out_ready,
         output [35:0] dsp_out_data, output dsp_out_valid, input dsp_out_ready,
+`ifdef LMS602D_FRONTEND
+        output dsp1_out_valid, input dsp1_out_ready,
+        input [35:0] err_inp1_data, input err_inp1_valid, output err_inp1_ready,
+`endif // !`ifdef LMS602D_FRONTEND
         output [35:0] eth_out_data, output eth_out_valid, input eth_out_ready
     );
 
@@ -192,6 +196,28 @@ module packet_router
     wire        _combiner0_valid, _combiner1_valid;
     wire        _combiner0_ready, _combiner1_ready;
 
+`ifdef LMS602D_FRONTEND
+    wire [35:0] _combiner0_0_data;
+    wire        _combiner0_0_valid;
+    wire        _combiner0_0_ready;
+
+    fifo36_mux #(.prio(0)) // No priority, fair sharing
+     _com_output_combiner0_0(
+        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
+        .data0_i(err_inp_data), .src0_rdy_i(err_inp_valid), .dst0_rdy_o(err_inp_ready),
+        .data1_i(err_inp1_data), .src1_rdy_i(err_inp1_valid), .dst1_rdy_o(err_inp1_ready),
+        .data_o(_combiner0_0_data), .src_rdy_o(_combiner0_0_valid), .dst_rdy_i(_combiner0_0_ready)
+    );
+
+    fifo36_mux #(.prio(0)) // No priority, fair sharing
+     _com_output_combiner0(
+        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
+        .data0_i(_combiner0_0_data), .src0_rdy_i(_combiner0_0_valid), .dst0_rdy_o(_combiner0_0_ready),
+        .data1_i(cpu_inp_data), .src1_rdy_i(cpu_inp_valid), .dst1_rdy_o(cpu_inp_ready),
+        .data_o(_combiner0_data), .src_rdy_o(_combiner0_valid), .dst_rdy_i(_combiner0_ready)
+    );
+`else
+    
     fifo36_mux #(.prio(0)) // No priority, fair sharing
      _com_output_combiner0(
         .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
@@ -199,6 +225,7 @@ module packet_router
         .data1_i(cpu_inp_data), .src1_rdy_i(cpu_inp_valid), .dst1_rdy_o(cpu_inp_ready),
         .data_o(_combiner0_data), .src_rdy_o(_combiner0_valid), .dst_rdy_i(_combiner0_ready)
     );
+`endif // !`ifdef LMS602D_FRONTEND
 
     fifo36_mux #(.prio(0)) // No priority, fair sharing
      _com_output_combiner1(
@@ -254,6 +281,9 @@ module packet_router
         .com_inp_data(com_inp_data), .com_inp_valid(com_inp_valid), .com_inp_ready(com_inp_ready),
         .ext_out_data(ext_out_data), .ext_out_valid(ext_out_valid), .ext_out_ready(ext_out_ready),
         .dsp_out_data(dsp_out_data), .dsp_out_valid(dsp_out_valid), .dsp_out_ready(dsp_out_ready),
+`ifdef LMS602D_FRONTEND
+        .dsp1_out_valid(dsp1_out_valid), .dsp1_out_ready(dsp1_out_ready),
+`endif // !`ifdef LMS602D_FRONTEND
         .cpu_out_data(_cpu_out_data), .cpu_out_valid(_cpu_out_valid), .cpu_out_ready(_cpu_out_ready)
     );
 

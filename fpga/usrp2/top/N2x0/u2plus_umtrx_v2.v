@@ -556,6 +556,8 @@ wire DivSw1, DivSw2;
 		     .adc_on_b_1		(),
 		     .adc_oe_b_1		(),
            .lms_res ({LMS2nRST,LMS1nRST}),
+		     .dac1_a		(dac_a_int2),
+		     .dac1_b		(dac_b_int2),
 `endif // !`ifndef LMS602D_FRONTEND
 		     .dac_a		(dac_a_int1),
 		     .dac_b		(dac_b_int1),

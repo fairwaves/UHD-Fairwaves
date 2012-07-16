@@ -56,6 +56,13 @@ module ext_fifo
      output [INT_WIDTH-1:0] dataout,
      output src_rdy_o,               // not EMPTY
      input dst_rdy_i,                 // READ
+`ifdef LMS602D_FRONTEND
+     input src1_rdy_i,                // WRITE
+     output dst1_rdy_o,               // not FULL
+     output src1_rdy_o,               // not EMPTY
+     input dst1_rdy_i,                 // READ
+     output [INT_WIDTH-1:0] dataout_1,
+`endif // !`ifdef LMS602D_FRONTEND
      output reg [31:0] debug,
      output reg [31:0] debug2
      );
@@ -67,11 +74,23 @@ module ext_fifo
    wire [FIFO_DEPTH-1:0] capacity;
    wire 		 space_avail;
    wire 		 data_avail;
+`ifdef LMS602D_FRONTEND
+   wire [EXT_WIDTH-1:0] write_data_1;
+   wire [EXT_WIDTH-1:0] read_data_1;
+   wire 		full1_1, empty1_1;
+   wire 		almost_full2_1, almost_full2_spread_1, full2_1, empty2_1;
+`endif // !`ifdef LMS602D_FRONTEND
 		 
    // These next 2 lines here purely because ICARUS is crap at handling generate statements.
    // Empirically this has been determined to make simulations work.
    wire 		 read_input_fifo = space_avail & ~empty1;
    wire 		 write_output_fifo = data_avail;
+`ifdef LMS602D_FRONTEND
+   wire 		 read_input_fifo_1 = space_avail & ~empty1_1;
+   wire 		 write_output_fifo_1 = data_avail;
+   assign 		 src1_rdy_o = ~empty2_1;
+   assign 		 dst1_rdy_o = ~full1_1;
+`endif // !`ifdef LMS602D_FRONTEND
    
    assign 		 src_rdy_o = ~empty2;
    assign 		 dst_rdy_o = ~full1;
@@ -102,6 +121,13 @@ module ext_fifo
 	   .space_avail(space_avail),
 	   .read_data(read_data),
 	   .read_strobe(~almost_full2_spread),
+`ifdef LMS602D_FRONTEND
+	   .write_data_1(write_data_1),
+	   .write_strobe_1(~empty1_1 ),
+	   .space_avail_1(space_avail_1),
+	   .read_data_1(read_data_1),
+	   .read_strobe_1(~almost_full2_spread_1),
+`endif // !`ifdef LMS602D_FRONTEND
 	   .data_avail(data_avail),
 	   .capacity(capacity)
 	   );
@@ -135,6 +161,33 @@ module ext_fifo
 								       .full(full2),
 								       .prog_full(almost_full2),
 								       .empty(empty2));
+`ifdef LMS602D_FRONTEND
+	 // FIFO buffers data from UDP engine into external FIFO clock domain.
+	 fifo_xlnx_512x36_2clk_36to18 fifo_xlnx_512x36_2clk_36to18_i2 (
+								       .rst(rst),
+								       .wr_clk(int_clk),
+								       .rd_clk(ext_clk),
+								       .din(datain), // Bus [35 : 0] 
+								       .wr_en(src1_rdy_i), 
+								       .rd_en(read_input_fifo_1),    		
+								       .dout(write_data_1), // Bus [17 : 0]
+								       .full(full1_1),			
+							               .empty(empty1_1));
+
+	 
+	 // FIFO buffers data read from external FIFO into DSP clk domain and to TX DSP.
+	 fifo_xlnx_512x36_2clk_18to36 fifo_xlnx_512x36_2clk_18to36_i2 (
+								       .rst(rst),
+								       .wr_clk(ext_clk),
+								       .rd_clk(dac_clk),
+								       .din(read_data_1), // Bus [17 : 0]
+								       .wr_en(write_output_fifo_1),
+								       .rd_en(dst1_rdy_i),
+								       .dout(dataout_1), // Bus [35 : 0]
+								       .full(full2_1),
+								       .prog_full(almost_full2_1),
+								       .empty(empty2_1));
+`endif // !`ifdef LMS602D_FRONTEND
       end // block: fifo_g1
       else if (EXT_WIDTH == 36 && INT_WIDTH == 36) begin: fifo_g1
 	 // FIFO buffers data from UDP engine into external FIFO clock domain.
@@ -161,6 +214,32 @@ module ext_fifo
 									    .full(full2),
 									    .empty(empty2),
 									    .prog_full(almost_full2));
+`ifdef LMS602D_FRONTEND
+	 // FIFO buffers data from UDP engine into external FIFO clock domain.
+	 fifo_xlnx_32x36_2clk fifo_xlnx_32x36_2clk_i2 (
+						       .rst(rst),
+						       .wr_clk(int_clk),
+						       .rd_clk(ext_clk),
+						       .din(datain), // Bus [35 : 0] 
+						       .wr_en(src1_rdy_i),
+						       .rd_en(read_input_fifo_1),
+						       .dout(write_data_1), // Bus [35 : 0] 
+						       .full(full1_1),
+						       .empty(empty1_1));
+	 
+	 // FIFO buffers data read from external FIFO into DSP clk domain and to TX DSP.
+	 fifo_xlnx_512x36_2clk_prog_full fifo_xlnx_32x36_2clk_prog_full_i2 (
+									    .rst(rst),
+									    .wr_clk(ext_clk),
+									    .rd_clk(dac_clk),
+									    .din(read_data_1), // Bus [35 : 0] 
+									    .wr_en(write_output_fifo_1),
+									    .rd_en(dst1_rdy_i),
+									    .dout(dataout_1), // Bus [35 : 0] 
+									    .full(full2_1),
+									    .empty(empty2_1),
+									    .prog_full(almost_full2_1));
+`endif // !`ifdef LMS602D_FRONTEND
 
       end    
    endgenerate
@@ -173,6 +252,15 @@ module ext_fifo
 			   .full_in(almost_full2),
 			   .full_out(almost_full2_spread)
 			   );
+`ifdef LMS602D_FRONTEND
+   refill_randomizer #(.BITS(7))
+     refill_randomizer_i2 (
+			   .clk(ext_clk),
+			   .rst(rst),
+			   .full_in(almost_full2_1),
+			   .full_out(almost_full2_spread_1)
+			   );
+`endif // !`ifdef LMS602D_FRONTEND
    
 //   always @ (posedge int_clk)
 //     debug[31:28] <= {empty2,full1,dst_rdy_i,src_rdy_i };
