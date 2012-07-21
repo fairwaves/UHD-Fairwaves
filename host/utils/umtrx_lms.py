@@ -121,8 +121,8 @@ def lms_rx_pll_tune(lms_dev, ref_clock, out_freq):
 
 def lms_init(lms_dev):
     """ INIT with default values (taken from the LMS EVB software)"""
-#    lms_dev.reg_write(0x09, 0xC0) # questionable step
-    lms_dev.reg_write(0x09, 0x80)
+#    lms_dev.reg_write(0x09, 0x80) # RXOUTSW, CLK_EN: PLLCLKOUT=1 (enabled)
+    lms_dev.reg_write(0x09, 0x00) # RXOUTSW, CLK_EN
     lms_dev.reg_write(0x17, 0xE0)
     lms_dev.reg_write(0x27, 0xE3)
     lms_dev.reg_write(0x64, 0x32)
