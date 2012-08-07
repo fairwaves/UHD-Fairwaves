@@ -64,7 +64,6 @@ module nobl_fifo
 `ifdef LMS602D_FRONTEND
    reg [FIFO_DEPTH-1:0] wr_pointer_1;
    reg [FIFO_DEPTH-1:0] rd_pointer_1;
-   reg dsp_number;
    
    reg 			data_avail_int_1;  // Internal not empty flag.
    assign 	    read_1 = read_strobe_1 && data_avail_int_1;
@@ -104,8 +103,6 @@ module nobl_fifo
    always @(posedge clk)
      if (rst)
        begin
-     dsp_number <= 1'b0;  
-       
 	  capacity <= (1 << (FIFO_DEPTH-1)) - 1;
 	  wr_pointer <= 0;
 	  rd_pointer <= 0;
@@ -121,8 +118,7 @@ module nobl_fifo
      else	  
        begin
        
-     if(~dsp_number)
-       begin  
+   // TX 0
 	  // No space available if:
 	  // Capacity is already zero; Capacity is 1 and write is asserted (lookahead); both read and write are asserted (collision)
 	  space_avail <= ~((capacity == 0) || (read&&write) || ((capacity == 1) && write) );
@@ -133,9 +129,7 @@ module nobl_fifo
      rd_pointer[FIFO_DEPTH-1] <= 1'b0;
 	  rd_pointer[FIFO_DEPTH-2:0] <= rd_pointer[FIFO_DEPTH-2:0] + (~write && read); 
 	  capacity <= capacity - write + (~write && read) ;
-       end
-     else
-       begin
+   // TX 1
 	  // No space available if:
 	  // Capacity is already zero; Capacity is 1 and write is asserted (lookahead); both read and write are asserted (collision)
 	  space_avail_1 <= ~((capacity_1 == 0) || (read_1&&write_1) || ((capacity == 1) && write_1) );
@@ -146,11 +140,9 @@ module nobl_fifo
 	  rd_pointer_1[FIFO_DEPTH-1] <= 1'b1;
      rd_pointer_1[FIFO_DEPTH-2:0] <= rd_pointer_1[FIFO_DEPTH-2:0] + (~write_1 && read_1);
 	  capacity_1 <= capacity_1 - write_1 + (~write_1 && read_1) ;
-       end // else: if(~dsp_number)
-     dsp_number <= ~dsp_number;
        end // else: !if(rst)
 
-   assign address = ~dsp_number ? (write ? wr_pointer : rd_pointer) : ((write_1 ? wr_pointer_1 : rd_pointer_1));
+   assign address = (write || write_1) ? (write ? wr_pointer : wr_pointer_1) : (read ? rd_pointer : rd_pointer_1);
    assign enable = write || read || write_1 || read_1; 
 `endif // !`ifdef LMS602D_FRONTEND
 
