@@ -242,15 +242,29 @@ typedef struct {
 #define SR_TIME64    10   // 6
 #define SR_BUF_POOL  16   // 4
 
+#ifndef UMTRX
 #define SR_RX_FRONT  24   // 5
+#else
+#define SR_RX_FRONT  20   // 5
+#define SR_RX_FRONT1  25   // 5
+#endif
 #define SR_RX_CTRL0  32   // 9
 #define SR_RX_DSP0   48   // 7
 #define SR_RX_CTRL1  80   // 9
 #define SR_RX_DSP1   96   // 7
 
+#ifndef UMTRX
 #define SR_TX_FRONT 128   // ?
 #define SR_TX_CTRL  144   // 6
 #define SR_TX_DSP   160   // 5
+#else
+#define SR_TX_FRONT 110   // ?
+#define SR_TX_CTRL  126   // 6
+#define SR_TX_DSP   135   // 5
+#define SR_TX1_FRONT 145   // ?
+#define SR_TX1_CTRL  161   // 6
+#define SR_TX1_DSP   170   // 5
+#endif
 
 #define SR_UDP_SM   192   // 64
 
