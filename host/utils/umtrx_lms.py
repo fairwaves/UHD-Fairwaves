@@ -104,6 +104,8 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
         else:
             print("ERROR: Incorrect VCOCAP reading while tuning")
             return False
+    if VCO_NORM == state:
+        stop_i = 63
 
     if start_i == -1 or stop_i == -1:
         print("ERROR: Can't find VCOCAP value while tuning")
