@@ -365,6 +365,7 @@ def lms_general_dc_calibration(lms_dev, dc_addr, calibration_reg_base):
 
 def lms_lpf_tuning_dc_calibration(lms_dev):
     """ Programming and Calibration Guide: 4.2 DC Offset Calibration of LPF Tuning Module """
+    result = False
     # Save TopSPI::CLK_EN[5] Register
     # TopSPI::CLK_EN[5] := 1
     clk_en_save = lms_dev.reg_set_bits(0x09, (1 << 5))
@@ -372,20 +373,18 @@ def lms_lpf_tuning_dc_calibration(lms_dev):
     # Perform DC Calibration Procedure in TopSPI with ADDR := 0 and get Result
     # DCCAL := TopSPI::DC_REGVAL
     DCCAL = lms_general_dc_calibration(lms_dev, 0, 0x0)
-    if DCCAL is None:
-        # Restore TopSPI::CLK_EN[5] Register
-        lms_dev.reg_write(0x09, clk_en_save)
-        return False
-
-    # RxLPFSPI::DCO_DACCAL := DCCAL
-    lms_dev.reg_write_bits(0x35, 0x3f, DCCAL)
-
-    # TxLPFSPI::DCO_DACCAL := DCCAL
-    lms_dev.reg_write_bits(0x55, 0x3f, DCCAL)
+    if DCCAL is not None:
+        # RxLPFSPI::DCO_DACCAL := DCCAL
+        lms_dev.reg_write_bits(0x35, 0x3f, DCCAL)
+        # TxLPFSPI::DCO_DACCAL := DCCAL
+        lms_dev.reg_write_bits(0x55, 0x3f, DCCAL)
+        # Success
+        result = True
 
     # Restore TopSPI::CLK_EN[5] Register
     lms_dev.reg_write(0x09, clk_en_save)
-    return True
+
+    return result
 
 def lms_txrx_lpf_dc_calibration(lms_dev, is_tx):
     """ Programming and Calibration Guide: 4.3 TX/RX LPF DC Offset Calibration """
@@ -396,17 +395,15 @@ def lms_txrx_lpf_dc_calibration(lms_dev, is_tx):
     # TopSPI::CLK_EN := 1
     clk_en_save = lms_dev.reg_set_bits(0x09, (1 << 1) if is_tx else (1 << 3))
 
-    # Perform DC Calibration Procedure in LPFSPI with ADDR := 0 (For channel I) and get Result
-    # Perform DC Calibration Procedure in LPFSPI with ADDR := 1 (For channel Q) and get Result
-    if lms_general_dc_calibration(lms_dev, 0, control_reg_base) is None \
-       or lms_general_dc_calibration(lms_dev, 1, control_reg_base) is None:
-        # Restore TopSPI::CLK_EN Register
-        lms_dev.reg_write(0x09, clk_en_save)
-        return False
+    # Perform DC Calibration Procedure in LPFSPI with ADDR := 0 (For channel I)
+    result = lms_general_dc_calibration(lms_dev, 0, control_reg_base) is not None
+    # Perform DC Calibration Procedure in LPFSPI with ADDR := 1 (For channel Q)
+    result = lms_general_dc_calibration(lms_dev, 1, control_reg_base) is not None and result
 
     # Restore TopSPI::CLK_EN Register
     lms_dev.reg_write(0x09, clk_en_save)
-    return True
+
+    return result
 
 def lms_rxvga2_dc_calibration(lms_dev):
     """ Programming and Calibration Guide: 4.4 RXVGA2 DC Offset Calibration """
@@ -417,23 +414,21 @@ def lms_rxvga2_dc_calibration(lms_dev):
     # TopSPI::CLK_EN := 1
     clk_en_save = lms_dev.reg_set_bits(0x09, (1 << 4))
 
-    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 0 (For DC Reference channel) and get Result
-    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 1 (For VGA2A_I channel) and get Result
-    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 2 (For VGA2A_Q channel) and get Result
-    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 3 (For VGA2B_I channel) and get Result
-    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 4 (For VGA2B_Q channel) and get Result
-    if lms_general_dc_calibration(lms_dev, 0, control_reg_base) is None \
-       or lms_general_dc_calibration(lms_dev, 1, control_reg_base) is None \
-       or lms_general_dc_calibration(lms_dev, 2, control_reg_base) is None \
-       or lms_general_dc_calibration(lms_dev, 3, control_reg_base) is None \
-       or lms_general_dc_calibration(lms_dev, 4, control_reg_base) is None:
-        # Restore TopSPI::CLK_EN Register
-        lms_dev.reg_write(0x09, clk_en_save)
-        return False
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 0 (For DC Reference channel)
+    result = lms_general_dc_calibration(lms_dev, 0, control_reg_base) is not None
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 1 (For VGA2A_I channel)
+    result = lms_general_dc_calibration(lms_dev, 1, control_reg_base) is not None and result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 2 (For VGA2A_Q channel)
+    result = lms_general_dc_calibration(lms_dev, 2, control_reg_base) is not None and result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 3 (For VGA2B_I channel)
+    result = lms_general_dc_calibration(lms_dev, 3, control_reg_base) is not None and result
+    # Perform DC Calibration Procedure in RxVGA2SPI with ADDR := 4 (For VGA2B_Q channel)
+    result = lms_general_dc_calibration(lms_dev, 4, control_reg_base) is not None and result
 
     # Restore TopSPI::CLK_EN Register
     lms_dev.reg_write(0x09, clk_en_save)
-    return True
+
+    return result
 
 def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
     """ Programming and Calibration Guide: 4.5 LPF Bandwidth Tuning.
@@ -442,7 +437,7 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
     reg_save_05 = lms_dev.reg_read(0x05)
     reg_save_09 = lms_dev.reg_read(0x09)
 
-    # Enable TxPLL and set toProduce 320MHz
+    # Enable TxPLL and tune it to 320MHz
     lms_tx_enable(lms_dev)
     lms_tx_pll_tune(lms_dev, ref_clock, int(320e6))
 
@@ -460,7 +455,7 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
     lms_dev.reg_write(0x06, rst_lpfcal_save & ~0x01)
     # RCCAL := TopSPI::RCCAL_LPFCAL
     RCCAL = lms_dev.reg_read(0x01) >> 5
-    print("RCCAL = %d" % RCCAL)
+    if verbosity >= 3: print("RCCAL = %d" % RCCAL)
     # RxLPFSPI::RCCAL_LPF := RCCAL
     lms_dev.reg_write_bits(0x56, (7 << 4), (RCCAL << 4))
     # TxLPFSPI::RCCAL_LPF := RCCAL
