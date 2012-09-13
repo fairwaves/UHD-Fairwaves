@@ -285,10 +285,11 @@ def lms_set_vga1dc_q(lms_dev, dc_shift):
 #    lms_dev.reg_write(0x45, (25 << 3) | 0x0) # VGA2GAIN, ENVD
 #    lms_dev.reg_write(0x44, (2 << 3) | (1 << 1) | 1) # PA2 on
 
-def lms_general_dc_calibration(lms_dev, dc_addr, calibration_reg_base):
+def lms_general_dc_calibration_loop(lms_dev, dc_addr, calibration_reg_base):
     """ Programming and Calibration Guide: 4.1 General DC Calibration Procedure """
     try_cnt_limit = 10
 
+    if verbosity > 0: print("DC Offset Calibration for addr %d:" % (dc_addr,))
     reg_val = lms_dev.reg_read(calibration_reg_base+0x03)
     # DC_ADDR := ADDR
     reg_val = (reg_val & 0xf8) | dc_addr
@@ -302,7 +303,7 @@ def lms_general_dc_calibration(lms_dev, dc_addr, calibration_reg_base):
 
     while try_cnt_limit:
         try_cnt_limit -= 1
-#        print("cnt=%d" % try_cnt_limit)
+        if verbosity > 1: print("cnt=%d" % try_cnt_limit)
 
         # Wait for 6.4(1.6) us
         time.sleep(6.4e-6)
@@ -310,27 +311,57 @@ def lms_general_dc_calibration(lms_dev, dc_addr, calibration_reg_base):
         # Read DC_CLBR_DONE
         reg_val  = lms_dev.reg_read(calibration_reg_base+0x01)
         DC_CLBR_DONE = (reg_val >> 1) & 0x1
-#        print(" DC_CLBR_DONE=%d" % DC_CLBR_DONE)
+        if verbosity > 1: print(" DC_CLBR_DONE=%d" % DC_CLBR_DONE)
 
         # DC_CLBR_DONE == 1?
-        if DC_CLBR_DONE:
+        if DC_CLBR_DONE == 1:
             continue
 
         # Read DC_LOCK
         reg_val  = lms_dev.reg_read(calibration_reg_base+0x01)
         DC_LOCK = (reg_val >> 2) & 0x7
-#        print(" DC_LOCK=%d" % DC_LOCK)
+        if verbosity > 1: print(" DC_LOCK=%d" % DC_LOCK)
+
+        # Read DC_REGVAL
+        DC_REGVAL = lms_dev.reg_read(calibration_reg_base+0x00)
+        if verbosity > 1: print("DC_REGVAL = %d" % DC_REGVAL)
 
         # DC_LOCK != 0 or 7?
         if DC_LOCK != 0 and DC_LOCK != 7:
-            # Read DC_REGVAL
-            DC_REGVAL = lms_dev.reg_read(calibration_reg_base+0x00)
-            print("DC_REGVAL = %d" % DC_REGVAL)
-            return DC_REGVAL
+            # We're done.
+            break
 
-    # PANIC: Algorithm does Not Converge!
-    print("Error: DC Offset Calibration does not converge!")
-    return None
+    # Return the value
+    return DC_REGVAL
+
+def lms_general_dc_calibration(lms_dev, dc_addr, calibration_reg_base):
+    # This procedure is outlined in FAQ, section 4.7.
+    # It's purpose is to circumvent the fact that in some edge cases calibration
+    # may be successful even is DC_LOCK shows 0 or 7.
+
+    # Set DC_REGVAL to 31
+    lms_dev.reg_write(calibration_reg_base+0x00, 31)
+    # Run the calibration first time
+    DC_REGVAL = lms_general_dc_calibration_loop(lms_dev, dc_addr, calibration_reg_base)
+    # Unchanged DC_REGVAL may mean either calibration failure or that '31' is
+    # the best calibration vaue. We're going to re-check that.
+    if 31 == DC_REGVAL:
+        # Set DC_REGVAL to a value other then 31, e.g. 0
+        lms_dev.reg_write(calibration_reg_base+0x00, 0)
+        # Retry the calibration
+        DC_REGVAL = lms_general_dc_calibration_loop(lms_dev, dc_addr, calibration_reg_base)
+        # If DC_REGVAL has been changed, then calibration succeeded.
+        if 0 == DC_REGVAL:
+            # PANIC: Algorithm does Not Converge!
+            # From LimeMicro FAQ: "[This] condition should not happen as this is being
+            # checked in our production test."
+            print("Error: DC Offset Calibration does not converge!")
+            return None
+
+    if verbosity > 0: print("Successful DC Offset Calibration for register bank 0x%X, DC addr %d. Result: 0x%X" \
+                            % (calibration_reg_base, dc_addr, DC_REGVAL))
+    return DC_REGVAL
+
 
 def lms_lpf_tuning_dc_calibration(lms_dev):
     """ Programming and Calibration Guide: 4.2 DC Offset Calibration of LPF Tuning Module """
