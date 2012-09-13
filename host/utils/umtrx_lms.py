@@ -127,8 +127,7 @@ def lms_rx_pll_tune(lms_dev, ref_clock, out_freq):
 
 def lms_init(lms_dev):
     """ INIT with default values (taken from the LMS EVB software)"""
-#    lms_dev.reg_write(0x09, 0x80) # RXOUTSW, CLK_EN: PLLCLKOUT=1 (enabled)
-    lms_dev.reg_write(0x09, 0x00) # RXOUTSW, CLK_EN
+    lms_dev.reg_write(0x09, 0x00) # RXOUTSW (disabled), CLK_EN (all disabled)
     lms_dev.reg_write(0x17, 0xE0)
     lms_dev.reg_write(0x27, 0xE3)
     lms_dev.reg_write(0x64, 0x32)
@@ -139,6 +138,11 @@ def lms_init(lms_dev):
     # RF Settings
     lms_dev.reg_write(0x41, 0x15) # VGA1GAIN
     lms_dev.reg_write(0x45, 0x00) # VGA2GAIN, ENVD
+
+    # Test settings
+#    lms_dev.reg_set_bits(0x35, (1<<6)) # Set BYP_EN_LPF
+#    lms_dev.reg_set_bits(0x09, (1<<7)) # Enable RXOUTSW
+
 
 def lms_tx_enable(lms_dev):
     """ Enable TX """
