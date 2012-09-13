@@ -44,8 +44,11 @@ FREQ_LIST = [# min, max, val
     (2.695e9,    3.24e9,     0x34),
     (3.24e9,     3.72e9,     0x3c)]
 
+# A list of reserved registers which read as junk
+RESV_REGS = (0x0C, 0x0D, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x69, 0x6A, 0x6B, 0x6C, 0x6D)
+
 def dump(lms_dev):
-    return [lms_dev.reg_read(x) for x in range(0, 128)]
+    return [(x, lms_dev.reg_read(x),) for x in range(0, 128) if x not in RESV_REGS]
 
 def select_freq(freq): # test if given freq within the range and return corresponding value
     l = list(filter(lambda t: True if t[0] < freq <= t[1] else False, FREQ_LIST))
@@ -553,14 +556,14 @@ if __name__ == '__main__':
             elif args.lms:
                 lms_regs = dump(umtrx_lms_dev)
                 print('LMS %u' % args.lms)
-                print(''.join(map(lambda a, b: '# 0x%02X: 0x%02X\n' % (a, b), list(range(0, 128)), lms_regs)))
+                print(''.join('# 0x%02X: 0x%02X\n' % data for data in lms_regs))
             elif args.dump:
                 umtrx_lms_dev_1 = umtrx_ctrl.umtrx_lms_device(sock, umtrx, 1)
                 umtrx_lms_dev_2 = umtrx_ctrl.umtrx_lms_device(sock, umtrx, 2)
                 lms1 = dump(umtrx_lms_dev_1)
                 lms2 = dump(umtrx_lms_dev_2)
-                diff = list(map(lambda l1, l2: 'OK\n' if l1 == l2 else 'DIFF\n', lms1, lms2))
-                print(''.join(map(lambda i, l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (i, l1, l2, d), list(range(0, 128)), lms1, lms2, diff)))
+                diff = list(map(lambda l1, l2: 'OK\n' if l1[1] == l2[1] else 'DIFF\n', lms1, lms2))
+                print(''.join(map(lambda l1, l2, d: '# 0x%02X: LMS1=0x%02X \tLMS2=0x%02X\t%s' % (l1[0], l1[1], l2[1], d), lms1, lms2, diff)))
             else:
                 print('UmTRX suspected at %s' % umtrx)
         else:
