@@ -471,16 +471,26 @@ def lms_auto_calibration(lms_dev, ref_clock, lpf_bandwidth_code):
     lms_lpf_tuning_dc_calibration(lms_dev)
     print("LPF Bandwidth Tuning...")
     lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code)
-    vga1gain = lms_set_vga1gain(lms_dev, -10)
-    vga2gain = lms_set_vga2gain(lms_dev, 15)
+
     print("Tx LPF DC calibration...")
+    tx_vga1gain = lms_set_tx_vga1gain(lms_dev, -10)
+    tx_vga2gain = lms_set_tx_vga2gain(lms_dev, 15)
     lms_txrx_lpf_dc_calibration(lms_dev, True)
+
+    # Disable Rx
+    lna = lms_get_rx_lna(lms_dev)
+    lms_set_rx_lna(lms_dev, 0)
     print("Rx LPF DC calibration...")
     lms_txrx_lpf_dc_calibration(lms_dev, False)
     print("RxVGA2 DC calibration...")
+    rx_vga2gain = lms_set_rx_vga2gain(lms_dev, 30)
     lms_rxvga2_dc_calibration(lms_dev)
-    lms_set_vga1gain(lms_dev, vga1gain)
-    lms_set_vga2gain(lms_dev, vga2gain)
+
+    # Restore saved values
+    lms_set_tx_vga1gain(lms_dev, tx_vga1gain)
+    lms_set_tx_vga2gain(lms_dev, tx_vga2gain)
+    lms_set_rx_vga2gain(lms_dev, rx_vga2gain)
+    lms_set_rx_lna(lms_dev, lna)
 
 def enable_loopback(lms_dev):
     """ Enable loopback"""
