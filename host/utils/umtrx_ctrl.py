@@ -139,16 +139,16 @@ class umtrx_lms_device:
         return reg_save
 
     def reg_set_bits(self, reg, mask):
-        return self.reg_rmw(reg, lambda x: x | mask)
+        return self.reg_rmw(reg, lambda x: x | int(mask))
 
     def reg_clear_bits(self, reg, mask):
-        return self.reg_rmw(reg, lambda x: x & ~mask)
+        return self.reg_rmw(reg, lambda x: x & ~int(mask))
 
     def reg_write_bits(self, reg, mask, data):
-        return self.reg_rmw(reg, lambda x: (x & ~mask) | data)
+        return self.reg_rmw(reg, lambda x: (x & ~int(mask)) | int(data))
 
     def reg_get_bits(self, reg, mask, shift):
-        return (self.reg_read(reg)&mask) >> shift
+        return (self.reg_read(reg)&int(mask)) >> shift
 
 class umtrx_vcxo_dac:
 
