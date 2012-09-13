@@ -123,11 +123,11 @@ class umtrx_lms_device:
 
     def reg_read(self, reg):
         data = self.spi.spi_rw(reg << 8, 16, 1)
-        if self.verbosity > 0: print "REG READ  0x%x -> 0x%x" % (reg, data,)
+        if self.verbosity > 0: print("REG READ  0x%x -> 0x%x" % (reg, data,))
         return data
 
     def reg_write(self, reg, data):
-        if self.verbosity > 0: print "REG WRITE 0x%x <- 0x%x" % (reg, data,)
+        if self.verbosity > 0: print("REG WRITE 0x%x <- 0x%x" % (reg, data,))
         self.spi.spi_rw(((0x80 | reg) << 8) | data, 16, 0)
 
     def reg_rmw(self, reg, action):
