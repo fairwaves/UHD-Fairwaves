@@ -467,29 +467,59 @@ def lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code):
     lms_dev.reg_write(0x09, reg_save_09)
 
 def lms_auto_calibration(lms_dev, ref_clock, lpf_bandwidth_code):
+    """ Performs all automatic calibration procedures in a recommeded order.
+
+        Notes:
+          0. Do not forget, that you should not apply any data for Tx during
+             the calibration. Rx should be disconnected as well, but we try
+             to handle this in the code.
+          1. It tunes Tx to 320MHz, so you have to re-tune to your frequency
+             after the calibration.
+          2. It's better to calibrate with your target TxVGA1 gain. If you
+             don't know your target gain yet, choose one <= -7dB to TX mixer
+             overload. TxVGA1 gain of -10dB is good choice.
+          3. TxVGA2 gain doesn't impact DC offset or LO leakage, because
+             it is in RF and is AC coupled. So we don't touch it. Thus TxVGA2
+             gain is irrelevant for the purpose of this calibration.
+          4. RxVGA2 gain is irrelevant, because it's set to 30dB during the
+             calibration and then restored to the original value.
+    """
     print("LPF Tuning...")
     lms_lpf_tuning_dc_calibration(lms_dev)
     print("LPF Bandwidth Tuning...")
     lms_lpf_bandwidth_tuning(lms_dev, ref_clock, lpf_bandwidth_code)
 
     print("Tx LPF DC calibration...")
-    tx_vga1gain = lms_set_tx_vga1gain(lms_dev, -10)
-    tx_vga2gain = lms_set_tx_vga2gain(lms_dev, 15)
     lms_txrx_lpf_dc_calibration(lms_dev, True)
 
     # Disable Rx
+    # We use this way of disabling Rx, because we have to leave
+    # RXMIX working. If we disable MIX, calibration will not fail,
+    # but DC cancellation will be a bit worse. And setting LNASEL_RXFE
+    # to 0 disables RXMIX. So instead of that we select LNA1 and then
+    # connect it to the internal termination resistor with
+    # IN1SEL_MIX_RXFE and RINEN_MIX_RXFE configuration bits.
     lna = lms_get_rx_lna(lms_dev)
-    lms_set_rx_lna(lms_dev, 0)
+    #   1. Select LNA1
+    lms_set_rx_lna(lms_dev, 1)
+    #   2. Connect LNA to external inputs.
+    #      IN1SEL_MIX_RXFE: Selects the input to the mixer
+    reg_save_71 = lms_dev.reg_clear_bits(0x71, (1 << 7))
+    #   3. Enable internal termination resistor.
+    #      RINEN_MIX_RXFE: Termination resistor on external mixer input enable
+    reg_save_7C = lms_dev.reg_set_bits(0x7C, (1 << 2))
+    # Set RxVGA2 gain to max
+    rx_vga2gain = lms_set_rx_vga2gain(lms_dev, 30)
+    # Calibrate!
     print("Rx LPF DC calibration...")
     lms_txrx_lpf_dc_calibration(lms_dev, False)
     print("RxVGA2 DC calibration...")
-    rx_vga2gain = lms_set_rx_vga2gain(lms_dev, 30)
     lms_rxvga2_dc_calibration(lms_dev)
 
     # Restore saved values
-    lms_set_tx_vga1gain(lms_dev, tx_vga1gain)
-    lms_set_tx_vga2gain(lms_dev, tx_vga2gain)
     lms_set_rx_vga2gain(lms_dev, rx_vga2gain)
+    lms_dev.reg_write(0x71, reg_save_71)
+    lms_dev.reg_write(0x7C, reg_save_7C)
     lms_set_rx_lna(lms_dev, lna)
 
 def enable_loopback(lms_dev):
