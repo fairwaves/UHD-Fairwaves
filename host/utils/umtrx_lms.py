@@ -102,12 +102,13 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
                 state = VCO_NORM
                 if verbosity > 1: print("Norm")
         else:
-            print("ERROR WHILE TUNING")
+            print("ERROR: Incorrect VCOCAP reading while tuning")
             return False
 
     if start_i == -1 or stop_i == -1:
-        print("CAN'T TUNE")
+        print("ERROR: Can't find VCOCAP value while tuning")
         return False
+
     # Tune to the middle of the found VCOCAP range
     avg_i = int((start_i + stop_i) / 2)
     print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
