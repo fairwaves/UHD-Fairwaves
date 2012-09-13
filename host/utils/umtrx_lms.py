@@ -174,15 +174,33 @@ def lms_rx_disable(lms_dev):
     # Rx DSM SPI clock enabled
     lms_dev.reg_clear_bits(0x09, (1 << 2))
 
-def lms_pa_off(lms_dev):
-    lms_dev.reg_clear_bits(0x44, (0x07 << 3))
+def lms_get_tx_pa(lms_dev):
+    """ Reurn selected Tx PA."""
+    return lms_dev.reg_get_bits(0x44, (0x07 << 3), 3)
 
-def lms_pa_on(lms_dev, pa):
-    """ Turn on PA, 'pa' parameter is in [1..2] range"""
+def lms_set_tx_pa(lms_dev, pa):
+    """ Turn on selected Tx PA.
+        'pa' parameter is in [0..2] range, where 0 is to turn off all PAs."""
     lms_dev.reg_write_bits(0x44, (0x07 << 3), (pa << 3))
 
-def lms_set_vga1gain(lms_dev, gain):
-    """ Set VGA1 gain in dB.
+def lms_get_rx_lna(lms_dev):
+    """ Reurn selected Rx LNA."""
+    #   Note: We should also check register 0x25 here, but it's not clear
+    #   what to return if 0x75 and 0x25 registers select different LNAs.
+
+    # LNASEL_RXFE[1:0]: Selects the active LNA.
+    return lms_dev.reg_get_bits(0x75, (0x03 << 4), 4)
+
+def lms_set_rx_lna(lms_dev, lna):
+    """ Turn on selected Rx LNA.
+        'lna' parameter is in [0..3] range, where 0 is to turn off all LNAs."""
+    # LNASEL_RXFE[1:0]: Selects the active LNA.
+    lms_dev.reg_write_bits(0x75, (0x03 << 4), (lna << 4))
+    # SELOUT[1:0]: Select output buffer in RX PLL, not used in TX PLL
+    lms_dev.reg_write_bits(0x25, 0x03, lna)
+
+def lms_set_tx_vga1gain(lms_dev, gain):
+    """ Set Tx VGA1 gain in dB.
     gain is in [-4 .. -35] dB range
     Returns the old gain value on success, None on error"""
     if not (-35 <= gain <= -4):
@@ -190,13 +208,13 @@ def lms_set_vga1gain(lms_dev, gain):
     old_bits = lms_dev.reg_write_bits(0x41, 0x1f, 35 + gain)
     return (old_bits & 0x1f) - 35
 
-def lms_get_vga1gain(lms_dev):
-    """ Get VGA1 gain in dB.
+def lms_get_tx_vga1gain(lms_dev):
+    """ Get Tx VGA1 gain in dB.
     gain is in [-4 .. -35] dB range
     Returns the gain value on success, None on error"""
     return lms_dev.reg_get_bits(0x41, 0x1f, 0)-35
 
-def lms_set_vga2gain(lms_dev, gain):
+def lms_set_tx_vga2gain(lms_dev, gain):
     """ Set VGA2 gain.
     gain is in dB [0 .. 25]
     Returns the old gain value on success, None on error"""
@@ -205,13 +223,30 @@ def lms_set_vga2gain(lms_dev, gain):
     old_bits = lms_dev.reg_write_bits(0x45, (0x1f << 3), (gain << 3))
     return old_bits >> 3
 
-def lms_get_vga2gain(lms_dev):
+def lms_get_tx_vga2gain(lms_dev):
     """ Get VGA2 gain in dB.
     gain is in [0 .. 25] dB range
     Returns the gain value on success, None on error"""
     gain = lms_dev.reg_get_bits(0x45, (0x1f << 3), 3)
     gain = gain if gain <= 25 else 25
     return gain
+
+def lms_set_rx_vga2gain(lms_dev, gain):
+    """ Set Rx VGA2 gain.
+    gain is in dB [0 .. 60]
+    Returns the old gain value on success, None on error"""
+    if not (0 <= gain <= 60):
+        return None
+    old_bits = lms_dev.reg_write_bits(0x65, 0x1f, gain/3)
+    return (old_bits & 0x1f) * 3
+
+def lms_get_rx_vga2gain(lms_dev):
+    """ Get VGA2 gain in dB.
+    gain is in [0 .. 60] dB range
+    Returns the gain value on success, None on error"""
+    gain = lms_dev.reg_get_bits(0x65, 0x1f, 0)
+    gain = gain if gain <= 20 else 20
+    return gain * 3
 
 def lms_set_vga1dc_i_int(lms_dev, dc_shift_int):
     """ Set VGA1 DC offset, I channel
@@ -452,14 +487,18 @@ if __name__ == '__main__':
     adv_opt.add_argument('--lms-rx-lpf-dc-calibration', action = 'store_true', help = 'RX LPF DC Offset Calibration')
     adv_opt.add_argument('--lms-rxvga2-dc-calibration', action = 'store_true', help = 'RXVGA2 DC Offset Calibration')
     adv_opt.add_argument('--lms-lpf-bandwidth-tuning', action = 'store_true', help = 'LPF bandwidth tuning. Specify --lpf-bandwidth-code to select specific LPF to tune. WARNING: Tx PLL is tuned to 320MHz during this procedure. Don\'t forget to re-tune it back if needed.')
-    adv_opt.add_argument('--lms-pa-on', type = int, choices = range(1, 3), help = 'turn on PA')
-    adv_opt.add_argument('--lms-pa-off', action = 'store_true', help = 'turn off PA')
+    adv_opt.add_argument('--lms-set-tx-pa',  type = int, choices = range(0, 3), help = 'Activate selected Tx PA, i.e. select LMS output. 0 to turn off all PAs')
+    adv_opt.add_argument('--lms-get-tx-pa', action = 'store_true', help = 'Get active PA, i.e. active LMS output. 0 if all outputs are disabled')
+    adv_opt.add_argument('--lms-set-rx-lna', type = int, choices = range(0, 4), help = 'Activate selected Rx LNA, i.e. select LMS input. 0 to turn off all LNAs')
+    adv_opt.add_argument('--lms-get-rx-lna', action = 'store_true', help = 'Get active LNA, i.e. active LMS input. 0 if all inputs are disabled')
     adv_opt.add_argument('--lms-tx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Tx PLL to the given frequency')
     adv_opt.add_argument('--lms-rx-pll-tune', type = float, metavar = '232.5e6..3720e6', help = 'Tune Rx PLL to the given frequency')
-    adv_opt.add_argument('--lms-set-vga1-gain', type = int, choices = range(-35, -3), metavar = '[-35..-4]', help = 'Set VGA1 gain, in dB')
-    adv_opt.add_argument('--lms-get-vga1-gain', action = 'store_true', help = 'Get VGA1 gain, in dB')
-    adv_opt.add_argument('--lms-set-vga2-gain', type = int, choices = range(0, 26), metavar = '[0..25]', help = 'Set VGA2 gain, in dB')
-    adv_opt.add_argument('--lms-get-vga2-gain', action = 'store_true', help = 'Get VGA2 gain, in dB')
+    adv_opt.add_argument('--lms-set-tx-vga1-gain', type = int, choices = range(-35, -3), metavar = '[-35..-4]', help = 'Set Tx VGA1 gain, in dB')
+    adv_opt.add_argument('--lms-get-tx-vga1-gain', action = 'store_true', help = 'Get Tx VGA1 gain, in dB')
+    adv_opt.add_argument('--lms-set-tx-vga2-gain', type = int, choices = range(0, 26), metavar = '[0..25]', help = 'Set Tx VGA2 gain, in dB')
+    adv_opt.add_argument('--lms-get-tx-vga2-gain', action = 'store_true', help = 'Get Tx VGA2 gain, in dB')
+    adv_opt.add_argument('--lms-set-rx-vga2-gain', type = int, choices = range(0, 61), metavar = '[0..60]', help = 'Set Rx VGA2 gain, in dB with 3dB accuracy.')
+    adv_opt.add_argument('--lms-get-rx-vga2-gain', action = 'store_true', help = 'Get Rx VGA2 gain, in dB')
     adv_opt.add_argument('--lms-tune-vga1-dc-i', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, I channel')
     adv_opt.add_argument('--lms-tune-vga1-dc-q', action = 'store_true', help = 'Interactive tuning of TxVGA1 DC shift, Q channel')
     adv_opt.add_argument('--enable-loopback', action = 'store_true', help = 'enable loopback')
@@ -467,7 +506,8 @@ if __name__ == '__main__':
     if args.lms is None: # argparse do not have dependency concept for options
         if args.reg is not None or args.data is not None or args.lms_tx_pll_tune is not None \
            or args.lms_rx_pll_tune is not None or args.lms_init \
-           or args.lms_pa_off or args.lms_pa_on is not None \
+           or args.lms_set_tx_pa is not None or args.lms_set_rx_lna is not None \
+           or args.lms_get_tx_pa or args.lms_get_rx_lna \
            or args.lms_lpf_tuning_dc_calibration or args.lms_tx_lpf_dc_calibration \
            or args.lms_rx_lpf_dc_calibration or args.lms_rxvga2_dc_calibration \
            or args.lms_auto_calibration or args.lms_lpf_bandwidth_tuning \
@@ -519,10 +559,14 @@ if __name__ == '__main__':
                 lms_txrx_lpf_dc_calibration(umtrx_lms_dev, False)
             elif args.lms_rxvga2_dc_calibration:
                 lms_rxvga2_dc_calibration(umtrx_lms_dev)
-            elif args.lms_pa_on is not None:
-                lms_pa_on(umtrx_lms_dev, args.lms_pa_on)
-            elif args.lms_pa_off:
-                lms_pa_off(umtrx_lms_dev)
+            elif args.lms_set_tx_pa is not None:
+                lms_set_tx_pa(umtrx_lms_dev, args.lms_set_tx_pa)
+            elif args.lms_get_tx_pa:
+                lms_get_tx_pa(umtrx_lms_dev)
+            elif args.lms_set_rx_lna is not None:
+                lms_set_rx_lna(umtrx_lms_dev, args.lms_set_rx_lna)
+            elif args.lms_get_rx_lna:
+                lms_get_rx_lna(umtrx_lms_dev)
             elif args.lms_tx_pll_tune is not None:
                 lms_tx_pll_tune(umtrx_lms_dev, int(args.pll_ref_clock), int(args.lms_tx_pll_tune))
             elif args.lms_rx_pll_tune is not None:
@@ -531,15 +575,20 @@ if __name__ == '__main__':
                 # 0x0f - 0.75MHz
                 lpf_bw_code = args.lpf_bandwidth_code if args.lpf_bandwidth_code is not None else 0x0f
                 lms_lpf_bandwidth_tuning(umtrx_lms_dev, int(args.pll_ref_clock), int(lpf_bw_code))
-            elif args.lms_set_vga1_gain is not None:
-                lms_set_vga1gain(umtrx_lms_dev, int(args.lms_set_vga1_gain))
-            elif args.lms_get_vga1_gain:
-                gain = lms_get_vga1gain(umtrx_lms_dev)
+            elif args.lms_set_tx_vga1_gain is not None:
+                lms_set_tx_vga1gain(umtrx_lms_dev, int(args.lms_set_tx_vga1_gain))
+            elif args.lms_get_tx_vga1_gain:
+                gain = lms_get_tx_vga1gain(umtrx_lms_dev)
                 print(gain)
-            elif args.lms_set_vga2_gain is not None:
-                lms_set_vga2gain(umtrx_lms_dev, int(args.lms_set_vga2_gain))
-            elif args.lms_get_vga2_gain:
-                gain = lms_get_vga2gain(umtrx_lms_dev)
+            elif args.lms_set_tx_vga2_gain is not None:
+                lms_set_tx_vga2gain(umtrx_lms_dev, int(args.lms_set_tx_vga2_gain))
+            elif args.lms_get_tx_vga2_gain:
+                gain = lms_get_tx_vga2gain(umtrx_lms_dev)
+                print(gain)
+            elif args.lms_set_rx_vga2_gain is not None:
+                lms_set_rx_vga2gain(umtrx_lms_dev, int(args.lms_set_rx_vga2_gain))
+            elif args.lms_get_rx_vga2_gain:
+                gain = lms_get_rx_vga2gain(umtrx_lms_dev)
                 print(gain)
             elif args.lms_tune_vga1_dc_i:
                 for i in range(110, 130, 1):
