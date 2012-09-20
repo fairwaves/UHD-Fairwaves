@@ -277,7 +277,7 @@ def lms_set_vga1dc_q(lms_dev, dc_shift):
     """ Set VGA1 DC offset, Q channel
     dc_shift is an a DC shift in mV [-16 .. 15.9375]
     Returns old gan value on success, None on error"""
-    old_bits = lms_set_vga1dc_i_int(lms_dev, int(dc_shift*16 + 128))
+    old_bits = lms_set_vga1dc_q_int(lms_dev, int(dc_shift*16 + 128))
     return (float(old_bits) - 128) / 16
 
 # RF Settings for LO leakage tuning
