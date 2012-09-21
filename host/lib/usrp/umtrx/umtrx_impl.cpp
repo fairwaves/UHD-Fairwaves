@@ -356,10 +356,10 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
             .set(1e6) //some default
             .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsp, _1))
             .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, 0, _1));
-        _tree->create<double>(mb_path / "tx_dsps/0/freq/value");
-//            .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
-        _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range");
-//            .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb));
+        _tree->create<double>(mb_path / "tx_dsps/0/freq/value")
+            .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, _1));
+        _tree->create<meta_range_t>(mb_path / "tx_dsps/0/freq/range")
+            .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb));
 
         //setup dsp flow control
         const double ups_per_sec = device_args_i.cast<double>("ups_per_sec", 20);
@@ -501,11 +501,12 @@ void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const double lo_fr
 void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const double lo_freq){
     apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
 }
-/*
+
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/special_functions/sign.hpp>
 
 double umtrx_impl::set_tx_dsp_freq(const std::string &mb, const double freq_){
+/*
     double new_freq = freq_;
     const double tick_rate = _tree->access<double>("/mboards/"+mb+"/tick_rate").get();
 
@@ -520,6 +521,9 @@ double umtrx_impl::set_tx_dsp_freq(const std::string &mb, const double freq_){
     else _mbc[mb].codec->set_tx_mod_mode(sign*4/zone); //DAC interp = 4
 
     return _mbc[mb].tx_dsp->set_freq(new_freq) + dac_shift; //actual freq
+*/
+    // TODO: HACK: I'm not sure this works as expected.
+    return _mbc[mb].tx_dsp->set_freq(freq_); //actual freq
 }
 
 meta_range_t umtrx_impl::get_tx_dsp_freq_range(const std::string &mb){
@@ -527,7 +531,7 @@ meta_range_t umtrx_impl::get_tx_dsp_freq_range(const std::string &mb){
     const meta_range_t dsp_range = _mbc[mb].tx_dsp->get_freq_range();
     return meta_range_t(dsp_range.start() - tick_rate*2, dsp_range.stop() + tick_rate*2, dsp_range.step());
 }
-*/
+
 
 // spi_config_t::EDGE_RISE is used by default
 uint32_t umtrx_impl::read_addr(uint8_t lms, uint8_t addr, bool rise) {
