@@ -62,6 +62,159 @@
 uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface);
 
 /*!
+ * Basic LMX control class
+ */
+class lms6002d_dev {
+public:
+    virtual ~lms6002d_dev() {}
+
+    void Init();
+    void dump();
+
+    /** Write through SPI */
+    virtual void write_reg(uint8_t addr, uint8_t val) = 0;
+    /** Read through SPI */
+    virtual uint8_t read_reg(uint8_t addr) = 0;
+
+    /** Tune TX PLL to a given frequency. */
+    bool tx_pll_tune(double ref_clock, double out_freq) {
+        return lms_txrx_pll_tune(0x10, ref_clock, out_freq);
+    }
+    /** Tune TX PLL to a given frequency. */
+    bool rx_pll_tune(double ref_clock, double out_freq) {
+        return lms_txrx_pll_tune(0x20, ref_clock, out_freq);
+    }
+
+    void tx_enable() {
+        // STXEN: Soft transmit enable
+        lms_set_bits(0x05, (1 << 3));
+        // Tx DSM SPI clock enabled
+        lms_set_bits(0x09, (1 << 0));
+    }
+
+    void rx_enable() {
+        // SRXEN: Soft receive enable
+        lms_set_bits(0x05, (1 << 2));
+        // Rx DSM SPI clock enabled
+        lms_set_bits(0x09, (1 << 2));
+    }
+
+    void tx_disable() {
+        // STXEN: Soft transmit enable
+        lms_clear_bits(0x05, (1 << 3));
+        // Tx DSM SPI clock enabled
+        lms_clear_bits(0x09, (1 << 0));
+    }
+    void rx_disable() {
+        // SRXEN: Soft receive enable
+        lms_clear_bits(0x05, (1 << 2));
+        // Rx DSM SPI clock enabled
+        lms_clear_bits(0x09, (1 << 2));
+    }
+
+    uint8_t get_tx_pa() {
+        return lms_read_shift(0x44, (0x07 << 3), 3);
+    }
+    /** Turn on selected Tx PA.
+        'pa' parameter is in [0..2] range, where 0 is to turn off all PAs. */
+    void set_tx_pa(uint8_t pa) {
+        lms_write_bits(0x44, (0x07 << 3), (pa << 3));
+    }
+
+    uint8_t get_rx_lna() {
+        //   Note: We should also check register 0x25 here, but it's not clear
+        //   what to return if 0x75 and 0x25 registers select different LNAs.
+        //
+        // LNASEL_RXFE[1:0]: Selects the active LNA.
+        return lms_read_shift(0x75, (0x03 << 4), 4);
+    }
+
+    /** Turn on selected Rx LNA.
+    'lna' parameter is in [0..3] range, where 0 is to turn off all LNAs.*/
+    void lms_set_rx_lna(uint8_t lna) {
+        // LNASEL_RXFE[1:0]: Selects the active LNA.
+        lms_write_bits(0x75, (0x03 << 4), (lna << 4));
+        // SELOUT[1:0]: Select output buffer in RX PLL, not used in TX PLL
+        lms_write_bits(0x25, 0x03, lna);
+    }
+    /**  Set Tx VGA1 gain in dB. 
+        gain is in [-4 .. -35] dB range
+        Returns the old gain value on success, -127 error*/
+    int8_t lms_set_tx_vga1gain(int8_t gain) {
+        if (not(-35 <= gain and gain <= -4)) {
+            return -127;
+        }
+        int8_t old_bits = lms_write_bits(0x41, 0x1f, 35 + gain);
+        return (old_bits & 0x1f) - 35;
+    }
+
+    /**  Get Tx VGA1 gain in dB.
+    gain is in [-4 .. -35] dB range */
+    int8_t lms_get_tx_vga1gain() {
+        return lms_read_shift(0x41, 0x1f, 0) - 35;
+    }
+
+    /**  Set VGA2 gain.
+    gain is in dB [0 .. 25]
+    Returns the old gain value on success, -127 on error */
+    int8_t lms_set_tx_vga2gain(int8_t gain) {
+        if (not(0 <= gain and gain <= 25))
+            return -127;
+        int8_t old_bits = lms_write_bits(0x45, (0x1f << 3), (gain << 3));
+        return old_bits >> 3;
+    }
+
+    /**  Get TX VGA2 gain in dB.
+    gain is in [0 .. 25] dB range
+    Returns the gain value */
+    int8_t lms_get_tx_vga2gain() {
+        int8_t gain = lms_read_shift(0x45, (0x1f << 3), 3);
+        gain = (gain <= 25) ? gain : 25;
+        return gain;
+    }
+
+    /**  Set Rx VGA2 gain.
+    gain is in dB [0 .. 60]
+    Returns the old gain value on success, -127 on error */
+    int8_t lms_set_rx_vga2gain(int8_t gain) {
+        if (not (0 <= gain and gain <= 60)) {
+            return -127;
+        }
+        int8_t old_bits = lms_write_bits(0x65, 0x1f, gain/3);
+        return (old_bits & 0x1f) * 3;
+    }
+
+    /**  Get Rx VGA2 gain in dB.
+    gain is in [0 .. 60] dB range
+    Returns the gain value */
+    int8_t lms_get_rx_vga2gain() {
+        int8_t gain = lms_read_shift(0x65, 0x1f, 0);
+        gain = (gain <= 20) ? gain : 20;
+        return gain * 3;
+    }
+
+protected:
+    bool lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
+
+    void lms_set_bits(uint8_t address, uint8_t mask) {
+        write_reg(address, read_reg(address) | (mask));
+    }
+    void lms_clear_bits(uint8_t address, uint8_t mask) {
+        write_reg(address, read_reg(address) & (!mask));
+    }
+
+    uint8_t lms_write_bits(uint8_t address, uint8_t mask, uint8_t bits) {
+        uint8_t reg = read_reg(address);
+        write_reg(address,  (reg & (!mask)) | bits);
+        return reg;
+    }
+    uint8_t lms_read_shift(uint8_t address, uint8_t mask, uint8_t shift) {
+        return (read_reg(address) & mask) >> shift;
+    }
+
+};
+
+/*!
  * UmTRX implementation guts:
  * The implementation details are encapsulated here.
  * Handles device properties and streaming...
@@ -71,19 +224,45 @@ public:
     umtrx_impl(const uhd::device_addr_t &);
     ~umtrx_impl(void);
 
+    class umtrx_lms6002d : public lms6002d_dev {
+    public:
+        umtrx_lms6002d(umtrx_impl* p, int lms_num) : _p(p), _lms_num(lms_num) {};
+
+        virtual void write_reg(uint8_t addr, uint8_t val) {
+            _p->lms_write(_lms_num, addr, val);
+        }
+        virtual uint8_t read_reg(uint8_t addr) {
+            return _p->lms_read(_lms_num, addr);
+        }
+    private:
+        int _lms_num;
+        umtrx_impl* _p;
+    };
+
     //the io interface
     uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
     uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
     bool recv_async_msg(uhd::async_metadata_t &, double);
 
     // LMS-specific functions
-    void reg_dump(bool rise = true);
-    void write_addr(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
-    uint32_t read_addr(uint8_t LMS_number, uint8_t address, bool rise = true);
+    void reg_dump();
+    void lms_write(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
+    uint32_t lms_read(uint8_t LMS_number, uint8_t address, bool rise = true);
+
     uint32_t write_n_check(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
+    
     bool lms_dc_calibrate(int lms_addr, int dc_addr);
+    
     void lms_init(int lms_addr);
     bool lms_pll_tune(int64_t ref_clock, int64_t out_freq);
+
+
+    void lms_set_bits(uint8_t LMS_number, uint8_t address, uint8_t mask);
+    void lms_clear_bits(uint8_t LMS_number, uint8_t address, uint8_t mask);
+
+    // LMS Control
+    void lms_tx_enable(uint8_t LMS_number, bool enable = true);
+    void lms_rx_enable(uint8_t LMS_number, bool enable = true);
 
 private:
     uhd::property_tree::sptr _tree;
@@ -105,6 +284,8 @@ private:
         mb_container_type(void): rx_chan_occ(0), tx_chan_occ(0){}
     };
     uhd::dict<std::string, mb_container_type> _mbc;
+
+    umtrx_lms6002d lms0, lms1;
 
     void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
     void set_db_eeprom(const std::string &, const std::string &, const uhd::usrp::dboard_eeprom_t &);
@@ -135,6 +316,8 @@ private:
     double set_tx_dsp_freq(const std::string &, const double);
     uhd::meta_range_t get_tx_dsp_freq_range(const std::string &);
     void update_clock_source(const std::string &, const std::string &);
+
+
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */

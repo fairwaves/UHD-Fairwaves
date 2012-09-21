@@ -42,6 +42,162 @@
 #include "validate_subdev_spec.hpp"
 #include <uhd/usrp/dboard_iface.hpp>
 
+/************************************************************************/
+/* LMS Class                                                            */
+/************************************************************************/
+void lms6002d_dev::dump()
+{
+    for (int i = 0; i < 128; i++) {
+        switch (i) {
+            case 0x0C:
+            case 0x0D:
+            case 0x37:
+            case 0x38:
+            case 0x39:
+            case 0x3A:
+            case 0x3B:
+            case 0x3C:
+            case 0x3D:
+            case 0x69:
+            case 0x6A:
+            case 0x6B:
+            case 0x6C:
+            case 0x6D:
+                continue;
+        }
+        printf("i=%x LMS=%x\n", i, read_reg(i));
+    }
+}
+
+bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
+{
+    // Supported frequency ranges and corresponding FREQSEL values.
+    struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
+        { 0.2325e9,   0.285625e9, 0x27 },
+        { 0.285625e9, 0.336875e9, 0x2f },
+        { 0.336875e9, 0.405e9,    0x37 },
+        { 0.405e9,    0.465e9,    0x3f },
+        { 0.465e9,    0.57125e9,  0x26 },
+        { 0.57125e9,  0.67375e9,  0x2e },
+        { 0.67375e9,  0.81e9,     0x36 },
+        { 0.81e9,     0.93e9,     0x3e },
+        { 0.93e9,     1.1425e9,   0x25 },
+        { 1.1425e9,   1.3475e9,   0x2d },
+        { 1.3475e9,   1.62e9,     0x35 },
+        { 1.62e9,     1.86e9,     0x3d },
+        { 1.86e9,     2.285e9,    0x24 },
+        { 2.285e9,    2.695e9,    0x2c },
+        { 2.695e9,    3.24e9,     0x34 },
+        { 3.24e9,     3.72e9,     0x3c },
+    };
+
+    // Find frequency range and FREQSEL for the given frequency
+    int8_t found_freqsel = -1;
+    for (unsigned i = 0; i < (int)sizeof(freqsel) / sizeof(freqsel[0]); i++) {
+        if (out_freq > freqsel[i].fmin && out_freq <= freqsel[i].fmax) {
+            found_freqsel = freqsel[i].value; break;
+        }
+    }
+    if (found_freqsel == -1)
+    {
+        // Unsupported frequency range
+        return false;
+    }
+
+    // Calculate NINT, NFRAC
+    int64_t vco_x = 1 << ((found_freqsel & 0x7) - 3);
+    int64_t nint = vco_x * out_freq / ref_clock;
+    int64_t nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock;
+
+    // DEBUG
+    printf("\nFREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n", (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
+
+    // Write NINT, NFRAC
+    write_reg(reg + 0x0, (nint >> 1) & 0xff);    // NINT[8:1]
+    write_reg(reg + 0x1, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] NFRACK[22:16]
+    write_reg(reg + 0x2, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
+    write_reg(reg + 0x3, (nfrack) & 0xff);     // NFRACK[7:0]
+    // Write FREQSEL
+    write_reg(reg + 0x5, (found_freqsel << 2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
+    // Reset VOVCOREG, OFFDOWN to default
+    write_reg(reg + 0x8, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
+    write_reg(reg + 0x9, 0x94); // VOVCOREG[0] VCOCAP[5:0]
+
+    // DEBUG
+    //reg_dump();
+
+    // Poll VOVCO
+    int start_i = -1;
+    int stop_i = -1;
+    enum State { VCO_HIGH, VCO_NORM, VCO_LOW } state = VCO_HIGH;
+    for (int i = 0; i < 64; i++) {
+        // TODO: Set only bits 5–0
+        write_reg(reg + 0x9, 0x80 | i);
+        //usleep(50);
+
+        int comp = read_reg(reg + 0x0a);
+        switch (comp >> 6) {
+        case 0x02: //HIGH
+            break;
+        case 0x01: //LOW
+            if (state == VCO_NORM) {
+                stop_i = i - 1;
+                state = VCO_LOW;
+                printf("Low\n");
+            }
+            break;
+        case 0x00: //NORMAL
+            if (state == VCO_HIGH) {
+                start_i = i;
+                state = VCO_NORM;
+                printf("Norm\n");
+            }
+            break;
+        default: //ERROR
+            printf("ERROR WHILE TUNING\n");
+            return false;
+        }
+        printf("VOVCO[%d]=%x\n", i, comp);
+    }
+    if (VCO_NORM == state)
+        stop_i = 63;
+
+    if (start_i == -1 || stop_i == -1) {
+        printf("CAN'T TUNE\n");
+        return false;
+    }
+
+    // Tune to the middle of the found VCOCAP range
+    int avg_i = (start_i + stop_i) / 2;
+    printf("START=%d STOP=%d SET=%d\n", start_i, stop_i, avg_i);
+    write_reg(reg + 0x09, 0x80 | avg_i);
+
+    return true;
+}
+
+void lms6002d_dev::Init()
+{
+    write_reg(0x09, 0x00); // RXOUTSW (disabled), CLK_EN (all disabled)
+    write_reg(0x17, 0xE0);
+    write_reg(0x27, 0xE3);
+    write_reg(0x64, 0x32);
+    write_reg(0x70, 0x01);
+    write_reg(0x79, 0x37);
+    write_reg(0x59, 0x09);
+    write_reg(0x47, 0x40);
+    // RF Settings
+    write_reg(0x41, 0x15); // VGA1GAIN
+    write_reg(0x45, 0x00); // VGA2GAIN, ENVD
+
+    //reg_dump();
+
+    tx_enable();
+    rx_enable();
+}
+
+
+
+
 using namespace uhd;
 using namespace uhd::usrp;
 using namespace uhd::transport;
@@ -100,7 +256,10 @@ static zero_copy_if::sptr make_xport(
 /***********************************************************************
  * Structors
  **********************************************************************/
-umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
+umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
+: lms0(this, 0)
+, lms1(this, 1)
+{
     UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
     device_addr_t device_addr = _device_addr;
     //setup the dsp transport hints (default to a large recv buff)
@@ -409,34 +568,32 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
         dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_eeprom;
         rx_db_eeprom.id = 0xfa09;
         tx_db_eeprom.id = 0xfa07;
+        //gdb_eeprom.id = 0x0000;
+        const char* board = "A";
 
-        //create the properties and register subscribers
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/rx_eeprom")
-            .set(rx_db_eeprom);
-//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "rx", _1));
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/tx_eeprom")
-            .set(tx_db_eeprom);
-//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "tx", _1));
-//        _tree->create<dboard_eeprom_t>(mb_path / "dboards/A/gdb_eeprom")
-//            .set(gdb_eeprom)
-//            .subscribe(boost::bind(&usrp2_impl::set_db_eeprom, this, mb, "gdb", _1));
-
-        //create a new dboard interface and manager
-            _mbc[mb].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface);
-            
-        _tree->create<dboard_iface::sptr>(mb_path / "dboards/A/iface").set(_mbc[mb].dboard_iface);
+        _mbc[mb].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface);
         _mbc[mb].dboard_manager = dboard_manager::make(
             rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
-            _mbc[mb].dboard_iface, _tree->subtree(mb_path / "dboards/A")
-        );
+            _mbc[mb].dboard_iface, _tree->subtree(mb_path / "dboards" / board)
+            );
+
+        //create the properties and register subscribers
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "rx_eeprom")
+            .set(rx_db_eeprom);
+
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "tx_eeprom")
+            .set(tx_db_eeprom);
+            
+        _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dboard_iface);
+
 
         //bind frontend corrections to the dboard freq props
-        const fs_path db_tx_fe_path = mb_path / "dboards" / "A" / "tx_frontends";
+        const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
             _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
                 .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, _1));
         }
-        const fs_path db_rx_fe_path = mb_path / "dboards" / "A" / "rx_frontends";
+        const fs_path db_rx_fe_path = mb_path / "dboards" / board / "rx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_rx_fe_path)){
             _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
                 .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
@@ -465,6 +622,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr){
             _mbc[mb].time64->set_time_next_pps(time_spec_t(time_t(_mbc[mb].gps->get_sensor("gps_time").to_int()+1)));
         }
     }
+
+    lms0.Init();
+    lms1.Init();
 
 }
 
@@ -534,7 +694,7 @@ meta_range_t umtrx_impl::get_tx_dsp_freq_range(const std::string &mb){
 
 
 // spi_config_t::EDGE_RISE is used by default
-uint32_t umtrx_impl::read_addr(uint8_t lms, uint8_t addr, bool rise) {
+uint32_t umtrx_impl::lms_read(uint8_t lms, uint8_t addr, bool rise) {
     if(addr > 127) return 0; // incorrect address, 7 bit long expected
     if(rise) {
 	BOOST_FOREACH(const std::string &mb, _mbc.keys()) {// EVIL HACK - ignore everything after 1st call
@@ -548,11 +708,11 @@ uint32_t umtrx_impl::read_addr(uint8_t lms, uint8_t addr, bool rise) {
 }
 
 uint32_t umtrx_impl::write_n_check(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
-    write_addr(lms, addr, data, rise);
-    return read_addr(lms, addr, rise);
+    lms_write(lms, addr, data, rise);
+    return lms_read(lms, addr, rise);
 }
 
-void umtrx_impl::write_addr(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
+void umtrx_impl::lms_write(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
     if(addr < 128) { // 1st bit is 1 (means 'write'), than address, than value
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         if(rise) { 
@@ -568,13 +728,35 @@ void umtrx_impl::write_addr(uint8_t lms, uint8_t addr, uint8_t data, bool rise) 
     }
 }
 
-void umtrx_impl::reg_dump(bool rise) {
+void umtrx_impl::reg_dump() {
     for (int i = 0; i < 128; i++) {
-        printf("i=%x LMS1=%x LMS2=%x\t", i, read_addr(1, i, rise), read_addr(2, i, rise));
-	if(read_addr(1, i, rise) == read_addr(2, i, rise)) printf("OK\n"); else printf("DIFF\n");
+        switch (i) {
+            case 0x0C:
+            case 0x0D:
+            case 0x37:
+            case 0x38:
+            case 0x39:
+            case 0x3A:
+            case 0x3B:
+            case 0x3C:
+            case 0x3D:
+            case 0x69:
+            case 0x6A:
+            case 0x6B:
+            case 0x6C:
+            case 0x6D:
+                continue;
+        }
+        printf("i=%x LMS1=%x LMS2=%x\t", i, lms_read(1, i), lms_read(2, i));
+	    
+        if(lms_read(1, i) == lms_read(2, i)) 
+            printf("OK\n"); 
+        else
+            printf("DIFF\n");
     }
 }
 
+#if 0
 bool umtrx_impl::lms_dc_calibrate(int lms_addr, int dc_addr)
 {
     static int try_cnt_limit = 10;
@@ -584,13 +766,13 @@ bool umtrx_impl::lms_dc_calibrate(int lms_addr, int dc_addr)
     reg_val |= LMS_BITS(0, LMS_DC_LOAD_SHIFT, LMS_DC_LOAD_MASK);
     reg_val |= LMS_BITS(1, LMS_DC_SRESET_SHIFT, LMS_DC_SRESET_MASK);
     reg_val |= LMS_BITS(dc_addr, LMS_DC_ADDR_SHIFT, LMS_DC_ADDR_MASK);
-    write_addr(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
+    lms_write(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
 
     reg_val ^= LMS_BITS(1, LMS_DC_START_CLBR_SHIFT, LMS_DC_START_CLBR_MASK);
-    write_addr(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
+    lms_write(lms_addr, LMS_DC_CAL_REG, reg_val, LMS_DC_CAL_REG);
 
     for (int try_cnt = 0; try_cnt < try_cnt_limit; try_cnt++) {
-        usleep(10); // Docs say 6.7us (1.6us)
+        // usleep(10); // Docs say 6.7us (1.6us)
         // TODO: todo                                           
     }
 
@@ -640,15 +822,15 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq) {
    printf("\nFREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n", (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
 
    // Write NINT, NFRAC
-   write_addr(1, 0x10, (nint >> 1) & 0xff);    // NINT[8:1]
-   write_addr(1, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] NFRACK[22:16]
-   write_addr(1, 0x12, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
-   write_addr(1, 0x13, (nfrack) & 0xff);     // NFRACK[7:0]
+   lms_write(1, 0x10, (nint >> 1) & 0xff);    // NINT[8:1]
+   lms_write(1, 0x11, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] NFRACK[22:16]
+   lms_write(1, 0x12, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
+   lms_write(1, 0x13, (nfrack) & 0xff);     // NFRACK[7:0]
    // Write FREQSEL
-   write_addr(1, 0x15, (found_freqsel << 2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
+   lms_write(1, 0x15, (found_freqsel << 2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
    // Reset VOVCOREG, OFFDOWN to default
-   write_addr(1, 0x18, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
-   write_addr(1, 0x19, 0x94); // VOVCOREG[0] VCOCAP[5:0]
+   lms_write(1, 0x18, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
+   lms_write(1, 0x19, 0x94); // VOVCOREG[0] VCOCAP[5:0]
 
    // DEBUG
    reg_dump();
@@ -659,10 +841,10 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq) {
    enum State { VCO_HIGH, VCO_NORM, VCO_LOW } state = VCO_HIGH;
    for (int i = 0; i < 64; i++) {
       // TODO: Set only bits 5–0
-      write_addr(1, 0x19, 0x80 | i);
+      lms_write(1, 0x19, 0x80 | i);
       //usleep(50);
 
-      int comp = read_addr(1, 0x1a);
+      int comp = lms_read(1, 0x1a);
       switch (comp >> 6) {
       case 0x02: //HIGH
          break;
@@ -686,6 +868,8 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq) {
       }
       printf("VOVCO[%d]=%x\n", i, comp);
    }
+   if (VCO_NORM == state)
+      stop_i = 63;
 
    if (start_i == -1 || stop_i == -1) {
       printf("CAN'T TUNE\n");
@@ -695,62 +879,72 @@ bool umtrx_impl::lms_pll_tune(int64_t ref_clock, int64_t out_freq) {
    // Tune to the middle of the found VCOCAP range
    int avg_i = (start_i + stop_i) / 2;
    printf("START=%d STOP=%d SET=%d\n", start_i, stop_i, avg_i);
-   write_addr(1, 0x19, 0x80 | avg_i);
+   lms_write(1, 0x19, 0x80 | avg_i);
 
    return true;
 }
 
 void umtrx_impl::lms_init(int lms_addr) {
-    // INIT defaults
-    write_addr(lms_addr, 0x09, 0xC0);
-    write_addr(lms_addr, 0x09, 0x80);
-    write_addr(lms_addr, 0x17, 0xE0);
-    write_addr(lms_addr, 0x27, 0xE3);
-    write_addr(lms_addr, 0x64, 0x32);
-    write_addr(lms_addr, 0x70, 0x01);
-    write_addr(lms_addr, 0x79, 0x37);
-    write_addr(lms_addr, 0x59, 0x09);
-    write_addr(lms_addr, 0x47, 0x40);
-
-    // Our defaults
-//    write_addr(lms_addr, 0x16, 0x8C);
-//    write_addr(lms_addr, 0x17, 0xE3);
-//    write_addr(lms_addr, 0x18, 0x43);
-
-    //TX Enable
-    write_addr(1, 0x05, (1<<5) | (1<<4) | (1<<3) | (1<<1));     //STXEN
-    write_addr(1, 0x09, 0x81);
-    // PA off
-    write_addr(1, 0x44, (0<<3)|(1<<1)|1);
-
-    //RF Settings
-//    write_addr(1, 0x40, 0x02);
-    write_addr(1, 0x41, 0x15); // VGA1GAIN
-//    write_addr(1, 0x42, 0x80);
-//    write_addr(1, 0x43, 0x80);
-//    write_addr(1, 0x44, 0x0B);
-    write_addr(1, 0x45, 0x00); // VGA2GAIN, ENVD
-//    write_addr(1, 0x46, 0x00);
-//    write_addr(1, 0x47, 0x40);
-//    write_addr(1, 0x48, 0x0C);
-//    write_addr(1, 0x49, 0x0C);
-    // Tx RF test mode registers
-//    write_addr(1, 0x4A, 0x18);
-//    write_addr(1, 0x4B, 0x50);
-//    write_addr(1, 0x4C, 0x00);
-//    write_addr(1, 0x4D, 0x00);
-
-    // TODO: Move everything below to respective functions.
 
     reg_dump();
+
+    lms_write(lms_addr, 0x09, 0x00); // RXOUTSW (disabled), CLK_EN (all disabled)
+    lms_write(lms_addr, 0x17, 0xE0);
+    lms_write(lms_addr, 0x27, 0xE3);
+    lms_write(lms_addr, 0x64, 0x32);
+    lms_write(lms_addr, 0x70, 0x01);
+    lms_write(lms_addr, 0x79, 0x37);
+    lms_write(lms_addr, 0x59, 0x09);
+    lms_write(lms_addr, 0x47, 0x40);
+// RF Settings
+    lms_write(lms_addr, 0x41, 0x15); // VGA1GAIN
+    lms_write(lms_addr, 0x45, 0x00); // VGA2GAIN, ENVD
+
+    //reg_dump();
+
+    lms_tx_enable(lms_addr);
+    lms_rx_enable(lms_addr);
 
     // Tune PLL
     lms_pll_tune(26e6, 925e6);
 
-    // RF Settings
-    write_addr(1, 0x41, (-4+35)); // VGA1GAIN
-    write_addr(1, 0x45, (25<<3)|0x0); // VGA2GAIN, ENVD
-
-    // PA2 on
-    write_addr(1, 0x44, (2<<3)|(1<<1)|1);
 }
+
+
+void umtrx_impl::lms_set_bits(uint8_t LMS_number, uint8_t address, uint8_t mask)
+{
+    lms_write(LMS_number, address, lms_read(LMS_number, address) | mask);
+}
+void umtrx_impl::lms_clear_bits(uint8_t LMS_number, uint8_t address, uint8_t mask)
+{
+    lms_write(LMS_number, address, lms_read(LMS_number, address) & (!mask));
+}
+
+
+void umtrx_impl::lms_tx_enable(uint8_t LMS_number, bool enable)
+{
+    if (enable) {
+        // STXEN: Soft transmit enable
+        lms_set_bits(LMS_number, 0x05, (1 << 3));
+        // Tx DSM SPI clock enabled
+        lms_set_bits(LMS_number, 0x09, (1 << 0));
+    } else {
+        lms_clear_bits(LMS_number, 0x05, (1 << 3));
+        lms_clear_bits(LMS_number, 0x09, (1 << 0));
+    }
+}
+
+void umtrx_impl::lms_rx_enable(uint8_t LMS_number, bool enable)
+{
+    if (enable) {
+        // SRXEN: Soft receive enable
+        lms_set_bits(LMS_number, 0x05, (1 << 2));
+        // Rx DSM SPI clock enabled
+        lms_set_bits(LMS_number, 0x09, (1 << 2));
+    } else {
+        lms_clear_bits(LMS_number, 0x05, (1 << 2));
+        lms_clear_bits(LMS_number, 0x09, (1 << 2));
+    }
+}
+
+#endif
