@@ -200,12 +200,12 @@ protected:
         write_reg(address, read_reg(address) | (mask));
     }
     void lms_clear_bits(uint8_t address, uint8_t mask) {
-        write_reg(address, read_reg(address) & (!mask));
+        write_reg(address, read_reg(address) & (~mask));
     }
 
     uint8_t lms_write_bits(uint8_t address, uint8_t mask, uint8_t bits) {
         uint8_t reg = read_reg(address);
-        write_reg(address,  (reg & (!mask)) | bits);
+        write_reg(address,  (reg & (~mask)) | bits);
         return reg;
     }
     uint8_t lms_read_shift(uint8_t address, uint8_t mask, uint8_t shift) {
