@@ -130,8 +130,8 @@ lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
         .set(true);
 
     this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
-    this->get_rx_subtree()->create<double>("bandwidth/value").set(double(0.0));
-    this->get_rx_subtree()->create<meta_range_t>("bandwidth/range").set(freq_range_t(0.3, 3.8));
+    this->get_rx_subtree()->create<double>("bandwidth/value").set(double(28));
+    this->get_rx_subtree()->create<meta_range_t>("bandwidth/range").set(freq_range_t(1.5, 28));
 }
 
 // LMS TX dboard configuration
@@ -152,6 +152,6 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args) { // Register properties
         .set(true);
 
     this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
-    this->get_tx_subtree()->create<double>("bandwidth/value").set(double(0.0));
-    this->get_tx_subtree()->create<meta_range_t>("bandwidth/range").set(freq_range_t(0.3, 3.8));
+    this->get_tx_subtree()->create<double>("bandwidth/value").set(double(28));
+    this->get_tx_subtree()->create<meta_range_t>("bandwidth/range").set(freq_range_t(1.5, 28));
 }
