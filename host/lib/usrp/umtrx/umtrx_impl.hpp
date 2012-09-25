@@ -62,7 +62,7 @@
 uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface);
 
 /*!
- * Basic LMX control class
+ * Basic LMS control class
  */
 class lms6002d_dev {
 public:
