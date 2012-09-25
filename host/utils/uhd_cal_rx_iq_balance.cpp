@@ -75,7 +75,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double rx_l
     tx_tune_req.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
     tx_tune_req.dsp_freq = 0;
     usrp->set_tx_freq(tx_tune_req);
-
+/*
     //wait for the LOs to become locked
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::system_time start = boost::get_system_time();
@@ -84,7 +84,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double rx_l
             throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
         }
     }
-
+*/
     return usrp->get_rx_freq();
 }
 
@@ -103,7 +103,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("verbose", "enable some verbose")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("tx_offset", po::value<double>(&tx_offset)->default_value(.9344e6), "TX LO offset from the RX LO in Hz")
+        ("tx_offset", po::value<double>(&tx_offset)->default_value(0.1e6), "TX LO offset from the RX LO in Hz")
 	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
         ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
 	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
@@ -192,7 +192,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::complex<double> best_correction;
         double phase_corr_start = -.3, phase_corr_stop = .3, phase_corr_step;
         double ampl_corr_start = -.3, ampl_corr_stop = .3, ampl_corr_step;
-        double best_suppression = 0, best_phase_corr = 0, best_ampl_corr = 0;
+        double best_suppression = initial_suppression, best_phase_corr = 0, best_ampl_corr = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
 

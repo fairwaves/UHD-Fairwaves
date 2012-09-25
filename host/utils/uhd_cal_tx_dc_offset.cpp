@@ -56,7 +56,7 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_fre
     //fill buff and send until interrupted
     while (not boost::this_thread::interruption_requested()){
         for (size_t i = 0; i < buff.size(); i++){
-            buff[i] = table(index += step);
+            buff[i] = samp_type();// table(index += step);
         }
         tx_stream->send(&buff.front(), buff.size(), md);
     }
@@ -77,8 +77,8 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
     usrp->set_tx_freq(tx_tune_req);
 
     //tune the receiver
-    usrp->set_rx_freq(usrp->get_tx_freq() - rx_offset);
-
+    usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
+/*
     //wait for the LOs to become locked
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::system_time start = boost::get_system_time();
@@ -87,7 +87,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
             throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
         }
     }
-
+*/
     return usrp->get_tx_freq();
 }
 
@@ -105,9 +105,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("help", "help message")
         ("verbose", "enable some verbose")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
-        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(507.123e3), "Transmit wave frequency in Hz")
+        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
+        ("rx_offset", po::value<double>(&rx_offset)->default_value(1e6), "RX LO offset from the TX LO in Hz")
 	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
         ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
 	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
@@ -192,8 +192,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double initial_dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
 
         //bounds and results from searching
-        double dc_i_start = -.01, dc_i_stop = .01, dc_i_step;
-        double dc_q_start = -.01, dc_q_stop = .01, dc_q_step;
+        double dc_i_start = -.1, dc_i_stop = .1, dc_i_step;
+        double dc_q_start = -.1, dc_q_stop = .1, dc_q_step;
         double lowest_offset = 0, best_dc_i = 0, best_dc_q = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){

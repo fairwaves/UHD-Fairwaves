@@ -77,8 +77,8 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
     usrp->set_tx_freq(tx_tune_req);
 
     //tune the receiver
-    usrp->set_rx_freq(usrp->get_tx_freq() - rx_offset);
-
+    usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
+/*
     //wait for the LOs to become locked
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::system_time start = boost::get_system_time();
@@ -87,7 +87,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
             throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
         }
     }
-
+*/
     return usrp->get_tx_freq();
 }
 
@@ -105,9 +105,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("help", "help message")
         ("verbose", "enable some verbose")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
-        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(507.123e3), "Transmit wave frequency in Hz")
+        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
+        ("rx_offset", po::value<double>(&rx_offset)->default_value(1e6), "RX LO offset from the TX LO in Hz")
 	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
         ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
 	("polar_mag", po::value<double>(&polar_mag), "Enforced correction, magnitude (polar)")
@@ -196,7 +196,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::complex<double> best_correction;
         double phase_corr_start = -.3, phase_corr_stop = .3, phase_corr_step;
         double ampl_corr_start = -.3, ampl_corr_stop = .3, ampl_corr_step;
-        double best_suppression = 0, best_phase_corr = 0, best_ampl_corr = 0;
+        double best_suppression = initial_suppression, best_phase_corr = 0, best_ampl_corr = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
 

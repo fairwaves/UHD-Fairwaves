@@ -39,7 +39,7 @@ static const double tau = 6.28318531;
 static const size_t wave_table_len = 8192;
 static const size_t num_search_steps = 5;
 static const size_t num_search_iters = 7;
-static const double default_freq_step = 7.3e6;
+static const double default_freq_step = 1e6;
 static const size_t default_num_samps = 10000;
 
 /***********************************************************************
@@ -53,6 +53,13 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
     if (mb_name.find("USRP2") != std::string::npos or mb_name.find("N200") != std::string::npos or mb_name.find("N210") != std::string::npos){
         usrp->set_tx_rate(12.5e6);
         usrp->set_rx_rate(12.5e6);
+    }
+    else if (mb_name.find("UMTRX") != std::string::npos){
+        usrp->set_tx_rate(13e6/24);
+        usrp->set_tx_bandwidth(3e6);
+        usrp->set_rx_rate(13e6/24);
+        usrp->set_rx_bandwidth(3e6);
+        return;
     }
     else if (mb_name.find("B100") != std::string::npos){
         usrp->set_tx_rate(4e6);
@@ -71,6 +78,9 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
     if (tx_name.find("WBX") != std::string::npos or tx_name.find("SBX") != std::string::npos){
         usrp->set_tx_gain(0);
     }
+    else if (tx_name.find("LMS6002D") != std::string::npos){
+        usrp->set_tx_gain(10);
+    }
     else{
         throw std::runtime_error("self-calibration is not supported for this hardware");
     }
@@ -79,6 +89,9 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
     const std::string rx_name = tree->access<std::string>(rx_fe_path / "name").get();
     if (rx_name.find("WBX") != std::string::npos or rx_name.find("SBX") != std::string::npos){
         usrp->set_rx_gain(25);
+    }
+    else if (rx_name.find("LMS6002D") != std::string::npos){
+        usrp->set_rx_gain(15);
     }
     else{
         throw std::runtime_error("self-calibration is not supported for this hardware");
@@ -191,17 +204,21 @@ static void capture_samples(
     std::vector<samp_type > &buff,
     const size_t nsamps_requested
 ){
+    size_t num_rx_samps;
     buff.resize(nsamps_requested);
     uhd::rx_metadata_t md;
+
+    for (int i=0; i<10; i++) {
 
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
     stream_cmd.num_samps = buff.size();
     stream_cmd.stream_now = true;
     usrp->issue_stream_cmd(stream_cmd);
-    const size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md);
+    num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md);
 
     //validate the received data
-    if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE){
+    if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE
+     && md.error_code != uhd::rx_metadata_t::ERROR_CODE_OVERFLOW){
         throw std::runtime_error(str(boost::format(
             "Unexpected error code 0x%x"
         ) % md.error_code));
@@ -211,6 +228,9 @@ static void capture_samples(
         buff.resize(num_rx_samps);
         return;
     }
+    if (num_rx_samps == buff.size()) break;
+    }
+
     if (num_rx_samps != buff.size()){
         throw std::runtime_error("did not get all the samples requested");
     }
