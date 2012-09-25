@@ -68,7 +68,7 @@ class lms6002d_dev {
 public:
     virtual ~lms6002d_dev() {}
 
-    void Init();
+    void init();
     void dump();
 
     /** Write through SPI */

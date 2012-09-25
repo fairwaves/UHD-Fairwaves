@@ -177,7 +177,7 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     return true;
 }
 
-void lms6002d_dev::Init()
+void lms6002d_dev::init()
 {
     write_reg(0x09, 0x00); // RXOUTSW (disabled), CLK_EN (all disabled)
     write_reg(0x17, 0xE0);
