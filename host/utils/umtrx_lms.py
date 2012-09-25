@@ -73,17 +73,19 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
     lms_dev.reg_write(base_reg+0x2, (nfrack >> 8) & 0xff) # NFRACK[15:8]
     lms_dev.reg_write(base_reg+0x3, (nfrack) & 0xff) # NFRACK[7:0]
     # Write FREQSEL
-    lms_dev.reg_write(base_reg+0x5, (freqsel << 2) | 0x01) # FREQSEL[5:0] SELOUT[1:0]
+    lms_dev.reg_write_bits(base_reg+0x5, (0x3f << 2), (freqsel << 2)) # FREQSEL[5:0]
     # Reset VOVCOREG, OFFDOWN to default
-    lms_dev.reg_write(base_reg+0x8, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
-    lms_dev.reg_write(base_reg+0x9, 0x94) # VOVCOREG[0] VCOCAP[5:0]
+    # -- I think this is not needed here, as it changes settings which
+    #    we may want to set beforehand.
+#    lms_dev.reg_write(base_reg+0x8, 0x40) # VOVCOREG[3:1] OFFDOWN[4:0]
+#    lms_dev.reg_write(base_reg+0x9, 0x94) # VOVCOREG[0] VCOCAP[5:0]
 
     # Poll VOVCO
     start_i = -1
     stop_i = -1
     state = VCO_HIGH
     for i in range(0, 64):
-        lms_dev.reg_write(base_reg+0x9, 0x80 | i)
+        lms_dev.reg_write_bits(base_reg+0x9, 0x3f, i)
         comp = lms_dev.reg_read(base_reg+0xa)
         if comp is None:
             return False
@@ -114,7 +116,7 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
     # Tune to the middle of the found VCOCAP range
     avg_i = int((start_i + stop_i) / 2)
     print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
-    lms_dev.reg_write(base_reg+0x9, 0x80 | avg_i)
+    lms_dev.reg_write_bits(base_reg+0x9, 0x3f, avg_i)
     return True
 
 def lms_tx_pll_tune(lms_dev, ref_clock, out_freq):
