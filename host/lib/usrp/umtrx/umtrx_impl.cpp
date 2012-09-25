@@ -118,10 +118,12 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     write_reg(reg + 0x2, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
     write_reg(reg + 0x3, (nfrack) & 0xff);     // NFRACK[7:0]
     // Write FREQSEL
-    write_reg(reg + 0x5, (found_freqsel << 2) | 0x01); // FREQSEL[5:0] SELOUT[1:0]
+    lms_write_bits(reg + 0x5, (0x3f << 2), (found_freqsel << 2)); // FREQSEL[5:0]
     // Reset VOVCOREG, OFFDOWN to default
-    write_reg(reg + 0x8, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
-    write_reg(reg + 0x9, 0x94); // VOVCOREG[0] VCOCAP[5:0]
+    // -- I think this is not needed here, as it changes settings which
+    //    we may want to set beforehand.
+//    write_reg(reg + 0x8, 0x40); // VOVCOREG[3:1] OFFDOWN[4:0]
+//    write_reg(reg + 0x9, 0x94); // VOVCOREG[0] VCOCAP[5:0]
 
     // DEBUG
     //reg_dump();
@@ -131,8 +133,8 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     int stop_i = -1;
     enum State { VCO_HIGH, VCO_NORM, VCO_LOW } state = VCO_HIGH;
     for (int i = 0; i < 64; i++) {
-        // TODO: Set only bits 5–0
-        write_reg(reg + 0x9, 0x80 | i);
+        // Update VCOCAP
+        lms_write_bits(reg + 0x9, 0x3f, i);
         //usleep(50);
 
         int comp = read_reg(reg + 0x0a);
@@ -170,7 +172,7 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     // Tune to the middle of the found VCOCAP range
     int avg_i = (start_i + stop_i) / 2;
     printf("START=%d STOP=%d SET=%d\n", start_i, stop_i, avg_i);
-    write_reg(reg + 0x09, 0x80 | avg_i);
+    lms_write_bits(reg + 0x09, 0x3f, avg_i);
 
     return true;
 }
