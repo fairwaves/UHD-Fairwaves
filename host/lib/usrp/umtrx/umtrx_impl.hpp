@@ -131,7 +131,7 @@ public:
 
     /** Turn on selected Rx LNA.
     'lna' parameter is in [0..3] range, where 0 is to turn off all LNAs.*/
-    void lms_set_rx_lna(uint8_t lna) {
+    void set_rx_lna(uint8_t lna) {
         // LNASEL_RXFE[1:0]: Selects the active LNA.
         lms_write_bits(0x75, (0x03 << 4), (lna << 4));
         // SELOUT[1:0]: Select output buffer in RX PLL, not used in TX PLL
@@ -139,27 +139,28 @@ public:
     }
     /**  Set Tx VGA1 gain in dB. 
         gain is in [-4 .. -35] dB range
-        Returns the old gain value on success, -127 error*/
-    int8_t lms_set_tx_vga1gain(int8_t gain) {
-        if (not(-35 <= gain and gain <= -4)) {
-            return -127;
-        }
+        Returns the old gain value */
+    int8_t set_tx_vga1gain(int8_t gain) {
+        /* Safety check */
+        if (not(-35 <= gain and gain <= -4))
+            gain = -35;
         int8_t old_bits = lms_write_bits(0x41, 0x1f, 35 + gain);
         return (old_bits & 0x1f) - 35;
     }
 
     /**  Get Tx VGA1 gain in dB.
     gain is in [-4 .. -35] dB range */
-    int8_t lms_get_tx_vga1gain() {
+    int8_t get_tx_vga1gain() {
         return lms_read_shift(0x41, 0x1f, 0) - 35;
     }
 
     /**  Set VGA2 gain.
     gain is in dB [0 .. 25]
-    Returns the old gain value on success, -127 on error */
-    int8_t lms_set_tx_vga2gain(int8_t gain) {
+    Returns the old gain value */
+    int8_t set_tx_vga2gain(int8_t gain) {
+        /* Safety check */
         if (not(0 <= gain and gain <= 25))
-            return -127;
+            gain = 0;
         int8_t old_bits = lms_write_bits(0x45, (0x1f << 3), (gain << 3));
         return old_bits >> 3;
     }
@@ -167,7 +168,7 @@ public:
     /**  Get TX VGA2 gain in dB.
     gain is in [0 .. 25] dB range
     Returns the gain value */
-    int8_t lms_get_tx_vga2gain() {
+    int8_t get_tx_vga2gain() {
         int8_t gain = lms_read_shift(0x45, (0x1f << 3), 3);
         gain = (gain <= 25) ? gain : 25;
         return gain;
@@ -175,11 +176,11 @@ public:
 
     /**  Set Rx VGA2 gain.
     gain is in dB [0 .. 60]
-    Returns the old gain value on success, -127 on error */
-    int8_t lms_set_rx_vga2gain(int8_t gain) {
-        if (not (0 <= gain and gain <= 60)) {
-            return -127;
-        }
+    Returns the old gain value */
+    int8_t set_rx_vga2gain(int8_t gain) {
+        /* Safety check */
+        if (not (0 <= gain and gain <= 60))
+            gain = 0;
         int8_t old_bits = lms_write_bits(0x65, 0x1f, gain/3);
         return (old_bits & 0x1f) * 3;
     }
@@ -187,7 +188,7 @@ public:
     /**  Get Rx VGA2 gain in dB.
     gain is in [0 .. 60] dB range
     Returns the gain value */
-    int8_t lms_get_rx_vga2gain() {
+    int8_t get_rx_vga2gain() {
         int8_t gain = lms_read_shift(0x65, 0x1f, 0);
         gain = (gain <= 20) ? gain : 20;
         return gain * 3;
