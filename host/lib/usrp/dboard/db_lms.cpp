@@ -24,6 +24,8 @@ using namespace uhd;
 using namespace uhd::usrp;
 using namespace boost::assign;
 
+static int verbosity = 0;
+
 // LMS boards for UMTRX
 
 class lms_rx : public rx_dboard_base, public lms6002d_dev {
@@ -31,20 +33,22 @@ public:
     lms_rx(ctor_args_t args);
 
     virtual void write_reg(uint8_t addr, uint8_t data) {
+        if (verbosity>0) printf("lms_rx::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)1,
             spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-
-        return this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
             spi_config_t::EDGE_RISE, addr << 8, 16);
+        if (verbosity>0) printf("lms_tx::read_reg(addr=0x%x) data=0x%x\n", addr, data);
+        return data;
     }
 
 
     double set_freq(double f) {
-        printf("lms_rx = %f\n", f);
+        if (verbosity>0) printf("lms_rx::set_freq(%f)\n", f);
         if (this->rx_pll_tune(26e6, f))
             return f;
         //dump();
@@ -52,7 +56,7 @@ public:
     }
 
     bool set_enabled(bool en) {
-        printf("lms_rx_en = %d\n", en);
+        if (verbosity>0) printf("lms_rx::set_enabled(%d)\n", en);
         if (en)
             rx_enable();
         else
@@ -67,19 +71,22 @@ public:
     lms_tx(ctor_args_t args);
 
     virtual void write_reg(uint8_t addr, uint8_t data) {
+        if (verbosity>0) printf("lms_tx::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)1,
             spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-
-        return this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
             spi_config_t::EDGE_RISE, addr << 8, 16);
+        if (verbosity>0) printf("lms_tx::read_reg(addr=0x%x) data=0x%x\n", addr, data);
+        return data;
+
     }
 
     double set_freq(double f) {
-        printf("lms_tx = %f\n", f);
+        if (verbosity>0) printf("lms_tx::set_freq(%f)\n", f);
         if (this->tx_pll_tune(26e6, f))
             return f;
         //dump();
@@ -87,7 +94,7 @@ public:
     }
 
     bool set_enabled(bool en) {
-        printf("lms_tx_en = %d\n", en);
+        if (verbosity>0) printf("lms_tx::set_enabled(%d)\n", en);
         if (en)
             tx_enable();
         else
