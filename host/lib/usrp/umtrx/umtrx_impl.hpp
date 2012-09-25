@@ -249,21 +249,6 @@ public:
     void lms_write(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
     uint32_t lms_read(uint8_t LMS_number, uint8_t address, bool rise = true);
 
-    uint32_t write_n_check(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
-    
-    bool lms_dc_calibrate(int lms_addr, int dc_addr);
-    
-    void lms_init(int lms_addr);
-    bool lms_pll_tune(int64_t ref_clock, int64_t out_freq);
-
-
-    void lms_set_bits(uint8_t LMS_number, uint8_t address, uint8_t mask);
-    void lms_clear_bits(uint8_t LMS_number, uint8_t address, uint8_t mask);
-
-    // LMS Control
-    void lms_tx_enable(uint8_t LMS_number, bool enable = true);
-    void lms_rx_enable(uint8_t LMS_number, bool enable = true);
-
 private:
     uhd::property_tree::sptr _tree;
     struct mb_container_type{
