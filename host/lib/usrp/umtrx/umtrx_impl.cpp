@@ -72,7 +72,7 @@ void lms6002d_dev::dump()
 bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
 {
     // Supported frequency ranges and corresponding FREQSEL values.
-    struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
+    static const struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
         { 0.2325e9,   0.285625e9, 0x27 },
         { 0.285625e9, 0.336875e9, 0x2f },
         { 0.336875e9, 0.405e9,    0x37 },
