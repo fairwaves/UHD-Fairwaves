@@ -585,6 +585,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 
         _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "tx_eeprom")
             .set(tx_db_eeprom);
+
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "gdb_eeprom")
+            .set(gdb_eeprom);
             
         _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dboard_iface);
 
