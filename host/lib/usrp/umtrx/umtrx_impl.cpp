@@ -628,8 +628,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         }
     }
 
-    lms0.Init();
-    lms1.Init();
+//    lms0.init();
+//    lms1.init();
 
 }
 
