@@ -149,10 +149,8 @@ def lms_init(lms_dev):
 def lms_tx_enable(lms_dev):
     """ Enable TX """
     # STXEN: Soft transmit enable
-#    lms_dev.reg_write(0x05, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1)) # STXEN
     lms_dev.reg_set_bits(0x05, (1 << 3))
     # Tx DSM SPI clock enabled
-#    lms_dev.reg_write(0x09, 0x81)
     lms_dev.reg_set_bits(0x09, (1 << 0))
 
 def lms_tx_disable(lms_dev):
