@@ -66,11 +66,11 @@ public:
     double get_codec_rate(unit_t) { return 0; }
 
     void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-	_iface->write_spi(unit, config, data, num_bits);
+        _iface->write_spi(unit, config, data, num_bits);
     }
 
     boost::uint32_t read_write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-	return _iface->read_spi(unit, config, data, num_bits);
+        return _iface->read_spi(unit, config, data, num_bits);
     }
 };
 
