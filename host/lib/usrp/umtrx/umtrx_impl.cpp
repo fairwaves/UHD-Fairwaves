@@ -197,9 +197,6 @@ void lms6002d_dev::init()
     write_reg(0x45, 0x00); // VGA2GAIN, ENVD
 
     //reg_dump();
-
-    tx_enable();
-    rx_enable();
 }
 
 
