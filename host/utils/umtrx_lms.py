@@ -65,7 +65,7 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
     vco_x = 1 << ((freqsel & 0x7) - 3)
     nint = int(vco_x * out_freq / ref_clock)
     nfrack = int((1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock)
-    print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
+    if verbosity > 0: print("FREQSEL=%d VCO_X=%d NINT=%d NFRACK=%d" % (freqsel, vco_x, nint, nfrack))
 
     # Write NINT, NFRAC
     lms_dev.reg_write(base_reg+0x0, (nint >> 1) & 0xff) # NINT[8:1]
@@ -115,7 +115,7 @@ def lms_txrx_pll_tune(lms_dev, base_reg, ref_clock, out_freq):
 
     # Tune to the middle of the found VCOCAP range
     avg_i = int((start_i + stop_i) / 2)
-    print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
+    if verbosity > 0: print("START=%d STOP=%d SET=%d" % (start_i, stop_i, avg_i))
     lms_dev.reg_write_bits(base_reg+0x9, 0x3f, avg_i)
     return True
 
