@@ -201,7 +201,7 @@ def lms_set_rx_lna(lms_dev, lna):
 
 def lms_set_tx_vga1gain(lms_dev, gain):
     """ Set Tx VGA1 gain in dB.
-    gain is in [-4 .. -35] dB range
+    gain is in [-35 .. -4] dB range
     Returns the old gain value on success, None on error"""
     if not (-35 <= gain <= -4):
         return None
@@ -210,7 +210,7 @@ def lms_set_tx_vga1gain(lms_dev, gain):
 
 def lms_get_tx_vga1gain(lms_dev):
     """ Get Tx VGA1 gain in dB.
-    gain is in [-4 .. -35] dB range
+    gain is in [-35 .. -4] dB range
     Returns the gain value on success, None on error"""
     return lms_dev.reg_get_bits(0x41, 0x1f, 0)-35
 
