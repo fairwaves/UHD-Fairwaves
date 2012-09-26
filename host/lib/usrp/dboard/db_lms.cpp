@@ -299,7 +299,7 @@ lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
     this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_rx_subtree()->create<double>("bandwidth/value")
         .coerce(boost::bind(&lms_rx::set_rx_bandwidth, this, _1))
-        .set(double(2*14e6));
+        .set(double(2*0.75e6));
     this->get_rx_subtree()->create<meta_range_t>("bandwidth/range")
         .set(lms_bandwidth_range);
 }
@@ -339,7 +339,7 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args),
     this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_tx_subtree()->create<double>("bandwidth/value")
         .coerce(boost::bind(&lms_tx::set_tx_bandwidth, this, _1))
-        .set(double(2*14e6));
+        .set(double(2*0.75e6));
     this->get_tx_subtree()->create<meta_range_t>("bandwidth/range")
         .set(lms_bandwidth_range);
 }
