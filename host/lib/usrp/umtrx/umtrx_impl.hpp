@@ -194,6 +194,92 @@ public:
         return gain * 3;
     }
 
+    /** Convert a width into a width code.
+    width is in kHz [750 .. 14000]
+    Returns the corresponding width code */
+    int8_t lpf_width_to_code(int width) {
+        switch (width) {
+        case   750: return 15;
+        case   875: return 14;
+        case  1250: return 13;
+        case  1375: return 12;
+        case  1500: return 11;
+        case  1920: return 10;
+        case  2500: return 9;
+        case  2750: return 8;
+        case  3000: return 7;
+        case  3500: return 6;
+        case  4375: return 5;
+        case  5000: return 4;
+        case  6000: return 3;
+        case  7000: return 2;
+        case 10000: return 1;
+        case 14000: return 0;
+        default:
+            printf("ERROR: Unsupported width. Setting to 14MHz\n");
+            return 0;
+        }
+    }
+
+    /** Convert a width code into a width.
+    width is an integer code as BWC_LPF register.
+    Returns the corresponding width in kHz */
+    int lpf_code_to_width(int8_t code) {
+        switch (code) {
+        case 15: return   750;
+        case 14: return   875;
+        case 13: return  1250;
+        case 12: return  1375;
+        case 11: return  1500;
+        case 10: return  1920;
+        case  9: return  2500;
+        case  8: return  2750;
+        case  7: return  3000;
+        case  6: return  3500;
+        case  5: return  4375;
+        case  4: return  5000;
+        case  3: return  6000;
+        case  2: return  7000;
+        case  1: return 10000;
+        case  0: return 14000;
+        default:
+            printf("ERROR: Unknown width code. Setting to 14MHz\n");
+            return 14000;
+        }
+    }
+
+    /**  Set Tx LPF width.
+    width is in kHz [750 .. 14000]
+    Returns the old width value in kHz */
+    int8_t set_tx_lpf(int width) {
+        int8_t width_code = lpf_width_to_code(width);
+        int8_t old_bits = lms_write_bits(0x34, (0x0f<<2), (width_code<<2));
+        return lpf_code_to_width((old_bits>>2) & 0x0f);
+    }
+
+    /**  Get Tx LPF width.
+    Returns the width value in kHz */
+    int8_t get_tx_lpf() {
+        int8_t code = lms_read_shift(0x34, (0x0f<<2), 2);
+        return lpf_code_to_width(code);
+    }
+
+    /**  Set Rx LPF width.
+    width is in kHz [750 .. 14000]
+    Returns the old width value in kHz */
+    int8_t set_rx_lpf(int width) {
+        int8_t width_code = lpf_width_to_code(width);
+        int8_t old_bits = lms_write_bits(0x54, (0x0f<<2), (width_code<<2));
+        return lpf_code_to_width((old_bits>>2) & 0x0f);
+    }
+
+    /**  Get Rx LPF width.
+    Returns the width value in kHz */
+    int8_t get_rx_lpf() {
+        int8_t code = lms_read_shift(0x54, (0x0f<<2), 2);
+        return lpf_code_to_width(code);
+    }
+
 protected:
     bool lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
 
