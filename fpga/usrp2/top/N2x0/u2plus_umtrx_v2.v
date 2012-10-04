@@ -20,7 +20,7 @@
 //`define DCM_FOR_RAMCLK
 //////////////////////////////////////////////////////////////////////////////////
 
-module u2plus_umtrx
+module u2plus_umtrx_v2
   (
    input CLK_FPGA_P, input CLK_FPGA_N,  // Diff
    
@@ -632,4 +632,4 @@ wire DivSw1, DivSw2;
    assign RAM_BWn = 4'b0000;
 `endif // !`ifndef NO_EXT_FIFO
    
-endmodule // u2plus
+endmodule // u2plus_umtrx_v2
