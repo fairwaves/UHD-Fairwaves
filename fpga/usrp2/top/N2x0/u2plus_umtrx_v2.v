@@ -76,6 +76,8 @@ module u2plus_umtrx
    input AUX_LD1,
    input AUX_LD2,
    input AUX_XX,
+   inout AUX_SCL,
+   inout AUX_SDA,
 
    // PPS
    input PPS_IN,
@@ -553,8 +555,6 @@ wire DivSw1, DivSw2;
 		     .adc_ovf_b_1		(1'b0),
 		     .adc_on_b_1		(),
 		     .adc_oe_b_1		(),
-		     .dac1_a		(dac_a_int2),
-		     .dac1_b		(dac_b_int2),
            .lms_res ({LMS2nRST,LMS1nRST}),
 `endif // !`ifndef LMS602D_FRONTEND
 		     .dac_a		(dac_a_int1),
