@@ -70,14 +70,14 @@ module u2plus_umtrx_v2
    
    //AUX
    inout AUX_SDAT,
-   output AUX_SCLK,
-   output AUX_SEN1,
-   output AUX_SEN2,
+//   output AUX_SCLK,
+//   output AUX_SEN1,
+//   output AUX_SEN2,
    input AUX_LD1,
    input AUX_LD2,
    input AUX_XX,
-   inout AUX_SCL,
-   inout AUX_SDA,
+//   inout AUX_SCL,
+//   inout AUX_SDA,
 
    // PPS
    input PPS_IN,
