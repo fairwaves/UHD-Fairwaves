@@ -57,6 +57,12 @@ module u2plus_umtrx
    input MISO2,
    output MOSI2,
 
+   //Diversity switches
+   output DivSw1_N,
+   output DivSw1_P,
+   output DivSw2_N,
+   output DivSw2_P,
+
    // Misc, debug
    output [5:1] leds,  // LED4 is shared w/INIT_B
    input FPGA_RESET,
@@ -121,6 +127,14 @@ module u2plus_umtrx
       
    // FPGA-specific pins connections
    wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, lms_clk, clock_ready;
+
+`ifdef UMTRX
+wire DivSw1, DivSw2;
+   OBUF DIVSW1_P_pin (.I(DivSw1),.O(DivSw1_P));
+   OBUF DIVSW1_N_pin (.I(~DivSw1),.O(DivSw1_N));
+   OBUF DIVSW2_P_pin (.I(DivSw2),.O(DivSw2_P));
+   OBUF DIVSW2_N_pin (.I(~DivSw2),.O(DivSw2_N));
+`endif // !`ifdef UMTRX
 
 `ifndef UMTRX
    IBUFGDS clk_fpga_pin (.O(clk_fpga),.I(CLK_FPGA_P),.IB(CLK_FPGA_N));
@@ -574,6 +588,9 @@ module u2plus_umtrx
 		     .sen_lms2 (SEN2),
 		     .io_tx		 (),
 		     .io_rx		 (),
+//Diversity switches
+		     .DivSw1(DivSw1),
+		     .DivSw2(DivSw2),
 `endif // !`ifndef UMTRX
 `ifndef NO_EXT_FIFO
 		     .RAM_D_po          (RAM_D_po),

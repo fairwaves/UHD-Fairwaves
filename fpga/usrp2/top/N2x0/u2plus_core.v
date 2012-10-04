@@ -160,6 +160,9 @@ module u2plus_core
    output sen_dac,
    output sen_lms1,
    output sen_lms2,
+   //Diversity switches
+   output DivSw1,
+   output DivSw2,
 `endif // !`ifndef UMTRX
    
    // GPIO to DBoards
@@ -205,6 +208,7 @@ module u2plus_core
    localparam SR_TX_CTRL  = 144;   // 6
    localparam SR_TX_DSP   = 160;   // 5
 
+   localparam SR_DIVSW    = 180;   // 2
    localparam SR_GPIO     = 184;   // 5   
    localparam SR_UDP_SM   = 192;   // 64
    
@@ -562,6 +566,13 @@ module u2plus_core
 
    setting_reg #(.my_addr(SR_MISC+5),.width(1)) sr_bld
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(bldr_done),.changed());
+
+   // Diversity switches
+   setting_reg #(.my_addr(SR_DIVSW+0),.width(1), .at_reset(32'd1)) sr_divsw1
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(DivSw1),.changed());
+
+   setting_reg #(.my_addr(SR_DIVSW+1),.width(1), .at_reset(32'd1)) sr_divsw2
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(DivSw2),.changed());
 
    // /////////////////////////////////////////////////////////////////////////
    //  LEDS

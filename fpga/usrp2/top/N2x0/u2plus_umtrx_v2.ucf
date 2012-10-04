@@ -211,10 +211,10 @@ NET "flash_miso" LOC = AA20;
 NET "flash_mosi" LOC = AB20;
 
 ## AUX // in case of UmSELv1 it is LVDS outputs for Rx diversity switches
-#NET "DivSw2_N" LOC = K1; // in v1a was DivSw1_N !!!
-#NET "DivSw2_P" LOC = K2; // in v1a was DivSw1_P !!!
-#NET "DivSw1_N" LOC = M1; // in v1a was DivSw2_N !!!
-#NET "DivSw1_P" LOC = M2; // in v1a was DivSw2_P !!!
+NET "DivSw2_N" LOC = K1; // in v1a was DivSw1_N !!!
+NET "DivSw2_P" LOC = K2; // in v1a was DivSw1_P !!!
+NET "DivSw1_N" LOC = M1; // in v1a was DivSw2_N !!!
+NET "DivSw1_P" LOC = M2; // in v1a was DivSw2_P !!!
 
 ## additional SPI and controls for AUX board in v2 !!!
 #NET "AUX_SCLK" LOC = AB12;
@@ -313,6 +313,11 @@ NET "RXD[3]" IOSTANDARD = LVCMOS33;
 NET "TXD[1]" IOSTANDARD = LVCMOS33;// FPGA input <- FTDI input  !!! in v1a was output  !!!
 NET "TXD[2]" IOSTANDARD = LVCMOS33;// FPGA input <- GPS input  !!! in v1a was output  !!!
 NET "TXD[3]" IOSTANDARD = LVCMOS33;
+
+NET "DivSw1_N" IOSTANDARD = LVCMOS25;
+NET "DivSw1_P" IOSTANDARD = LVCMOS25;
+NET "DivSw2_N" IOSTANDARD = LVCMOS25;
+NET "DivSw2_P" IOSTANDARD = LVCMOS25;
 
 ## additional SPI and controls for AUX board in v1b !!!
 NET "AUX_SDAT" IOSTANDARD = LVCMOS33;// FPGA input/output !!!
