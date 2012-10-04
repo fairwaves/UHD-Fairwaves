@@ -115,6 +115,7 @@ module u2plus_core
    input adc_ovf_b_1,
    output adc_on_b_1,
    output adc_oe_b_1,
+   output [1:0] lms_res,
 `endif // !`ifndef LMS602D_FRONTEND
    
 `ifndef LMS602D_FRONTEND
@@ -538,6 +539,9 @@ module u2plus_core
    // Output control lines
    wire [7:0] 	 clock_outs, serdes_outs, adc_outs;
    assign 	 {clock_ready, clk_en[1:0], clk_sel[1:0]} = clock_outs[4:0];
+`ifdef LMS602D_FRONTEND
+   assign lms_res = clock_outs[6:5];
+`endif // !`ifdef LMS602D_FRONTEND
    assign 	 {ser_enable, ser_prbsen, ser_loopen, ser_rx_en} = serdes_outs[3:0];
    assign 	 {adc_oe_a, adc_on_a, adc_oe_b, adc_on_b } = adc_outs[3:0];
 
