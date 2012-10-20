@@ -37,6 +37,9 @@ umtrx_init(void)
   uint8_t val;
   uint32_t res;
 
+//issue a reset to the LMS chips
+  output_regs->clk_ctrl |= LMS1_RESET | LMS2_RESET;
+
   // Check LMS presense
   res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);
   printf("LMS1 chip version = 0x%x\n", res);
