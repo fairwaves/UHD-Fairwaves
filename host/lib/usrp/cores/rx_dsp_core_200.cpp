@@ -58,7 +58,8 @@ public:
         const size_t dsp_base, const size_t ctrl_base,
         const boost::uint32_t sid, const bool lingering_packet
     ):
-        _iface(iface), _dsp_base(dsp_base), _ctrl_base(ctrl_base), _sid(sid)
+        _iface(iface), _dsp_base(dsp_base), _ctrl_base(ctrl_base), _sid(sid),
+        _tick_rate(0)
     {
         //This is a hack/fix for the lingering packet problem.
         //The caller should also flush the recv transports
