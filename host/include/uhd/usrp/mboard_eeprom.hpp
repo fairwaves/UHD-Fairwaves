@@ -39,7 +39,8 @@ namespace uhd{ namespace usrp{
             MAP_N100,
             MAP_B000,
             MAP_B100,
-            MAP_E100
+            MAP_E100,
+            MAP_UMTRX
         };
 
         //! Make a new empty mboard eeprom

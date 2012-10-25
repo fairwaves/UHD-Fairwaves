@@ -86,6 +86,7 @@ public:
         _ctrl_seq_num(0),
         _protocol_compat(0) //initialized below...
     {
+        bool is_umtrx = false;
         //Obtain the firmware's compat number.
         //Save the response compat number for communication.
         //TODO can choose to reject certain older compat numbers
@@ -97,11 +98,17 @@ public:
             ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
             if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE)
                 throw uhd::runtime_error(str(boost::format("unexpected firmware response: -->%c<--") % (char)ntohl(ctrl_data.id)));
+            is_umtrx = true;
         }
 
         _protocol_compat = ntohl(ctrl_data.proto_ver);
 
-        mb_eeprom = mboard_eeprom_t(*this, mboard_eeprom_t::MAP_N100);
+        // Read EEPROM, either standard USRP or extended UMTRX
+        if (!is_umtrx) {
+            mb_eeprom = mboard_eeprom_t(*this, mboard_eeprom_t::MAP_N100);
+        } else {
+            mb_eeprom = mboard_eeprom_t(*this, mboard_eeprom_t::MAP_UMTRX);
+        }
 
         //----------------------- special temporary warning ------------
         if (mb_eeprom["gpsdo"] == "internal" and _protocol_compat < USRP2_FW_COMPAT_NUM){
