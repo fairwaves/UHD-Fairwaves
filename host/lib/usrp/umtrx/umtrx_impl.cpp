@@ -673,6 +673,12 @@ void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const double lo_fr
     apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
 }
 
+void umtrx_impl::set_tcxo_dac(const std::string &mb, const uint16_t val){
+    if (verbosity>0) printf("umtrx_impl::set_tcxo_dac(%d)\n", val);
+    _mbc[mb].iface->write_spi(4, spi_config_t::EDGE_FALL, val, 16);
+}
+
+
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/special_functions/sign.hpp>
 

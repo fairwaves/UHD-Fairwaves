@@ -367,6 +367,7 @@ private:
 */
     void set_rx_fe_corrections(const std::string &mb, const double);
     void set_tx_fe_corrections(const std::string &mb, const double);
+    void set_tcxo_dac(const std::string &mb, const uint16_t val);
 
     double get_master_clock_rate() const { return 13e6; }
 
