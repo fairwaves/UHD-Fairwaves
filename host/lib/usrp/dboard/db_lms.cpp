@@ -92,10 +92,11 @@ public:
 
     double set_freq(double f) {
         if (verbosity>0) printf("lms_rx::set_freq(%f)\n", f);
-        if (this->rx_pll_tune(26e6, f))
-            return f;
-        //dump();
-        return 0;
+        double actual_freq = rx_pll_tune(26e6, f);
+        if (actual_freq<0)
+            actual_freq = 0;
+        if (verbosity>0) printf("lms_rx::set_freq() actual_freq=%f\n", actual_freq);
+        return actual_freq;
     }
 
     bool set_enabled(bool en) {
@@ -172,10 +173,11 @@ public:
 
     double set_freq(double f) {
         if (verbosity>2) printf("lms_tx::set_freq(%f)\n", f);
-        if (this->tx_pll_tune(26e6, f))
-            return f;
-        //dump();
-        return 0;
+        double actual_freq = tx_pll_tune(26e6, f);
+        if (actual_freq<0)
+            actual_freq = 0;
+        if (verbosity>2) printf("lms_tx::set_freq() actual_freq=%f\n", actual_freq);
+        return actual_freq;
     }
 
     bool set_enabled(bool en) {

@@ -77,11 +77,11 @@ public:
     virtual uint8_t read_reg(uint8_t addr) = 0;
 
     /** Tune TX PLL to a given frequency. */
-    bool tx_pll_tune(double ref_clock, double out_freq) {
+    double tx_pll_tune(double ref_clock, double out_freq) {
         return lms_txrx_pll_tune(0x10, ref_clock, out_freq);
     }
     /** Tune TX PLL to a given frequency. */
-    bool rx_pll_tune(double ref_clock, double out_freq) {
+    double rx_pll_tune(double ref_clock, double out_freq) {
         return lms_txrx_pll_tune(0x20, ref_clock, out_freq);
     }
 
@@ -313,7 +313,7 @@ public:
     }
 
 protected:
-    bool lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
+    double lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
 
     void lms_set_bits(uint8_t address, uint8_t mask) {
         write_reg(address, read_reg(address) | (mask));

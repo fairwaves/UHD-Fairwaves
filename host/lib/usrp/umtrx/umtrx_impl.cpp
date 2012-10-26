@@ -71,7 +71,7 @@ void lms6002d_dev::dump()
     }
 }
 
-bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
+double lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
 {
     // Supported frequency ranges and corresponding FREQSEL values.
     static const struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
@@ -105,22 +105,23 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     if (found_freqsel == -1)
     {
         // Unsupported frequency range
-        return false;
+        return -1;
     }
 
     // Calculate NINT, NFRAC
     int64_t vco_x = 1 << ((found_freqsel & 0x7) - 3);
     int64_t nint = vco_x * out_freq / ref_clock;
-    int64_t nfrack = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock;
+    int64_t nfrac = (1 << 23) * (vco_x * out_freq - nint * ref_clock) / ref_clock;
+    double actual_freq = (nint + nfrac/double(1<<23)) * (ref_clock/vco_x);
 
     // DEBUG
-    if (verbosity>0) printf("FREQSEL=%d VCO_X=%d NINT=%d  NFRACK=%d\n\n", (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrack);
+    if (verbosity>0) printf("FREQSEL=%d VCO_X=%d NINT=%d  NFRAC=%d ACTUAL_FREQ=%f\n\n", (int)found_freqsel, (int)vco_x, (int)nint, (int)nfrac, actual_freq);
 
     // Write NINT, NFRAC
     write_reg(reg + 0x0, (nint >> 1) & 0xff);    // NINT[8:1]
-    write_reg(reg + 0x1, ((nfrack >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] NFRACK[22:16]
-    write_reg(reg + 0x2, (nfrack >> 8) & 0xff);  // NFRACK[15:8]
-    write_reg(reg + 0x3, (nfrack) & 0xff);     // NFRACK[7:0]
+    write_reg(reg + 0x1, ((nfrac >> 16) & 0x7f) | ((nint & 0x1) << 7)); //NINT[0] nfrac[22:16]
+    write_reg(reg + 0x2, (nfrac >> 8) & 0xff);  // NFRAC[15:8]
+    write_reg(reg + 0x3, (nfrac) & 0xff);     // NFRAC[7:0]
     // Write FREQSEL
     lms_write_bits(reg + 0x5, (0x3f << 2), (found_freqsel << 2)); // FREQSEL[5:0]
     // Reset VOVCOREG, OFFDOWN to default
@@ -161,7 +162,7 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
             break;
         default: //ERROR
             printf("ERROR: Incorrect VCOCAP reading while tuning\n");
-            return false;
+            return -1;
         }
         if (verbosity>1) printf("VOVCO[%d]=%x\n", i, (comp>>6));
     }
@@ -170,7 +171,7 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
 
     if (start_i == -1 || stop_i == -1) {
         printf("ERROR: Can't find VCOCAP value while tuning\n");
-        return false;
+        return -1;
     }
 
     // Tune to the middle of the found VCOCAP range
@@ -178,7 +179,8 @@ bool lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_f
     if (verbosity>0) printf("START=%d STOP=%d SET=%d\n", start_i, stop_i, avg_i);
     lms_write_bits(reg + 0x09, 0x3f, avg_i);
 
-    return true;
+    // Return actual frequency we've tuned to
+    return actual_freq;
 }
 
 void lms6002d_dev::init()
