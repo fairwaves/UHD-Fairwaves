@@ -93,10 +93,10 @@ public:
         ctrl_data.id = htonl(USRP2_CTRL_ID_WAZZUP_BRO);
         ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
         if (ntohl(ctrl_data.id) != USRP2_CTRL_ID_WAZZUP_DUDE) {
-    	    ctrl_data.id = htonl(UMTRX_CTRL_ID_REQUEST);
-    	    ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
-    	    if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE) 
-		throw uhd::runtime_error(str(boost::format("unexpected firmware response: -->%c<--") % (char)ntohl(ctrl_data.id)));
+            ctrl_data.id = htonl(UMTRX_CTRL_ID_REQUEST);
+            ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
+            if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE)
+                throw uhd::runtime_error(str(boost::format("unexpected firmware response: -->%c<--") % (char)ntohl(ctrl_data.id)));
         }
 
         _protocol_compat = ntohl(ctrl_data.proto_ver);
