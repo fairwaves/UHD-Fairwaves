@@ -263,8 +263,6 @@ static zero_copy_if::sptr make_xport(
  * Structors
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
-: lms0(this, 0)
-, lms1(this, 1)
 {
     UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
     device_addr_t device_addr = _device_addr;
@@ -599,7 +597,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             
         _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dboard_iface);
 
-
         //bind frontend corrections to the dboard freq props
         const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
@@ -732,63 +729,3 @@ meta_range_t umtrx_impl::get_tx_dsp_freq_range(const std::string &mb){
     const meta_range_t dsp_range = _mbc[mb].tx_dsp->get_freq_range();
     return meta_range_t(dsp_range.start() - tick_rate*2, dsp_range.stop() + tick_rate*2, dsp_range.step());
 }
-
-
-// spi_config_t::EDGE_RISE is used by default
-uint32_t umtrx_impl::lms_read(uint8_t lms, uint8_t addr, bool rise) {
-    if(addr > 127) return 0; // incorrect address, 7 bit long expected
-    if(rise) {
-	BOOST_FOREACH(const std::string &mb, _mbc.keys()) {// EVIL HACK - ignore everything after 1st call
-	    return _mbc[mb].iface->read_spi(lms, spi_config_t::EDGE_RISE, addr << 8, 16);
-	}
-    }
-    BOOST_FOREACH(const std::string &mb, _mbc.keys()) {// EVIL HACK - ignore everything after 1st call
-        return _mbc[mb].iface->read_spi(lms, spi_config_t::EDGE_FALL, addr << 8, 16);
-    }
-    return 0; // placeholder for error handling
-}
-
-void umtrx_impl::lms_write(uint8_t lms, uint8_t addr, uint8_t data, bool rise) {
-    if(addr < 128) { // 1st bit is 1 (means 'write'), than address, than value
-        uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        if(rise) { 
-    	    BOOST_FOREACH(const std::string &mb, _mbc.keys()) {// EVIL HACK - write into all possible places
-		_mbc[mb].iface->write_spi(lms, spi_config_t::EDGE_RISE, command, 16);
-	    }
-    	}
-        else { 
-    	    BOOST_FOREACH(const std::string &mb, _mbc.keys()) {// EVIL HACK - write into all possible places
-    		_mbc[mb].iface->write_spi(lms, spi_config_t::EDGE_FALL, command, 16); 
-    	    }
-    	}
-    }
-}
-
-void umtrx_impl::reg_dump() {
-    for (int i = 0; i < 128; i++) {
-        switch (i) {
-            case 0x0C:
-            case 0x0D:
-            case 0x37:
-            case 0x38:
-            case 0x39:
-            case 0x3A:
-            case 0x3B:
-            case 0x3C:
-            case 0x3D:
-            case 0x69:
-            case 0x6A:
-            case 0x6B:
-            case 0x6C:
-            case 0x6D:
-                continue;
-        }
-        printf("i=%x LMS1=%x LMS2=%x\t", i, lms_read(1, i), lms_read(2, i));
-	    
-        if(lms_read(1, i) == lms_read(2, i)) 
-            printf("OK\n"); 
-        else
-            printf("DIFF\n");
-    }
-}
-

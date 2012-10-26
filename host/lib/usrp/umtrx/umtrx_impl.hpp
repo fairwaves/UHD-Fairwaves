@@ -343,21 +343,6 @@ public:
     umtrx_impl(const uhd::device_addr_t &);
     ~umtrx_impl(void);
 
-    class umtrx_lms6002d : public lms6002d_dev {
-    public:
-        umtrx_lms6002d(umtrx_impl* p, int lms_num) : _p(p), _lms_num(lms_num) {};
-
-        virtual void write_reg(uint8_t addr, uint8_t val) {
-            _p->lms_write(_lms_num, addr, val);
-        }
-        virtual uint8_t read_reg(uint8_t addr) {
-            return _p->lms_read(_lms_num, addr);
-        }
-    private:
-        int _lms_num;
-        umtrx_impl* _p;
-    };
-
     //the io interface
     uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
     uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
@@ -389,10 +374,8 @@ private:
     };
     uhd::dict<std::string, mb_container_type> _mbc;
 
-    umtrx_lms6002d lms0, lms1;
-
     void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
-    void set_db_eeprom(const std::string &, const std::string &, const uhd::usrp::dboard_eeprom_t &);
+//    void set_db_eeprom(const std::string &, const std::string &, const uhd::usrp::dboard_eeprom_t &);
 /*
     uhd::sensor_value_t get_mimo_locked(const std::string &);
     uhd::sensor_value_t get_ref_locked(const std::string &);
