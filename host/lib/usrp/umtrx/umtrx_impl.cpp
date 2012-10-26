@@ -609,6 +609,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
                 .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
         }
+
+        //set TCXO DAC calibration value, which is read from mboard EEPROM
+        if (_mbc[mb].iface->mb_eeprom.has_key("tcxo-dac") and not _mbc[mb].iface->mb_eeprom["tcxo-dac"].empty()) {
+            _tree->create<uint16_t>(mb_path / "tcxo_dac/value")
+                .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, mb, _1))
+                .set(boost::lexical_cast<uint16_t>(_mbc[mb].iface->mb_eeprom["tcxo-dac"]));
+        }
     }
 
     //initialize io handling
