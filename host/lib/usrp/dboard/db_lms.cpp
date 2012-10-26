@@ -282,7 +282,8 @@ UHD_STATIC_BLOCK(reg_lms_dboards){
 // LMS RX dboard configuration
 
 lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
-    this->get_rx_subtree()->create<std::string>("name").set(std::string(str(boost::format("%s - %s") % get_rx_id().to_pp_string() % get_subdev_name())));
+    this->get_rx_subtree()->create<std::string>("name")
+        .set(std::string(str(boost::format("%s - %s") % get_rx_id().to_pp_string() % get_subdev_name())));
 
     BOOST_FOREACH(const std::string &name, lms_rx_gain_ranges.keys()){
         this->get_rx_subtree()->create<double>("gains/"+name+"/value")
@@ -293,9 +294,9 @@ lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
     }
 
     this->get_rx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&lms_rx::set_freq, this, _1))
-        .set(300.0);
-    this->get_rx_subtree()->create<meta_range_t>("freq/range").set(lms_freq_range);
+        .coerce(boost::bind(&lms_rx::set_freq, this, _1));
+    this->get_rx_subtree()->create<meta_range_t>("freq/range")
+        .set(lms_freq_range);
 
     this->get_rx_subtree()->create<std::string>("antenna/value")
         .subscribe(boost::bind(&lms_rx::set_rx_ant, this, _1))
@@ -305,8 +306,7 @@ lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
     this->get_rx_subtree()->create<int>("sensors"); //phony property so this dir exists
     this->get_rx_subtree()->create<std::string>("connection").set("IQ");
     this->get_rx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&lms_rx::set_enabled, this, _1))
-        .set(true);
+        .coerce(boost::bind(&lms_rx::set_enabled, this, _1));
 
     this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_rx_subtree()->create<double>("bandwidth/value")
@@ -322,7 +322,8 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args),
                                    vga1gain(get_tx_vga1gain()),
                                    vga2gain(get_tx_vga2gain())
 { // Register properties
-    this->get_tx_subtree()->create<std::string>("name").set(std::string(str(boost::format("%s - %s") % get_tx_id().to_pp_string() % get_subdev_name())));
+    this->get_tx_subtree()->create<std::string>("name")
+        .set(std::string(str(boost::format("%s - %s") % get_tx_id().to_pp_string() % get_subdev_name())));
 
     BOOST_FOREACH(const std::string &name, lms_tx_gain_ranges.keys()){
         this->get_tx_subtree()->create<double>("gains/"+name+"/value")
@@ -333,9 +334,9 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args),
     }
 
     this->get_tx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&lms_tx::set_freq, this, _1))
-        .set(301.0);
-    this->get_tx_subtree()->create<meta_range_t>("freq/range").set(lms_freq_range);
+        .coerce(boost::bind(&lms_tx::set_freq, this, _1));
+    this->get_tx_subtree()->create<meta_range_t>("freq/range")
+        .set(lms_freq_range);
 
     this->get_tx_subtree()->create<std::string>("antenna/value")
         .subscribe(boost::bind(&lms_tx::set_tx_ant, this, _1))
@@ -345,8 +346,7 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args),
     this->get_tx_subtree()->create<int>("sensors"); //phony property so this dir exists
     this->get_tx_subtree()->create<std::string>("connection").set("IQ");
     this->get_tx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&lms_tx::set_enabled, this, _1))
-        .set(true);
+        .coerce(boost::bind(&lms_tx::set_enabled, this, _1));
 
     this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_tx_subtree()->create<double>("bandwidth/value")
