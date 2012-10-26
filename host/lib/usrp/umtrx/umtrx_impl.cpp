@@ -571,7 +571,11 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
         dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_eeprom;
         rx_db_eeprom.id = 0xfa09;
+        rx_db_eeprom.serial = _mbc[mb].iface->mb_eeprom["serial"];
+        rx_db_eeprom.revision = _mbc[mb].iface->mb_eeprom["revision"];
         tx_db_eeprom.id = 0xfa07;
+        tx_db_eeprom.serial = _mbc[mb].iface->mb_eeprom["serial"];
+        tx_db_eeprom.revision = _mbc[mb].iface->mb_eeprom["revision"];
         //gdb_eeprom.id = 0x0000;
         const char* board = "A";
 
