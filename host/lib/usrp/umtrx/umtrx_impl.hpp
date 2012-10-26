@@ -194,6 +194,38 @@ public:
         return gain * 3;
     }
 
+    /**  Set Tx VGA1 DC offset, I channel.
+    offset is a raw value [0 .. 255]
+    Returns the old offset value */
+    uint8_t set_tx_vga1dc_i_int(uint8_t offset) {
+        uint8_t old_bits = lms_write_bits(0x42, 0xff, offset);
+        return old_bits;
+    }
+
+    /**  Get Tx VGA1 DC offset, I channel.
+    offset is a raw value [0 .. 255]
+    Returns the offset value */
+    uint8_t get_tx_vga1dc_i_int() {
+        uint8_t offset = lms_read_shift(0x42, 0xff, 0);
+        return offset;
+    }
+
+    /**  Set Tx VGA1 DC offset, Q channel.
+    offset is a raw value [0 .. 255]
+    Returns the old offset value */
+    uint8_t set_tx_vga1dc_q_int(uint8_t offset) {
+        uint8_t old_bits = lms_write_bits(0x43, 0xff, offset);
+        return old_bits;
+    }
+
+    /**  Get Tx VGA1 DC offset, Q channel.
+    offset is a raw value [0 .. 255]
+    Returns the offset value */
+    uint8_t get_tx_vga1dc_q_int() {
+        uint8_t offset = lms_read_shift(0x43, 0xff, 0);
+        return offset;
+    }
+
     /** Convert a width into a width code.
     width is in kHz [750 .. 14000]
     Returns the corresponding width code */

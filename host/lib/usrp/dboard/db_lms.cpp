@@ -248,6 +248,18 @@ public:
         return bandwidth;
     }
 
+    uint8_t _set_tx_vga1dc_i_int(uint8_t offset) {
+        if (verbosity>0) printf("lms_tx::set_tx_vga1dc_i_int(%d)\n", offset);
+        set_tx_vga1dc_i_int(offset);
+        return offset;
+    }
+
+    uint8_t _set_tx_vga1dc_q_int(uint8_t offset) {
+        if (verbosity>0) printf("lms_tx::set_tx_vga1dc_q_int(%d)\n", offset);
+        set_tx_vga1dc_q_int(offset);
+        return offset;
+    }
+
 private:
     int vga1gain, vga2gain;  // Stored values of VGA1 and VGA2 gains.
 };
@@ -342,5 +354,13 @@ lms_tx::lms_tx(ctor_args_t args) : tx_dboard_base(args),
         .set(double(2*0.75e6));
     this->get_tx_subtree()->create<meta_range_t>("bandwidth/range")
         .set(lms_bandwidth_range);
+
+    // UmTRX specific calibration
+    this->get_tx_subtree()->create<uint8_t>("cal/dc_i/value")
+        .subscribe(boost::bind(&lms_tx::_set_tx_vga1dc_i_int, this, _1))
+        .publish(boost::bind(&lms_tx::get_tx_vga1dc_i_int, this));
+    this->get_tx_subtree()->create<uint8_t>("cal/dc_q/value")
+        .subscribe(boost::bind(&lms_tx::_set_tx_vga1dc_q_int, this, _1))
+        .publish(boost::bind(&lms_tx::get_tx_vga1dc_q_int, this));
 }
 

@@ -610,6 +610,20 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
                 .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
         }
 
+        //set Tx DC calibration values, which are read from mboard EEPROM
+        if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"].empty()) {
+            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_i/value")
+                    .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"]));
+            }
+        }
+        if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"].empty()) {
+            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_q/value")
+                    .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"]));
+            }
+        }
+
         //set TCXO DAC calibration value, which is read from mboard EEPROM
         if (_mbc[mb].iface->mb_eeprom.has_key("tcxo-dac") and not _mbc[mb].iface->mb_eeprom["tcxo-dac"].empty()) {
             _tree->create<uint16_t>(mb_path / "tcxo_dac/value")
