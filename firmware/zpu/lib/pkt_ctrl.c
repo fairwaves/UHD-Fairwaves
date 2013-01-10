@@ -38,10 +38,10 @@
 #define CPU_CTRL_WR_START (1 << 3)
 
 void pkt_ctrl_program_inspector(
-    const struct ip_addr *ip_addr, uint16_t data_port
+    const struct ip_addr *ip_addr, uint16_t data_port0, uint16_t data_port1
 ){
     router_ctrl->ip_addr = ip_addr->addr;
-    router_ctrl->data_ports = data_port;
+    router_ctrl->data_ports = data_port0 | ((uint32_t)(data_port1) << 16);
 }
 
 void pkt_ctrl_set_routing_mode(pkt_ctrl_routing_mode_t mode){

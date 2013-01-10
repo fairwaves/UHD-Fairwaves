@@ -77,7 +77,8 @@ void handle_udp_fw_update_packet(struct socket_address src, struct socket_addres
     sr_rx_ctrl1->cmd = 1 << 31 | 1 << 28; //no samples now
     sr_rx_ctrl1->time_secs = 0;
     sr_rx_ctrl1->time_ticks = 0; //latch the command
-    sr_tx_ctrl->cyc_per_up = 0;
+    sr_tx_ctrl0->cyc_per_up = 0;
+    sr_tx_ctrl1->cyc_per_up = 0;
     break;
 
   case USRP2_FW_UPDATE_ID_WATS_TEH_FLASH_INFO_LOL: //query sector size, memory size so the host can mind the boundaries

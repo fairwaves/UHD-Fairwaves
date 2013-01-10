@@ -70,7 +70,12 @@ static void handle_udp_data_packet(
 
     case USRP2_UDP_TX_DSP0_PORT:
         //end async update packets per second
-        sr_tx_ctrl->cyc_per_up = 0;
+        sr_tx_ctrl0->cyc_per_up = 0;
+        break;
+
+    case USRP2_UDP_TX_DSP1_PORT:
+        //end async update packets per second
+        sr_tx_ctrl1->cyc_per_up = 0;
         break;
 
     default: return;
@@ -89,6 +94,10 @@ static void handle_udp_data_packet(
 
     case USRP2_UDP_TX_DSP0_PORT:
         which = 1;
+        break;
+
+    case USRP2_UDP_TX_DSP1_PORT:
+        which = 3;
         break;
 
     default: return;
@@ -324,7 +333,7 @@ main(void)
 
   //1) register the addresses into the network stack
   register_addrs(ethernet_mac_addr(), get_ip_addr());
-  pkt_ctrl_program_inspector(get_ip_addr(), USRP2_UDP_TX_DSP0_PORT);
+  pkt_ctrl_program_inspector(get_ip_addr(), USRP2_UDP_TX_DSP0_PORT, USRP2_UDP_TX_DSP1_PORT);
 
   //2) register callbacks for udp ports we service
   init_udp_listeners();
@@ -332,6 +341,7 @@ main(void)
   register_udp_listener(USRP2_UDP_RX_DSP0_PORT, handle_udp_data_packet);
   register_udp_listener(USRP2_UDP_RX_DSP1_PORT, handle_udp_data_packet);
   register_udp_listener(USRP2_UDP_TX_DSP0_PORT, handle_udp_data_packet);
+  register_udp_listener(USRP2_UDP_TX_DSP1_PORT, handle_udp_data_packet);
   
 #ifdef USRP2P
 #ifndef NO_FLASH
