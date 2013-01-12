@@ -118,7 +118,8 @@ void umtrx_impl::io_impl::recv_pirate_loop(
             vrt::if_hdr_unpack_be(vrt_hdr, if_packet_info);
 
             //handle a tx async report message
-            if (if_packet_info.sid == USRP2_TX_ASYNC_SID and if_packet_info.packet_type != vrt::if_packet_info_t::PACKET_TYPE_DATA){
+            if ((if_packet_info.sid == USRP2_TX_ASYNC_SID_BASE+0 or if_packet_info.sid == USRP2_TX_ASYNC_SID_BASE+1)
+                and if_packet_info.packet_type != vrt::if_packet_info_t::PACKET_TYPE_DATA){
 
                 //fill in the async metadata
                 async_metadata_t metadata;
@@ -169,16 +170,20 @@ void umtrx_impl::io_init(void) {
     //init first so we dont have an access race
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         //init the tx xport and flow control monitor
-        _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xport);
+        _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[0]);
+        _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[1]);
         _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
-            USRP2_SRAM_BYTES/_mbc[mb].tx_dsp_xport->get_send_frame_size()
+            UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[0]->get_send_frame_size()
+        )));
+        _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
+            UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[1]->get_send_frame_size()
         )));
     }
 
     //allocate streamer weak ptrs containers
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         _mbc[mb].rx_streamers.resize(_mbc[mb].rx_dsps.size());
-        _mbc[mb].tx_streamers.resize(1/*known to be 1 dsp*/);
+        _mbc[mb].tx_streamers.resize(_mbc[mb].tx_dsps.size());
     }
 
     //create a new pirate thread for each zc if (yarr!!)
@@ -187,7 +192,11 @@ void umtrx_impl::io_init(void) {
         //spawn a new pirate to plunder the recv booty
         _io_impl->pirate_tasks.push_back(task::make(boost::bind(
             &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
-            _mbc[mb].tx_dsp_xport, index++
+            _mbc[mb].tx_dsp_xports[0], index++
+        )));
+        _io_impl->pirate_tasks.push_back(task::make(boost::bind(
+            &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
+            _mbc[mb].tx_dsp_xports[1], index++
         )));
     }
 }
@@ -251,14 +260,22 @@ void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
     //sanity checking
     validate_subdev_spec(_tree, spec, "rx", which_mb);
 
-    //setup mux for this spec
+    //setup DSPs and frontends IQ mux for this spec
     bool fe_swapped = false;
     for (size_t i = 0; i < spec.size(); i++){
         const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "rx_frontends" / spec[i].sd_name / "connection").get();
         if (i == 0 and (conn == "QI" or conn == "Q")) fe_swapped = true;
         _mbc[which_mb].rx_dsps[i]->set_mux(conn, fe_swapped);
+        _mbc[which_mb].rx_fes[i]->set_mux(fe_swapped);
     }
-    _mbc[which_mb].rx_fe->set_mux(fe_swapped);
+    //set DSPs to frontends mapping
+    if (spec[0].db_name == "A") {
+        //default: DSP0<-frontend0, DSP1<-frontend1
+        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_RX_FRONT_SW), 0);
+    } else {
+        //swapped: DSP0<-frontend1, DSP1<-frontend0
+        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_RX_FRONT_SW), 1);
+    }
 
     //compute the new occupancy and resize
     _mbc[which_mb].rx_chan_occ = spec.size();
@@ -272,9 +289,19 @@ void umtrx_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev
     //sanity checking
     validate_subdev_spec(_tree, spec, "tx", which_mb);
 
-    //set the mux for this spec
-    const std::string conn = _tree->access<std::string>(root / spec[0].db_name / "tx_frontends" / spec[0].sd_name / "connection").get();
-    _mbc[which_mb].tx_fe->set_mux(conn);
+    //set the frontends IQ mux for this spec
+    for (size_t i = 0; i < spec.size(); i++){
+        const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "rx_frontends" / spec[i].sd_name / "connection").get();
+        _mbc[which_mb].tx_fes[i]->set_mux(conn);
+    }
+    //set DSPs to frontends mapping
+    if (spec[0].db_name == "A") {
+        //default: DSP0->frontend0, DSP1->frontend1
+        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_TX_FRONT_SW), 0);
+    } else {
+        //swapped: DSP0->frontend1, DSP1->frontend0
+        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_TX_FRONT_SW), 1);
+    }
 
     //compute the new occupancy and resize
     _mbc[which_mb].tx_chan_occ = spec.size();
@@ -377,7 +404,7 @@ tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_){
         + vrt_send_header_offset_words32*sizeof(boost::uint32_t)
         - sizeof(vrt::if_packet_info_t().cid) //no class id ever used
     ;
-    const size_t bpp = _mbc[_mbc.keys().front()].tx_dsp_xport->get_send_frame_size() - hdr_size;
+    const size_t bpp = _mbc[_mbc.keys().front()].tx_dsp_xports[0]->get_send_frame_size() - hdr_size;
     const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
 
     //make the new streamer given the samples per packet
@@ -405,17 +432,17 @@ tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_){
             if (chan < num_chan_so_far){
                 const size_t dsp = chan + _mbc[mb].tx_chan_occ - num_chan_so_far;
                 if (not args.args.has_key("noclear")){
-                    _mbc[mb].tx_dsp->clear();
-                    _io_impl->fc_mons[abs]->clear();
+                    _mbc[mb].tx_dsps[dsp]->clear();
+                    _io_impl->fc_mons[abs+dsp]->clear();
                 }
-                if (args.args.has_key("underflow_policy")) _mbc[mb].tx_dsp->set_underflow_policy(args.args["underflow_policy"]);
+                if (args.args.has_key("underflow_policy")) _mbc[mb].tx_dsps[dsp]->set_underflow_policy(args.args["underflow_policy"]);
                 my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-                    &umtrx_impl::io_impl::get_send_buff, _io_impl.get(), abs, _1
+                    &umtrx_impl::io_impl::get_send_buff, _io_impl.get(), abs+dsp, _1
                 ));
                 _mbc[mb].tx_streamers[dsp] = my_streamer; //store weak pointer
                 break;
             }
-            abs += 1; //assume 1 tx dsp
+            abs += 2; //assume 2 tx dsp
         }
     }
 

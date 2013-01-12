@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "usrp2_impl.hpp"
+#include "usrp2_regs.hpp"
 #include "fw_common.h"
 #include "apply_corrections.hpp"
 #include <uhd/utils/log.hpp>

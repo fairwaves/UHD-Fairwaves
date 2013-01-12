@@ -54,12 +54,15 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 
+// Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
+static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
+
 /*!
  * Make a UmTRX dboard interface.
  * \param iface the UmTRX interface object
  * \return a sptr to a new dboard interface
  */
-uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface);
+uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface, int lms_spi_number);
 
 /*!
  * Basic LMS control class
@@ -358,17 +361,20 @@ private:
     struct mb_container_type{
         usrp2_iface::sptr iface;
         uhd::gps_ctrl::sptr gps;
-        rx_frontend_core_200::sptr rx_fe;
-        tx_frontend_core_200::sptr tx_fe;
+        std::vector<rx_frontend_core_200::sptr> rx_fes;
+        std::vector<tx_frontend_core_200::sptr> tx_fes;
         std::vector<rx_dsp_core_200::sptr> rx_dsps;
         std::vector<boost::weak_ptr<uhd::rx_streamer> > rx_streamers;
         std::vector<boost::weak_ptr<uhd::tx_streamer> > tx_streamers;
-        tx_dsp_core_200::sptr tx_dsp;
+        std::vector<tx_dsp_core_200::sptr> tx_dsps;
         time64_core_200::sptr time64;
         std::vector<uhd::transport::zero_copy_if::sptr> rx_dsp_xports;
-        uhd::transport::zero_copy_if::sptr tx_dsp_xport;
-        uhd::usrp::dboard_manager::sptr dboard_manager;
-        uhd::usrp::dboard_iface::sptr dboard_iface;
+        std::vector<uhd::transport::zero_copy_if::sptr> tx_dsp_xports;
+        struct db_container_type{
+            uhd::usrp::dboard_iface::sptr dboard_iface;
+            uhd::usrp::dboard_manager::sptr dboard_manager;
+        };
+        uhd::dict<std::string, db_container_type> dbc;
         size_t rx_chan_occ, tx_chan_occ;
         mb_container_type(void): rx_chan_occ(0), tx_chan_occ(0){}
     };
@@ -401,8 +407,8 @@ private:
     //update spec methods are coercers until we only accept db_name == A
     void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
     void update_tx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
-    double set_tx_dsp_freq(const std::string &, const double);
-    uhd::meta_range_t get_tx_dsp_freq_range(const std::string &);
+    double set_tx_dsp_freq(const std::string &, const size_t, const double);
+    uhd::meta_range_t get_tx_dsp_freq_range(const std::string &, const size_t);
     void update_clock_source(const std::string &, const std::string &);
 
 

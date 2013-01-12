@@ -24,7 +24,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
 #include <boost/function.hpp>
-#include "usrp2_regs.hpp"
 #include "wb_iface.hpp"
 #include <string>
 

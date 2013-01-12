@@ -19,6 +19,7 @@
 #include <limits>
 
 #include "../umtrx/umtrx_impl.hpp"
+#define lms_number  1
 
 using namespace uhd;
 using namespace uhd::usrp;
@@ -78,12 +79,12 @@ public:
     virtual void write_reg(uint8_t addr, uint8_t data) {
         if (verbosity>2) printf("lms_rx::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)lms_number,
             spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)lms_number,
             spi_config_t::EDGE_RISE, addr << 8, 16);
         if (verbosity>2) printf("lms_tx::read_reg(addr=0x%x) data=0x%x\n", addr, data);
         return data;
@@ -159,12 +160,12 @@ public:
     virtual void write_reg(uint8_t addr, uint8_t data) {
         if (verbosity>2) printf("lms_tx::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)lms_number,
             spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)1,
+        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)lms_number,
             spi_config_t::EDGE_RISE, addr << 8, 16);
         if (verbosity>2) printf("lms_tx::read_reg(addr=0x%x) data=0x%x\n", addr, data);
         return data;

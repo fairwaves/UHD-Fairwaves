@@ -33,10 +33,12 @@ using namespace boost::assign;
 
 class umtrx_dboard_iface : public dboard_iface {
     usrp2_iface::sptr _iface;
+    uhd::usrp::dboard_iface::unit_t _lms_spi_number;
     void _write_aux_dac(unit_t) {}
 
 public:
-    umtrx_dboard_iface(usrp2_iface::sptr iface) { _iface = iface; }
+    umtrx_dboard_iface(usrp2_iface::sptr iface, int lms_spi_number)
+        : _iface(iface), _lms_spi_number((uhd::usrp::dboard_iface::unit_t)lms_spi_number) {}
     ~umtrx_dboard_iface(void) {}
 
     special_props_t get_special_props(void) {
@@ -65,18 +67,20 @@ public:
     void set_clock_enabled(unit_t, bool) {}
     double get_codec_rate(unit_t) { return 0; }
 
-    void write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-        _iface->write_spi(unit, config, data, num_bits);
+    void write_spi(unit_t, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
+        // HACK: We ignore SPI device address and always write to our LMS.
+        _iface->write_spi(_lms_spi_number, config, data, num_bits);
     }
 
-    boost::uint32_t read_write_spi(unit_t unit, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
-        return _iface->read_spi(unit, config, data, num_bits);
+    boost::uint32_t read_write_spi(unit_t, const spi_config_t &config, boost::uint32_t data, size_t num_bits) {
+        // HACK: We ignore SPI device address and always read from our LMS.
+        return _iface->read_spi(_lms_spi_number, config, data, num_bits);
     }
 };
 
 /**********************************
  * Make Function
  **********************************/
-dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface) {
-    return dboard_iface::sptr(new umtrx_dboard_iface(iface));
+dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface, int lms_spi_number) {
+    return dboard_iface::sptr(new umtrx_dboard_iface(iface, lms_spi_number));
 }
