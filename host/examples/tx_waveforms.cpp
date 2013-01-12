@@ -208,9 +208,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     md.start_of_burst = true;
     md.end_of_burst   = false;
     md.has_time_spec  = true;
-//    md.time_spec = uhd::time_spec_t(0.1);
-    md.time_spec = usrp->get_time_now();
-    md.time_spec += uhd::time_spec_t(0.1);
+    md.time_spec = uhd::time_spec_t(0.1);
 
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
     usrp->set_time_now(uhd::time_spec_t(0.0));
