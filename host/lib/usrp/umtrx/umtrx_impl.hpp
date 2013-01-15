@@ -386,8 +386,8 @@ private:
     uhd::sensor_value_t get_mimo_locked(const std::string &);
     uhd::sensor_value_t get_ref_locked(const std::string &);
 */
-    void set_rx_fe_corrections(const std::string &mb, const double);
-    void set_tx_fe_corrections(const std::string &mb, const double);
+    void set_rx_fe_corrections(const std::string &mb, const std::string &board, const double);
+    void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tcxo_dac(const std::string &mb, const uint16_t val);
 
     double get_master_clock_rate() const { return 13e6; }

@@ -633,12 +633,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
             _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
-                .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, _1));
+                .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, board, _1));
         }
         const fs_path db_rx_fe_path = mb_path / "dboards" / board / "rx_frontends";
         BOOST_FOREACH(const std::string &name, _tree->list(db_rx_fe_path)){
             _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
-                .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, _1));
+                .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, board, _1));
         }
 
         //set Tx DC calibration values, which are read from mboard EEPROM
@@ -719,12 +719,12 @@ sensor_value_t umtrx_impl::get_ref_locked(const std::string &mb){
     return sensor_value_t("Ref", lock, "locked", "unlocked");
 }
 */
-void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const double lo_freq){
-    apply_rx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
+void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
+    apply_rx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
 }
 
-void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const double lo_freq){
-    apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), "A", lo_freq);
+void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
+    apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
 }
 
 void umtrx_impl::set_tcxo_dac(const std::string &mb, const uint16_t val){
