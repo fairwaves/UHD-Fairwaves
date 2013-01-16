@@ -610,50 +610,50 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         //gdb_eeprom.id = 0x0000;
 
         BOOST_FOREACH(const std::string &board, _mbc[mb].dbc.keys()){
+            //create dboard interface
+            _mbc[mb].dbc[board].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface, (board=="A")?1:2);
+            _mbc[mb].dbc[board].dboard_manager = dboard_manager::make(
+                rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
+                _mbc[mb].dbc[board].dboard_iface, _tree->subtree(mb_path / "dboards" / board)
+                );
 
-        _mbc[mb].dbc[board].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface, (board=="A")?1:2);
-        _mbc[mb].dbc[board].dboard_manager = dboard_manager::make(
-            rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
-            _mbc[mb].dbc[board].dboard_iface, _tree->subtree(mb_path / "dboards" / board)
-            );
+            //create the properties and register subscribers
+            _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "rx_eeprom")
+                .set(rx_db_eeprom);
 
-        //create the properties and register subscribers
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "rx_eeprom")
-            .set(rx_db_eeprom);
+            _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "tx_eeprom")
+                .set(tx_db_eeprom);
 
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "tx_eeprom")
-            .set(tx_db_eeprom);
-
-        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "gdb_eeprom")
-            .set(gdb_eeprom);
+            _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "gdb_eeprom")
+                .set(gdb_eeprom);
             
-        _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dbc[board].dboard_iface);
+            _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dbc[board].dboard_iface);
 
-        //bind frontend corrections to the dboard freq props
-        const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
-        BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-            _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
-                .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, board, _1));
-        }
-        const fs_path db_rx_fe_path = mb_path / "dboards" / board / "rx_frontends";
-        BOOST_FOREACH(const std::string &name, _tree->list(db_rx_fe_path)){
-            _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
-                .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, board, _1));
-        }
+            //bind frontend corrections to the dboard freq props
+            const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
+            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
+                    .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, board, _1));
+            }
+            const fs_path db_rx_fe_path = mb_path / "dboards" / board / "rx_frontends";
+            BOOST_FOREACH(const std::string &name, _tree->list(db_rx_fe_path)){
+                _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
+                    .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, board, _1));
+            }
 
-        //set Tx DC calibration values, which are read from mboard EEPROM
-        if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"].empty()) {
-            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-                _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_i/value")
-                    .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"]));
+            //set Tx DC calibration values, which are read from mboard EEPROM
+            if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"].empty()) {
+                BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                    _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_i/value")
+                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"]));
+                }
             }
-        }
-        if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"].empty()) {
-            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-                _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_q/value")
-                    .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"]));
+            if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"].empty()) {
+                BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                    _tree->access<uint8_t>(db_tx_fe_path / name / "cal/dc_q/value")
+                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"]));
+                }
             }
-        }
         }
 
         //set TCXO DAC calibration value, which is read from mboard EEPROM
