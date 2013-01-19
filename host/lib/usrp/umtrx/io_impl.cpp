@@ -261,12 +261,11 @@ void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
     validate_subdev_spec(_tree, spec, "rx", which_mb);
 
     //setup DSPs and frontends IQ mux for this spec
-    bool fe_swapped = false;
     for (size_t i = 0; i < spec.size(); i++){
         const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "rx_frontends" / spec[i].sd_name / "connection").get();
-        if (i == 0 and (conn == "QI" or conn == "Q")) fe_swapped = true;
+        bool fe_swapped = (conn == "QI" or conn == "Q");
         _mbc[which_mb].rx_dsps[i]->set_mux(conn, fe_swapped);
-        _mbc[which_mb].rx_fes[i]->set_mux(fe_swapped);
+        _mbc[which_mb].rx_fes[fe_num_for_db(spec[i].db_name)]->set_mux(fe_swapped);
     }
     //set DSPs to frontends mapping
     if (spec[0].db_name == "A") {
@@ -291,8 +290,8 @@ void umtrx_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev
 
     //set the frontends IQ mux for this spec
     for (size_t i = 0; i < spec.size(); i++){
-        const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "rx_frontends" / spec[i].sd_name / "connection").get();
-        _mbc[which_mb].tx_fes[i]->set_mux(conn);
+        const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "tx_frontends" / spec[i].sd_name / "connection").get();
+        _mbc[which_mb].tx_fes[fe_num_for_db(spec[i].db_name)]->set_mux(conn);
     }
     //set DSPs to frontends mapping
     if (spec[0].db_name == "A") {

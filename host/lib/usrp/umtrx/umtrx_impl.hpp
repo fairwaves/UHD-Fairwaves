@@ -411,7 +411,8 @@ private:
     uhd::meta_range_t get_tx_dsp_freq_range(const std::string &, const size_t);
     void update_clock_source(const std::string &, const std::string &);
 
-
+    //helper functions
+    UHD_INLINE int fe_num_for_db(const std::string& db) { return (db == "A")?0:1; }
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */
