@@ -475,26 +475,26 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, mb, _1));
 
         BOOST_FOREACH(const std::string &db, _mbc[mb].dbc.keys()){
-        const fs_path rx_fe_path = mb_path / "rx_frontends" / db;
-        const fs_path tx_fe_path = mb_path / "tx_frontends" / db;
-        const rx_frontend_core_200::sptr rx_fe = (db=="A")?_mbc[mb].rx_fes[0]:_mbc[mb].rx_fes[1];
-        const tx_frontend_core_200::sptr tx_fe = (db=="A")?_mbc[mb].tx_fes[0]:_mbc[mb].tx_fes[1];
+            const fs_path rx_fe_path = mb_path / "rx_frontends" / db;
+            const fs_path tx_fe_path = mb_path / "tx_frontends" / db;
+            const rx_frontend_core_200::sptr rx_fe = (db=="A")?_mbc[mb].rx_fes[0]:_mbc[mb].rx_fes[1];
+            const tx_frontend_core_200::sptr tx_fe = (db=="A")?_mbc[mb].tx_fes[0]:_mbc[mb].tx_fes[1];
 
-        _tree->create<std::complex<double> >(rx_fe_path / "dc_offset" / "value")
-            .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, _1))
-            .set(std::complex<double>(0.0, 0.0));
-        _tree->create<bool>(rx_fe_path / "dc_offset" / "enable")
-            .subscribe(boost::bind(&rx_frontend_core_200::set_dc_offset_auto, rx_fe, _1))
-            .set(true);
-        _tree->create<std::complex<double> >(rx_fe_path / "iq_balance" / "value")
-            .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
-            .set(std::polar<double>(1.0, 0.0));
-        _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
-            .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
-            .set(std::complex<double>(0.0, 0.0));
-        _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
-            .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
-            .set(std::polar<double>(1.0, 0.0));
+            _tree->create<std::complex<double> >(rx_fe_path / "dc_offset" / "value")
+                .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, _1))
+                .set(std::complex<double>(0.0, 0.0));
+            _tree->create<bool>(rx_fe_path / "dc_offset" / "enable")
+                .subscribe(boost::bind(&rx_frontend_core_200::set_dc_offset_auto, rx_fe, _1))
+                .set(true);
+            _tree->create<std::complex<double> >(rx_fe_path / "iq_balance" / "value")
+                .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
+                .set(std::polar<double>(1.0, 0.0));
+            _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
+                .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+                .set(std::complex<double>(0.0, 0.0));
+            _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
+                .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
+                .set(std::polar<double>(1.0, 0.0));
         }
 
         ////////////////////////////////////////////////////////////////
