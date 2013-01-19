@@ -49,12 +49,12 @@
 #define SR_RX_CTRL1  80   // 9
 #define SR_RX_DSP1   96   // 7
 
-#define SR_TX_FRONT0 145   // ?
-#define SR_TX_CTRL0  161   // 6
-#define SR_TX_DSP0   170   // 5
-#define SR_TX_FRONT1 110   // ?
-#define SR_TX_CTRL1  126   // 6
-#define SR_TX_DSP1   135   // 5
+#define SR_TX_FRONT0 110   // ?
+#define SR_TX_CTRL0  126   // 6
+#define SR_TX_DSP0   135   // 5
+#define SR_TX_FRONT1 145   // ?
+#define SR_TX_CTRL1  161   // 6
+#define SR_TX_DSP1   170   // 5
 
 // DSPs to frontends mapping controls
 #define SR_TX_FRONT_SW 177 // 1
