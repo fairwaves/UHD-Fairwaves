@@ -390,40 +390,24 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
 
         ////////////////////////////////////////////////////////////////
+        // create (fake) daughterboard entries
+        ////////////////////////////////////////////////////////////////
+        _mbc[mb].dbc["A"];
+        _mbc[mb].dbc["B"];
+
+        ////////////////////////////////////////////////////////////////
         // create codec control objects
         ////////////////////////////////////////////////////////////////
-        const fs_path rx_codec_path = mb_path / "rx_codecs/A";
-        const fs_path tx_codec_path = mb_path / "tx_codecs/A";
-        _tree->create<int>(rx_codec_path / "gains"); //phony property so this dir exists
-        _tree->create<int>(tx_codec_path / "gains"); //phony property so this dir exists
-        // TODO: Implement "gains" as well
-        _tree->create<std::string>(tx_codec_path / "name").set("LMS_TX");
-        _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
-/*        _mbc[mb].codec = umtrx_codec_ctrl::make(_mbc[mb].iface);
-        switch(_mbc[mb].iface->get_rev()){
-        case usrp2_iface::USRP_N200:
-        case usrp2_iface::USRP_N210:
-        case usrp2_iface::USRP_N200_R4:
-        case usrp2_iface::USRP_N210_R4:{
-            _tree->create<std::string>(rx_codec_path / "name").set("ads62p44");
-            _tree->create<meta_range_t>(rx_codec_path / "gains/digital/range").set(meta_range_t(0, 6.0, 0.5));
-            _tree->create<double>(rx_codec_path / "gains/digital/value")
-                .subscribe(boost::bind(&usrp2_codec_ctrl::set_rx_digital_gain, _mbc[mb].codec, _1)).set(0);
-            _tree->create<meta_range_t>(rx_codec_path / "gains/fine/range").set(meta_range_t(0, 0.5, 0.05));
-            _tree->create<double>(rx_codec_path / "gains/fine/value")
-                .subscribe(boost::bind(&usrp2_codec_ctrl::set_rx_digital_fine_gain, _mbc[mb].codec, _1)).set(0);
-        }break;
-
-        case usrp2_iface::USRP2_REV3:
-        case usrp2_iface::USRP2_REV4:
-            _tree->create<std::string>(rx_codec_path / "name").set("ltc2284");
-            break;
-        case usrp2_iface::USRP_NXXX:
-            _tree->create<std::string>(rx_codec_path / "name").set("??????");
-            break;
+        BOOST_FOREACH(const std::string &db, _mbc[mb].dbc.keys()){
+            const fs_path rx_codec_path = mb_path / "rx_codecs" / db;
+            const fs_path tx_codec_path = mb_path / "tx_codecs" / db;
+            _tree->create<int>(rx_codec_path / "gains"); //phony property so this dir exists
+            _tree->create<int>(tx_codec_path / "gains"); //phony property so this dir exists
+            // TODO: Implement "gains" as well
+            _tree->create<std::string>(tx_codec_path / "name").set("LMS_TX");
+            _tree->create<std::string>(rx_codec_path / "name").set("LMS_RX");
         }
-        _tree->create<std::string>(tx_codec_path / "name").set("ad9777");
-*/
+
         ////////////////////////////////////////////////////////////////
         // create gpsdo control objects
         ////////////////////////////////////////////////////////////////
@@ -446,12 +430,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 //            .publish(boost::bind(&umtrx_impl::get_mimo_locked, this, mb));
         _tree->create<sensor_value_t>(mb_path / "sensors/ref_locked");
 //            .publish(boost::bind(&umtrx_impl::get_ref_locked, this, mb));
-
-        ////////////////////////////////////////////////////////////////
-        // create (fake) daughterboard entries
-        ////////////////////////////////////////////////////////////////
-        _mbc[mb].dbc["A"];
-        _mbc[mb].dbc["B"];
 
         ////////////////////////////////////////////////////////////////
         // create frontend control objects
