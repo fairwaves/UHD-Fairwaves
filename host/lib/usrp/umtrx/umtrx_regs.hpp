@@ -57,8 +57,8 @@
 #define SR_TX_DSP1   170   // 5
 
 // DSPs to frontends mapping controls
+#define SR_RX_FRONT_SW 176 // 1
 #define SR_TX_FRONT_SW 177 // 1
-#define SR_RX_FRONT_SW 177 // 1
 
 #define SR_GPIO     184
 #define SR_UDP_SM   192   // 64
