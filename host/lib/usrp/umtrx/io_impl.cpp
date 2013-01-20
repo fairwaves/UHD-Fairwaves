@@ -264,6 +264,8 @@ void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
     for (size_t i = 0; i < spec.size(); i++){
         const std::string conn = _tree->access<std::string>(root / spec[i].db_name / "rx_frontends" / spec[i].sd_name / "connection").get();
         bool fe_swapped = (conn == "QI" or conn == "Q");
+        // This logic looks broken, but we've copied it from USRP2 code and
+        // it works in our limited case, so don't bother.
         _mbc[which_mb].rx_dsps[i]->set_mux(conn, fe_swapped);
         _mbc[which_mb].rx_fes[fe_num_for_db(spec[i].db_name)]->set_mux(fe_swapped);
     }
