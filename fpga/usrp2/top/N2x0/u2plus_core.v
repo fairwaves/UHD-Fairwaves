@@ -622,7 +622,7 @@ module u2plus_core
 `ifndef LMS602D_FRONTEND
    wire [7:0] 	 led_hw = {run_tx, (run_rx0_d1 | run_rx1_d1), clk_status, serdes_link_up & good_sync, 1'b0};
 `else
-   wire [7:0] 	 led_hw = {(run_tx | run_tx1), (run_rx0_d1 | run_rx1_d1), clk_status, serdes_link_up & good_sync, 1'b0};
+   wire [7:0] 	 led_hw = {run_tx0_mux, run_rx0_mux, run_tx1_mux, run_rx1_mux, 1'b0};
 `endif // !`ifndef LMS602D_FRONTEND
    
    setting_reg #(.my_addr(SR_MISC+3),.width(8)) sr_led
