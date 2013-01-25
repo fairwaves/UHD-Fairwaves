@@ -77,7 +77,8 @@ module ext_fifo
 `ifdef LMS602D_FRONTEND
    wire [EXT_WIDTH-1:0] write_data_1;
    wire [EXT_WIDTH-1:0] read_data_1;
-   wire 		full1_1, empty1_1;
+   wire [FIFO_DEPTH-1:0] capacity_1;
+   wire 		full1_1, empty1_1, space_avail_1, data_avail_1;
    wire 		almost_full2_1, almost_full2_spread_1, full2_1, empty2_1;
 `endif // !`ifdef LMS602D_FRONTEND
 		 
@@ -86,8 +87,8 @@ module ext_fifo
    wire 		 read_input_fifo = space_avail & ~empty1;
    wire 		 write_output_fifo = data_avail;
 `ifdef LMS602D_FRONTEND
-   wire 		 read_input_fifo_1 = space_avail & ~empty1_1;
-   wire 		 write_output_fifo_1 = data_avail;
+   wire 		 read_input_fifo_1 = space_avail_1 & ~empty1_1;
+   wire 		 write_output_fifo_1 = data_avail_1;
    assign 		 src1_rdy_o = ~empty2_1;
    assign 		 dst1_rdy_o = ~full1_1;
 `endif // !`ifdef LMS602D_FRONTEND
@@ -99,6 +100,10 @@ module ext_fifo
    assign 		 space_avail = ~full2;
    assign 		 data_avail = ~empty1;
    assign 		 read_data = write_data;
+   
+   assign 		 space_avail_1 = ~full2_1;
+   assign 		 data_avail_1 = ~empty1_1;
+   assign 		 read_data_1 = write_data_1;
 `else
    
    // External FIFO running at ext clock rate  and 18 or 36 bit width.
@@ -127,6 +132,8 @@ module ext_fifo
 	   .space_avail_1(space_avail_1),
 	   .read_data_1(read_data_1),
 	   .read_strobe_1(~almost_full2_spread_1),
+	   .capacity_1(capacity_1),
+	   .data_avail_1(data_avail_1),
 `endif // !`ifdef LMS602D_FRONTEND
 	   .data_avail(data_avail),
 	   .capacity(capacity)

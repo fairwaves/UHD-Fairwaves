@@ -35,6 +35,9 @@ module nobl_if
      input [WIDTH-1:0] data_out,
      output reg [WIDTH-1:0] data_in,
      output reg data_in_valid,
+`ifdef LMS602D_FRONTEND
+     output reg id_dsp_o,
+`endif // !`ifdef LMS602D_FRONTEND
      input write,
      input enable
      );
@@ -44,14 +47,17 @@ module nobl_if
    reg [DEPTH-1:0] address_pipe1;
    reg 		   write_pipe1;
    reg [WIDTH-1:0] data_out_pipe1;
+   reg id_dsp_i_pipe1;
    
    reg 		   enable_pipe2;
    reg 		   write_pipe2;
    reg [WIDTH-1:0] data_out_pipe2;
+   reg id_dsp_i_pipe2;
 
    reg 		   enable_pipe3;
    reg 		   write_pipe3;
    reg [WIDTH-1:0] data_out_pipe3;
+   reg id_dsp_i_pipe3;
 
    assign 	   RAM_LDn = 0;
    // ZBT/NoBL RAM actually manages its own output enables very well.
@@ -75,6 +81,7 @@ module nobl_if
 	  data_out_pipe1  <= 0;
 	  RAM_WEn <= 1;
 	  RAM_CE1n <= 1;
+	  id_dsp_i_pipe1 <= 0;
 	  
        end
      else
@@ -86,6 +93,9 @@ module nobl_if
 	  if (enable)
 	    begin
 	       address_pipe1 <= address_gray;
+`ifdef LMS602D_FRONTEND
+	       id_dsp_i_pipe1 <= address[DEPTH-1];
+`endif // !`ifdef LMS602D_FRONTEND
 	       write_pipe1 <= write;
 //	       RAM_WEn <= ~write;  // Creates IOB flop
 	       
@@ -110,12 +120,14 @@ module nobl_if
 	  enable_pipe2 <= 0;
 	  data_out_pipe2 <= 0;
 	  write_pipe2 <= 0;   
+	  id_dsp_i_pipe2 <= 0;
        end
      else
        begin
 	  data_out_pipe2 <= data_out_pipe1;
 	  write_pipe2 <= write_pipe1;
 	  enable_pipe2 <= enable_pipe1;
+	  id_dsp_i_pipe2 <= id_dsp_i_pipe1;
        end
    
    //
@@ -128,12 +140,14 @@ module nobl_if
 	  data_out_pipe3 <= 0;
 	  write_pipe3 <= 0;
 	  RAM_D_poe <= 0;	  
+	  id_dsp_i_pipe3 <= 0;
        end
      else
        begin
 	  data_out_pipe3 <= data_out_pipe2;
 	  write_pipe3 <= write_pipe2;
 	  enable_pipe3 <= enable_pipe2;
+	  id_dsp_i_pipe3 <= id_dsp_i_pipe2;
 	  RAM_D_poe <= ~(write_pipe2 & enable_pipe2); // Active low driver enable in Xilinx.	
        end
 
@@ -149,6 +163,7 @@ module nobl_if
        begin
 	  data_in_valid <= 0;
 	  data_in <= 0;
+	  id_dsp_o <= 0;
        end
      else
        begin
@@ -157,6 +172,9 @@ module nobl_if
 	    begin
 	       // Read data now available to be registered.
 	       data_in_valid <= 1'b1;
+`ifdef LMS602D_FRONTEND
+	       id_dsp_o <= id_dsp_i_pipe3;
+`endif // !`ifdef LMS602D_FRONTEND
 	    end
 	  else
 	    data_in_valid <= 1'b0;

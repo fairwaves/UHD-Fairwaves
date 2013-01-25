@@ -816,10 +816,10 @@ module u2plus_core
       .in(set_data_dsp),.out(),.changed(clear_tx));
 
 `ifndef NO_EXT_FIFO
-   assign 	 RAM_A[20:18] = 3'b0;
+   assign 	 RAM_A[20:19] = 2'b0;
 `endif // !`ifndef NO_EXT_FIFO
    
-   ext_fifo #(.EXT_WIDTH(36),.INT_WIDTH(36),.RAM_DEPTH(18),.FIFO_DEPTH(18)) 
+   ext_fifo #(.EXT_WIDTH(36),.INT_WIDTH(36),.RAM_DEPTH(19),.FIFO_DEPTH(19)) 
      ext_fifo_i1
        (.int_clk(dsp_clk),
 	.ext_clk(dsp_clk),
@@ -833,7 +833,7 @@ module u2plus_core
 	.RAM_D_pi(RAM_D_pi),
 	.RAM_D_po(RAM_D_po),
 	.RAM_D_poe(RAM_D_poe),
-	.RAM_A(RAM_A[17:0]),
+	.RAM_A(RAM_A[18:0]),
 	.RAM_WEn(RAM_WEn),
 	.RAM_CENn(RAM_CENn),
 	.RAM_LDn(RAM_LDn),

@@ -38,16 +38,17 @@ module nobl_fifo
 	output RAM_CE1n,
 	input [WIDTH-1:0] write_data,
 	input write_strobe,
-	output reg space_avail,
+	output space_avail,
 	output  [WIDTH-1:0] read_data,
 	input read_strobe,                    // Triggers a read, result in approximately 6 cycles.
 `ifdef LMS602D_FRONTEND
 	input [WIDTH-1:0] write_data_1,
 	input write_strobe_1,
-	output reg space_avail_1,
+	output space_avail_1,
 	output  [WIDTH-1:0] read_data_1,
 	input read_strobe_1,                    // Triggers a read, result in approximately 6 cycles.
 	output reg [FIFO_DEPTH-1:0] capacity_1,
+	output  data_avail_1,                    // Qulaifys read data available this cycle on read_data_1.
 `endif // !`ifdef LMS602D_FRONTEND
 	output  data_avail,                    // Qulaifys read data available this cycle on read_data.
 	output reg [FIFO_DEPTH-1:0] capacity
@@ -59,14 +60,31 @@ module nobl_fifo
    wire [RAM_DEPTH-1:0] address;
    reg 			data_avail_int;  // Internal not empty flag.
    
-   assign 	    read = read_strobe && data_avail_int;
    assign 	    write = write_strobe && space_avail;
-`ifdef LMS602D_FRONTEND
+`ifndef LMS602D_FRONTEND
+   assign 	    read = read_strobe && data_avail_int;
+`else
+   assign 	    read_one_ch = read_strobe && data_avail_int;
+   assign 	    read_dual_ch = (read_strobe && read_strobe_1) ? ((queue_rd) ? 1'b0 : read_one_ch ): read_one_ch;
+   assign 	    read = (data_avail_int && data_avail_int_1) ? read_dual_ch : read_one_ch;
+   
    reg [FIFO_DEPTH-1:0] wr_pointer_1;
    reg [FIFO_DEPTH-1:0] rd_pointer_1;
    
+   wire id_dsp_o;   
    reg 			data_avail_int_1;  // Internal not empty flag.
-   assign 	    read_1 = read_strobe_1 && data_avail_int_1;
+   
+   wire data_avail_0_1;
+   assign data_avail = data_avail_0_1 && ~id_dsp_o;
+   assign data_avail_1 = data_avail_0_1 && id_dsp_o;
+   
+   wire [WIDTH-1:0] write_data_0_1;
+   
+   reg queue_wr, queue_rd, space_avail_out, space_avail_1_out;
+   
+   assign 	    read_one_ch_1 = read_strobe_1 && data_avail_int_1;
+   assign 	    read_dual_ch_1 = (read_strobe && read_strobe_1) ? ((queue_rd) ? read_one_ch_1 : 1'b0 ): read_one_ch_1;
+   assign 	    read_1 = (data_avail_int && data_avail_int_1) ? read_dual_ch_1 : read_one_ch_1;
    assign 	    write_1 = write_strobe_1 && space_avail_1;
 `endif // !`ifdef LMS602D_FRONTEND
 
@@ -106,14 +124,17 @@ module nobl_fifo
 	  capacity <= (1 << (FIFO_DEPTH-1)) - 1;
 	  wr_pointer <= 0;
 	  rd_pointer <= 0;
-	  space_avail <= 1;
+	  space_avail_out <= 1;
 	  data_avail_int <= 0;
      
 	  capacity_1 <= (1 << (FIFO_DEPTH-1)) - 1;
 	  wr_pointer_1 <= 0;
 	  rd_pointer_1 <= 0;
-	  space_avail_1 <= 1;
+	  space_avail_1_out <= 1;
 	  data_avail_int_1 <= 0;
+     
+	  queue_wr <= 0;
+	  queue_rd <= 0;
        end
      else	  
        begin
@@ -121,29 +142,44 @@ module nobl_fifo
    // TX 0
 	  // No space available if:
 	  // Capacity is already zero; Capacity is 1 and write is asserted (lookahead); both read and write are asserted (collision)
-	  space_avail <= ~((capacity == 0) || (read&&write) || ((capacity == 1) && write) );
+	  space_avail_out <= ~((capacity == 0) || (read&&write) || ((capacity == 1) && write) );
 	  // Capacity has 1 cycle delay so look ahead here for corner case of read of last item in FIFO.
-	  data_avail_int <= ~((capacity == ((1 << (FIFO_DEPTH-1))-1))  || ((capacity == ((1 << (FIFO_DEPTH-1))-2)) && (~write && read))  );
+	  data_avail_int <= ~((capacity == ((1 << (FIFO_DEPTH-1))-1))  || ((capacity == ((1 << (FIFO_DEPTH-1))-2)) && (~(write | write_1) && read))  );
 	  wr_pointer[FIFO_DEPTH-1] <= 1'b0;
 	  wr_pointer[FIFO_DEPTH-2:0] <= wr_pointer[FIFO_DEPTH-2:0] + write;
-     rd_pointer[FIFO_DEPTH-1] <= 1'b0;
-	  rd_pointer[FIFO_DEPTH-2:0] <= rd_pointer[FIFO_DEPTH-2:0] + (~write && read); 
-	  capacity <= capacity - write + (~write && read) ;
+	  rd_pointer[FIFO_DEPTH-1] <= 1'b0;
+	  rd_pointer[FIFO_DEPTH-2:0] <= rd_pointer[FIFO_DEPTH-2:0] + (~(write | write_1 | read_1) && read); 
+	  capacity <= capacity - write + (~(write | write_1) && read) ;
    // TX 1
 	  // No space available if:
 	  // Capacity is already zero; Capacity is 1 and write is asserted (lookahead); both read and write are asserted (collision)
-	  space_avail_1 <= ~((capacity_1 == 0) || (read_1&&write_1) || ((capacity == 1) && write_1) );
+	  space_avail_1_out <= ~((capacity_1 == 0) || (read_1&&write_1) || ((capacity_1 == 1) && write_1) );
 	  // Capacity has 1 cycle delay so look ahead here for corner case of read of last item in FIFO.
-	  data_avail_int_1 <= ~((capacity_1 == ((1 << (FIFO_DEPTH-1))-1))  || ((capacity_1 == ((1 << (FIFO_DEPTH-1))-2)) && (~write_1 && read_1))  );
+	  data_avail_int_1 <= ~((capacity_1 == ((1 << (FIFO_DEPTH-1))-1))  || ((capacity_1 == ((1 << (FIFO_DEPTH-1))-2)) && (~(write_1 | write) && read_1))  );
 	  wr_pointer_1[FIFO_DEPTH-1] <= 1'b1;
-     wr_pointer_1[FIFO_DEPTH-2:0] <= wr_pointer_1[FIFO_DEPTH-2:0] + write_1;
+	  wr_pointer_1[FIFO_DEPTH-2:0] <= wr_pointer_1[FIFO_DEPTH-2:0] + write_1;
 	  rd_pointer_1[FIFO_DEPTH-1] <= 1'b1;
-     rd_pointer_1[FIFO_DEPTH-2:0] <= rd_pointer_1[FIFO_DEPTH-2:0] + (~write_1 && read_1);
-	  capacity_1 <= capacity_1 - write_1 + (~write_1 && read_1) ;
+	  rd_pointer_1[FIFO_DEPTH-2:0] <= rd_pointer_1[FIFO_DEPTH-2:0] + (~(write_1 | write | read) && read_1);
+	  capacity_1 <= capacity_1 - write_1 + (~(write | write_1) && read_1) ;
+     
+	  if (write || write_1)
+	       queue_wr <= ~queue_wr;
+	  if (read || read_1)
+	       queue_rd <= ~queue_rd;
+     
        end // else: !if(rst)
+
+   wire space_avail_buf = (queue_wr) ? 1'b0 : space_avail_out;
+   wire space_avail_1_buf = (queue_wr) ? space_avail_1_out : 1'b0; 
+   
+   assign space_avail = (write_strobe && write_strobe_1) ? space_avail_buf : space_avail_out; //  
+   assign space_avail_1 = (write_strobe && write_strobe_1) ? space_avail_1_buf :  space_avail_1_out; // 
 
    assign address = (write || write_1) ? (write ? wr_pointer : wr_pointer_1) : (read ? rd_pointer : rd_pointer_1);
    assign enable = write || read || write_1 || read_1; 
+   
+   assign write_data_0_1 = write ? write_data : write_data_1; // Multiplexer for TX DSP data (write)
+   assign read_data_1 = read_data;
 `endif // !`ifdef LMS602D_FRONTEND
 
 
@@ -166,10 +202,17 @@ module nobl_fifo
 	.RAM_OEn(RAM_OEn),
 	.RAM_CE1n(RAM_CE1n),
 	.address(address),
-	.data_out(write_data),
 	.data_in(read_data),
+`ifndef LMS602D_FRONTEND
+	.data_out(write_data),
 	.data_in_valid(data_avail),
 	.write(write),
+`else
+	.id_dsp_o(id_dsp_o),
+	.data_out(write_data_0_1),
+	.data_in_valid(data_avail_0_1),
+	.write(write || write_1),
+`endif // !`ifdef LMS602D_FRONTEND
 	.enable(enable)
 	);
 
