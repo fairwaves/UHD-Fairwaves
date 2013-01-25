@@ -219,6 +219,8 @@ module u2plus_core
    localparam SR_TX1_FRONT = 145;   // ?
    localparam SR_TX1_CTRL  = 161;   // 6
    localparam SR_TX1_DSP   = 170;   // 5
+   localparam SR_RX_FRONT_SW = 176;
+   localparam SR_TX_FRONT_SW = 177;
 `endif // !`ifndef LMS602D_FRONTEND
 
    localparam SR_DIVSW    = 180;   // 2
@@ -266,6 +268,7 @@ module u2plus_core
    wire 	 run_rx0, run_rx1, run_tx;
 `ifdef LMS602D_FRONTEND
    wire 	 run_tx1;
+   wire   run_tx0_mux, run_tx1_mux;
 `endif // !`ifdef LMS602D_FRONTEND
    reg 		 run_rx0_d1, run_rx1_d1;
    
@@ -608,6 +611,7 @@ module u2plus_core
    setting_reg #(.my_addr(SR_DIVSW+1),.width(1), .at_reset(32'd1)) sr_divsw2
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(DivSw2),.changed());
 
+
    // /////////////////////////////////////////////////////////////////////////
    //  LEDS
    //    register 8 determines whether leds are controlled by SW or not
@@ -707,22 +711,40 @@ module u2plus_core
       .i_out(adc_i), .q_out(adc_q), .run(run_rx0_d1 | run_rx1_d1), .debug());
 `else
    wire [23:0] 	 adc_i_0, adc_q_0, adc_i_1, adc_q_1;
+   wire [23:0] 	 i_0_mux, q_0_mux, i_1_mux, q_1_mux;
+   wire run_rx0_mux, run_rx1_mux;
+   wire adc_ovf_i_0_mux, adc_ovf_q_0_mux, adc_ovf_i_1_mux, adc_ovf_q_1_mux;
    
    rx_frontend #(.BASE(SR_RX_FRONT0)) rx_frontend0
      (.clk(dsp_clk),.rst(dsp_rst),
      .adc_clk(lms_clk),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-      .adc_a({adc_a_0,2'b00}),.adc_ovf_a(adc_ovf_a_0),
-      .adc_b({adc_b_0,2'b00}),.adc_ovf_b(adc_ovf_b_0),
+      .adc_a({adc_a_0,2'b00}),.adc_ovf_a(adc_ovf_i_0_mux),
+      .adc_b({adc_b_0,2'b00}),.adc_ovf_b(adc_ovf_q_0_mux),
       .i_out(adc_i_0), .q_out(adc_q_0), .run(run_rx0_d1), .debug());
 
    rx_frontend #(.BASE(SR_RX_FRONT1)) rx_frontend1
      (.clk(dsp_clk),.rst(dsp_rst),
      .adc_clk(lms_clk),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-      .adc_a({adc_a_1,2'b00}),.adc_ovf_a(adc_ovf_a_1),
-      .adc_b({adc_b_1,2'b00}),.adc_ovf_b(adc_ovf_b_1),
+      .adc_a({adc_a_1,2'b00}),.adc_ovf_a(adc_ovf_i_1_mux),
+      .adc_b({adc_b_1,2'b00}),.adc_ovf_b(adc_ovf_q_1_mux),
       .i_out(adc_i_1), .q_out(adc_q_1), .run(run_rx1_d1), .debug());
+
+   frontend_sw #(.BASE(SR_RX_FRONT_SW)) rx_frontend_sw
+     (
+      .clk(lms_clk), .rst(dsp_rst),
+      .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
+      .i_0_in(adc_i_0), .q_0_in(adc_q_0), 
+      .i_1_in(adc_i_1), .q_1_in(adc_q_1), 
+      .run_0_in(run_rx0_d1), .run_1_in(run_rx1_d1), 
+      .adc_ovf_i_0_in(adc_ovf_a_0), .adc_ovf_q_0_in(adc_ovf_b_0), 
+      .adc_ovf_i_1_in(adc_ovf_a_1), .adc_ovf_q_1_in(adc_ovf_b_1), 
+      .i_0_mux(i_0_mux), .q_0_mux(q_0_mux), 
+      .i_1_mux(i_1_mux), .q_1_mux(q_1_mux), 
+      .run_0_mux(run_rx0_mux), .run_1_mux(run_rx1_mux), 
+      .adc_ovf_i_0_mux(adc_ovf_i_0_mux), .adc_ovf_q_0_mux(adc_ovf_q_0_mux), 
+      .adc_ovf_i_1_mux(adc_ovf_i_1_mux), .adc_ovf_q_1_mux(adc_ovf_q_1_mux));      
 `endif // !`ifndef LMS602D_FRONTEND
    
    // /////////////////////////////////////////////////////////////////////////
@@ -744,7 +766,7 @@ module u2plus_core
 `ifndef LMS602D_FRONTEND
       .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
 `else
-      .adc_i(adc_i_0),.adc_ovf_i(adc_ovf_a_0),.adc_q(adc_q_0),.adc_ovf_q(adc_ovf_b_0),
+      .adc_i(i_0_mux),.adc_ovf_i(adc_ovf_i_0_mux),.adc_q(q_0_mux),.adc_ovf_q(adc_ovf_q_0_mux),
 `endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx0), .run(run_rx0_d1), .strobe(strobe_rx0),
       .debug() );
@@ -781,7 +803,7 @@ module u2plus_core
 `ifndef LMS602D_FRONTEND
       .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
 `else
-      .adc_i(adc_i_1),.adc_ovf_i(adc_ovf_a_1),.adc_q(adc_q_1),.adc_ovf_q(adc_ovf_b_1),
+      .adc_i(i_1_mux),.adc_ovf_i(adc_ovf_i_1_mux),.adc_q(q_1_mux),.adc_ovf_q(adc_ovf_q_1_mux),
 `endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx1), .run(run_rx1_d1), .strobe(strobe_rx1),
       .debug() );
@@ -869,6 +891,9 @@ module u2plus_core
    // /////////////////////////////////////////////////////////////////////////
    // DSP TX 0
    wire [23:0] 	 tx_i, tx_q;
+   wire [23:0] 	 tx1_i, tx1_q;
+   wire [23:0] 	 front_i_0, front_q_0;
+   wire [23:0] 	 front_i_1, front_q_1;
    
    vita_tx_chain #(.BASE_CTRL(SR_TX_CTRL), .BASE_DSP(SR_TX_DSP), 
 		   .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
@@ -890,6 +915,23 @@ module u2plus_core
       .underrun(underrun), .run(run_tx),
       .debug(debug_vt));
 
+`ifdef LMS602D_FRONTEND     
+   frontend_sw #(.BASE(SR_TX_FRONT_SW)) tx_frontend_sw
+     (
+      .clk(lms_clk), .rst(dsp_rst),
+      .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
+      .i_0_in(tx_i), .q_0_in(tx_q), 
+      .i_1_in(tx1_i), .q_1_in(tx1_q),
+      .i_0_mux(front_i_0), .q_0_mux(front_q_0), 
+      .i_1_mux(front_i_1), .q_1_mux(front_q_1),
+      .run_0_in(run_tx), .run_1_in(run_tx1),       
+      .run_0_mux(run_tx0_mux), .run_1_mux(run_tx1_mux),      
+      .adc_ovf_i_0_in(), .adc_ovf_q_0_in(), 
+      .adc_ovf_i_1_in(), .adc_ovf_q_1_in(),  
+      .adc_ovf_i_0_mux(), .adc_ovf_q_0_mux(), 
+      .adc_ovf_i_1_mux(), .adc_ovf_q_1_mux());  
+`endif // !`ifndef LMS602D_FRONTEND
+
    tx_frontend #(.BASE(SR_TX_FRONT)) tx_frontend
      (
 `ifndef LMS_DSP
@@ -899,12 +941,11 @@ module u2plus_core
      .clk(lms_clk), .rst(dsp_rst),
       .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
 `endif // !`ifndef LMS_DSP
-      .tx_i(tx_i), .tx_q(tx_q), .run(1'b1),
+      .tx_i(front_i_0), .tx_q(front_q_0), .run(1'b1),
       .dac_a(dac_a), .dac_b(dac_b));
 
    // /////////////////////////////////////////////////////////////////////////
    // DSP TX 1
-   wire [23:0] 	 tx1_i, tx1_q;
    
    vita_tx_chain #(.BASE_CTRL(SR_TX1_CTRL), .BASE_DSP(SR_TX1_DSP), 
 		   .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
@@ -935,7 +976,7 @@ module u2plus_core
      .clk(lms_clk), .rst(dsp_rst),
       .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
 `endif // !`ifndef LMS_DSP
-      .tx_i(tx1_i), .tx_q(tx1_q), .run(1'b1),
+      .tx_i(front_i_1), .tx_q(front_q_1), .run(1'b1),
       .dac_a(dac1_a), .dac_b(dac1_b));
 
    // ///////////////////////////////////////////////////////////////////////////////////
