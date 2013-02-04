@@ -303,7 +303,7 @@ lms_rx::lms_rx(ctor_args_t args) : rx_dboard_base(args){ // Register properties
 
     this->get_rx_subtree()->create<std::string>("antenna/value")
         .subscribe(boost::bind(&lms_rx::set_rx_ant, this, _1))
-        .set("RX3");
+        .set("RX1");
     this->get_rx_subtree()->create<std::vector<std::string> >("antenna/options")
         .set(lms_rx_antennas);
     this->get_rx_subtree()->create<int>("sensors"); //phony property so this dir exists
