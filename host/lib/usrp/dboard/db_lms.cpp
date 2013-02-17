@@ -18,7 +18,7 @@
 #include <cfloat>
 #include <limits>
 
-#include "../umtrx/umtrx_impl.hpp"
+#include "../umtrx/lms6002d.hpp"
 #define lms_number  1
 
 using namespace uhd;

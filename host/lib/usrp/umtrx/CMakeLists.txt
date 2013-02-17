@@ -29,5 +29,6 @@ IF(ENABLE_UMTRX)
         ${CMAKE_CURRENT_SOURCE_DIR}/dboard_iface.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/io_impl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/umtrx_impl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lms6002d.cpp
     )
 ENDIF(ENABLE_UMTRX)
