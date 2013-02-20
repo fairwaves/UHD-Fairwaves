@@ -46,7 +46,7 @@ void lms6002d_dev::dump()
     }
 }
 
-double lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
+double lms6002d_dev::txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq)
 {
     // Supported frequency ranges and corresponding FREQSEL values.
     static const struct vco_sel { int64_t fmin; int64_t fmax; int8_t value; } freqsel[] = {
@@ -68,7 +68,7 @@ double lms6002d_dev::lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out
         { 3.24e9,     3.72e9,     0x3c },
     };
 
-    if (verbosity>0) printf("lms6002d_dev::lms_txrx_pll_tune(ref_clock=%f, out_freq=%f)\n", ref_clock, out_freq);
+    if (verbosity>0) printf("lms6002d_dev::txrx_pll_tune(ref_clock=%f, out_freq=%f)\n", ref_clock, out_freq);
 
     // Find frequency range and FREQSEL for the given frequency
     int8_t found_freqsel = -1;

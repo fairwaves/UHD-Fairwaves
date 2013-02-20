@@ -38,11 +38,11 @@ public:
 
     /** Tune TX PLL to a given frequency. */
     double tx_pll_tune(double ref_clock, double out_freq) {
-        return lms_txrx_pll_tune(0x10, ref_clock, out_freq);
+        return txrx_pll_tune(0x10, ref_clock, out_freq);
     }
     /** Tune TX PLL to a given frequency. */
     double rx_pll_tune(double ref_clock, double out_freq) {
-        return lms_txrx_pll_tune(0x20, ref_clock, out_freq);
+        return txrx_pll_tune(0x20, ref_clock, out_freq);
     }
 
     void tx_enable() {
@@ -273,7 +273,7 @@ public:
     }
 
 protected:
-    double lms_txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
+    double txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
 
     void lms_set_bits(uint8_t address, uint8_t mask) {
         write_reg(address, read_reg(address) | (mask));
