@@ -26,6 +26,7 @@ cordic_stage.v \
 dsp_core_rx.v \
 dsp_core_tx.v \
 dspengine_16to8.v \
+frontend_sw.v \
 hb_dec.v \
 hb_interp.v \
 pipectrl.v \
