@@ -504,10 +504,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             _mbc[mb].time64->set_time_next_pps(time_spec_t(time_t(_mbc[mb].gps->get_sensor("gps_time").to_int()+1)));
         }
     }
-
-//    lms0.init();
-//    lms1.init();
-
 }
 
 umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(

@@ -272,6 +272,49 @@ public:
         return lpf_code_to_width(code);
     }
 
+    /** Programming and Calibration Guide: 4.1 General DC Calibration Procedure */
+    int general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibration_reg_base);
+
+    /** This procedure is outlined in FAQ, section 4.7.
+    It's purpose is to circumvent the fact that in some edge cases calibration
+    may be successful even is DC_LOCK shows 0 or 7.
+    */
+    int general_dc_calibration(uint8_t dc_addr, uint8_t calibration_reg_base);
+
+    /** Programming and Calibration Guide: 4.2 DC Offset Calibration of LPF Tuning Module */
+    bool lpf_tuning_dc_calibration();
+
+    /** Programming and Calibration Guide: 4.3 TX/RX LPF DC Offset Calibration */
+    bool txrx_lpf_dc_calibration(bool is_tx);
+
+    /** Programming and Calibration Guide: 4.4 RXVGA2 DC Offset Calibration */
+    int rxvga2_dc_calibration();
+
+    /** Programming and Calibration Guide: 4.5 LPF Bandwidth Tuning.
+    Note, that this function modifies Tx PLL settings.
+    */
+    void lpf_bandwidth_tuning(int ref_clock, uint8_t lpf_bandwidth_code);
+
+    /** Performs all automatic calibration procedures in a recommeded order.
+
+        Notes:
+          0. Do not forget, that you should not apply any data for Tx during
+             the calibration. Rx should be disconnected as well, but we try
+             to handle this in the code.
+          1. It tunes Tx to 320MHz, so you have to re-tune to your frequency
+             after the calibration.
+          2. It's better to calibrate with your target TxVGA1 gain. If you
+             don't know your target gain yet, choose one <= -7dB to TX mixer
+             overload. TxVGA1 gain of -10dB is good choice.
+          3. TxVGA2 gain doesn't impact DC offset or LO leakage, because
+             it is in RF and is AC coupled. So we don't touch it. Thus TxVGA2
+             gain is irrelevant for the purpose of this calibration.
+          4. RxVGA2 gain is irrelevant, because it's set to 30dB during the
+             calibration and then restored to the original value.
+    */
+    void auto_calibration(int ref_clock, int lpf_bandwidth_code);
+
+
 protected:
     double txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
 

@@ -275,6 +275,19 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
                                              tx_vga2gain(lms.get_tx_vga2gain())
 {
     ////////////////////////////////////////////////////////////////////
+    // LMS6002D initialization
+    ////////////////////////////////////////////////////////////////////
+    lms.init();
+    // Rx and Tx will be enabled/disabled during the property tree initialization
+    // at later steps of initialization, so it doesn't hurt that we enable them here.
+    lms.rx_enable();
+    lms.tx_enable();
+    // -10dB is a good value for calibration if don't know a target gain yet
+    lms.set_tx_vga1gain(-10);
+    // Perform autocalibration
+    lms.auto_calibration(26e6, 0xf);
+
+    ////////////////////////////////////////////////////////////////////
     // Register RX properties
     ////////////////////////////////////////////////////////////////////
     this->get_rx_subtree()->create<std::string>("name")
