@@ -170,8 +170,8 @@ void lms6002d_dev::init()
     write_reg(0x59, 0x09);
     write_reg(0x47, 0x40);
     // RF Settings
-    write_reg(0x41, 0x15); // VGA1GAIN
-    write_reg(0x45, 0x00); // VGA2GAIN, ENVD
+//    write_reg(0x41, 0x15); // VGA1GAIN
+//    write_reg(0x45, 0x00); // VGA2GAIN, ENVD
 
     //reg_dump();
 }
