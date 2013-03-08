@@ -24,12 +24,12 @@
 #ifdef UMTRX
 // The master clock rate in FPGA
 # define MASTER_CLK_RATE 104000000 // UmTRX:    104 MHz
-// The TIME64 / VITA TIMER clock rate in FOGA
+// The TIME64 / VITA TIMER clock rate in FPGA
 # define TIME64_CLK_RATE 13000000  // UmTRX:    13 MHz
 #else
 // The master clock rate in FPGA
 # define MASTER_CLK_RATE 100000000 // USRP2(p): 100 MHz
-// The TIME64 / VITA TIMER clock rate in FOGA
+// The TIME64 / VITA TIMER clock rate in FPGA
 # define TIME64_CLK_RATE 100000000 // USRP2(p): 100 MHz
 #endif
 
