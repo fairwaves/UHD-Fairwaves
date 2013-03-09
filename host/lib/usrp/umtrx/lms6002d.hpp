@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <assert.h>
 
 /*!
  * LMS6002D control class
@@ -270,6 +271,72 @@ public:
     int8_t get_rx_lpf() {
         int8_t code = lms_read_shift(0x54, (0x0f<<2), 2);
         return lpf_code_to_width(code);
+    }
+
+    void rf_loopback_enable(int lna) {
+        assert(lna>=0 && lna<=3);
+
+        ///////////////////
+        //  Configire LNA
+        ///////////////////
+        // We configure all switches as if we want to use given LNA,
+        // but power down all LNAs with a test mode register.
+
+        // LNASEL_RXFE[1:0]: Selects the active LNA.
+        lms_write_bits(0x75, (0x03 << 4), (lna << 4));
+        // SELOUT[1:0]: Select output buffer in RX PLL
+        lms_write_bits(0x25, 0x03, lna);
+        // Power down LNAs with a test mode register
+        lms_set_bits(0x7D, (1 << 0));
+        // Enable test mode for RX FE for the previous setting to take effect
+        lms_set_bits(0x70, (1 << 1));
+
+        //////////////////
+        // Enable AUX PA
+        //////////////////
+
+        // Our testing shows that seeting this bit is not required.
+        // PD_DRVAUX = 0
+//        lms_clear_bits(0x44, (1 << 1));
+
+        ////////////////////
+        // Enable loopback
+        ////////////////////
+
+        // Our testing shows that seeting this bit is not required.
+        // PD[0] = 1
+//        lms_set_bits(0x0b, (1 << 0));
+        // Select RXMIX input for loopback
+        // LBRFEN[3:0] = lna
+        lms_write_bits(0x08, 0x0f, lna);
+    }
+
+    void rf_loopback_disable() {
+        /////////////////////
+        // Disable loopback
+        /////////////////////
+
+        // PD[0] = 0
+//        lms_clear_bits(0x0b, (1 << 0));
+        // Select RXMIX input for loopback
+        // LBRFEN[3:0] = 0 (disabled)
+        lms_write_bits(0x08, 0x0f, 0);
+
+        ///////////////////
+        // Disable AUX PA
+        ///////////////////
+
+        // PD_DRVAUX = 1
+//        lms_set_bits(0x44, (1 << 1));
+
+        ///////////////////
+        //  Power up LNAs
+        ///////////////////
+
+        // Power up LNAs with a test mode register
+        lms_clear_bits(0x7D, (1 << 0));
+        // Disable test mode for RX FE
+        lms_clear_bits(0x70, (1 << 1));
     }
 
     /** Programming and Calibration Guide: 4.1 General DC Calibration Procedure */

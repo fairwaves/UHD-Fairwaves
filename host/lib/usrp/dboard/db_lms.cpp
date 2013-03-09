@@ -153,19 +153,31 @@ public:
         //validate input
         assert_has(lms_rx_antennas, ant, "LMS6002D rx antenna name");
 
-        if (ant == "RX0") {
-            lms.set_rx_lna(0);
-        } else if (ant == "RX1") {
-            lms.set_rx_lna(1);
-        } else if (ant == "RX2") {
-            lms.set_rx_lna(2);
-        } else if (ant == "RX3") {
-            lms.set_rx_lna(3);
-        } else if (ant == "CAL") {
-            // TODO: Turn on loopback
-            lms.set_rx_lna(0);
+        if (ant == "CAL") {
+            // Enable RF loopback if disabled
+            if (!rf_loopback_enabled) {
+                if (verbosity>0) printf("db_lms6002d::set_rx_ant(%s) enabling RF loopback for LNA%d\n", ant.c_str(), lms.get_rx_lna());
+                lms.rf_loopback_enable(lms.get_rx_lna());
+                rf_loopback_enabled = true;
+            }
         } else {
-            UHD_THROW_INVALID_CODE_PATH();
+            // Disable RF loopback if enabled
+            if (rf_loopback_enabled) {
+                lms.rf_loopback_disable();
+                rf_loopback_enabled = false;
+            }
+
+            if (ant == "RX0") {
+                lms.set_rx_lna(0);
+            } else if (ant == "RX1") {
+                lms.set_rx_lna(1);
+            } else if (ant == "RX2") {
+                lms.set_rx_lna(2);
+            } else if (ant == "RX3") {
+                lms.set_rx_lna(3);
+            } else {
+                UHD_THROW_INVALID_CODE_PATH();
+            }
         }
     }
 
@@ -253,8 +265,9 @@ public:
     }
 
 private:
-    umtrx_lms6002d_dev lms;
+    umtrx_lms6002d_dev lms;        // Interface to the LMS chip.
     int tx_vga1gain, tx_vga2gain;  // Stored values of Tx VGA1 and VGA2 gains.
+    bool rf_loopback_enabled;      // Whether RF loopback is enabled.
 };
 
 // Register the LMS dboards
@@ -272,7 +285,8 @@ UHD_STATIC_BLOCK(reg_lms_dboards){
 db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
                                              lms(get_iface()),
                                              tx_vga1gain(lms.get_tx_vga1gain()),
-                                             tx_vga2gain(lms.get_tx_vga2gain())
+                                             tx_vga2gain(lms.get_tx_vga2gain()),
+                                             rf_loopback_enabled(false)
 {
     ////////////////////////////////////////////////////////////////////
     // LMS6002D initialization
