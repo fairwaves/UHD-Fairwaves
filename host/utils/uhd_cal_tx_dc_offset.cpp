@@ -104,6 +104,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     desc.add_options()
         ("help", "help message")
         ("verbose", "enable some verbose")
+        ("debug_raw_data", "save raw captured signals to files")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
@@ -185,11 +186,18 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double actual_tx_freq = usrp->get_tx_freq();
         const double actual_rx_freq = usrp->get_rx_freq();
         const double bb_dc_freq = actual_tx_freq - actual_rx_freq;
+        if (vm.count("verbose")) printf("actual_rx_rate = %0.2f MHz\n", actual_rx_rate/1e6);
+        if (vm.count("verbose")) printf("actual_tx_freq = %0.2f MHz\n", actual_tx_freq/1e6);
+        if (vm.count("verbose")) printf("actual_rx_freq = %0.2f MHz\n", actual_rx_freq/1e6);
+        if (vm.count("verbose")) printf("bb_dc_freq = %0.2f MHz\n", bb_dc_freq/1e6);
 
         //capture initial uncorrected value
         usrp->set_tx_dc_offset(std::complex<double>(0, 0));
         capture_samples(usrp, rx_stream, buff, nsamps);
         const double initial_dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
+        if (vm.count("verbose")) printf("initial_dc_dbrms = %2.0f dB\n", initial_dc_dbrms);
+
+        if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
         //bounds and results from searching
         double dc_i_start = -.1, dc_i_stop = .1, dc_i_step;
@@ -197,12 +205,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         double lowest_offset = 0, best_dc_i = 0, best_dc_q = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
+            if (vm.count("verbose")) printf("  iteration %d\n", i);
 
             dc_i_step = (dc_i_stop - dc_i_start)/(num_search_steps-1);
             dc_q_step = (dc_q_stop - dc_q_start)/(num_search_steps-1);
 
             for (double dc_i = dc_i_start; dc_i <= dc_i_stop + dc_i_step/2; dc_i += dc_i_step){
             for (double dc_q = dc_q_start; dc_q <= dc_q_stop + dc_q_step/2; dc_q += dc_q_step){
+                if (vm.count("verbose")) printf("    dc_i = %0.5f dc_q = %0.5f", dc_i, dc_q);
 
                 const std::complex<double> correction(dc_i, dc_q);
                 usrp->set_tx_dc_offset(correction);
@@ -211,12 +221,16 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                 capture_samples(usrp, rx_stream, buff, nsamps);
 
                 const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
+                if (vm.count("verbose")) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
 
                 if (dc_dbrms < lowest_offset){
                     lowest_offset = dc_dbrms;
                     best_dc_i = dc_i;
                     best_dc_q = dc_q;
+                    if (vm.count("verbose")) printf("    *");
+                    if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
                 }
+                if (vm.count("verbose")) printf("\n");
 
             }}
 
@@ -229,6 +243,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             dc_q_start = best_dc_q - dc_q_step;
             dc_q_stop = best_dc_q + dc_q_step;
         }
+
+        if (vm.count("verbose")) printf("  best_dc_i = %0.5f best_dc_q = %0.5f", best_dc_i, best_dc_q);
+        if (vm.count("verbose")) printf("  lowest_offset = %2.0f dB  delta = %2.0f dB\n", lowest_offset, initial_dc_dbrms - lowest_offset);
 
         if (lowest_offset < initial_dc_dbrms){ //most likely valid, keep result
             result_t result;

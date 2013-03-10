@@ -101,6 +101,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     desc.add_options()
         ("help", "help message")
         ("verbose", "enable some verbose")
+        ("debug_raw_data", "save raw captured signals to files")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
         ("tx_offset", po::value<double>(&tx_offset)->default_value(0.1e6), "TX LO offset from the RX LO in Hz")
@@ -182,11 +183,23 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double actual_rx_freq = usrp->get_rx_freq();
         const double bb_tone_freq = actual_tx_freq - actual_rx_freq;
         const double bb_imag_freq = -bb_tone_freq;
+        if (vm.count("verbose")) printf("actual_rx_rate = %0.2f MHz\n", actual_rx_rate/1e6);
+        if (vm.count("verbose")) printf("actual_tx_freq = %0.2f MHz\n", actual_tx_freq/1e6);
+        if (vm.count("verbose")) printf("actual_rx_freq = %0.2f MHz\n", actual_rx_freq/1e6);
+        if (vm.count("verbose")) printf("bb_tone_freq = %0.2f MHz\n", bb_tone_freq/1e6);
+        if (vm.count("verbose")) printf("bb_imag_freq = %0.2f MHz\n", bb_imag_freq/1e6);
 
         //capture initial uncorrected value
         usrp->set_rx_iq_balance(std::polar<double>(1.0, 0.0));
         capture_samples(usrp, rx_stream, buff, nsamps);
-        const double initial_suppression = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate) - compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
+        const double initial_tone_dbrms = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate);
+        const double initial_image_dbrms = compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
+        const double initial_suppression = initial_tone_dbrms - initial_image_dbrms;
+        if (vm.count("verbose")) printf("initial_tone_dbrms = %2.0f dB\n", initial_tone_dbrms);
+        if (vm.count("verbose")) printf("initial_image_dbrms = %2.0f dB\n", initial_image_dbrms);
+        if (vm.count("verbose")) printf("initial_suppression = %2.0f dB\n", initial_suppression);
+
+        if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
         //bounds and results from searching
         std::complex<double> best_correction;
@@ -217,6 +230,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                     best_suppression = suppression;
                     best_phase_corr = phase_corr;
                     best_ampl_corr = ampl_corr;
+                    if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
                 }
 
             }}

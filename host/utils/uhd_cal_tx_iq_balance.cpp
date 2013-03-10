@@ -53,6 +53,7 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_fre
     const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
     wave_table table(tx_wave_ampl);
 
+
     //fill buff and send until interrupted
     while (not boost::this_thread::interruption_requested()){
         for (size_t i = 0; i < buff.size(); i++){
@@ -104,6 +105,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     desc.add_options()
         ("help", "help message")
         ("verbose", "enable some verbose")
+        ("debug_raw_data", "save raw captured signals to files")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
@@ -177,8 +179,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     if (not vm.count("freq_start")) freq_start = usrp->get_tx_freq_range().start() + 50e6;
     if (not vm.count("freq_stop")) freq_stop = usrp->get_tx_freq_range().stop() - 50e6;
 
+    if (vm.count("verbose")) printf("freq_start = %0.2f MHz\n", freq_start/1e6);
+    if (vm.count("verbose")) printf("freq_stop = %0.2f MHz\n", freq_stop/1e6);
+    if (vm.count("verbose")) printf("freq_step = %0.2f MHz\n", freq_step/1e6);
+    if (vm.count("verbose")) printf("rx_offset = %0.2f MHz\n", rx_offset/1e6);
+
     for (double tx_lo_i = freq_start; tx_lo_i <= freq_stop; tx_lo_i += freq_step){
         const double tx_lo = tune_rx_and_tx(usrp, tx_lo_i, rx_offset);
+        if (vm.count("verbose")) printf("-------------------------\n");
+        if (vm.count("verbose")) printf("Calibrating for %0.1f MHz\n", tx_lo/1e6);
 
         //frequency constants for this tune event
         const double actual_rx_rate = usrp->get_rx_rate();
@@ -186,11 +195,23 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double actual_rx_freq = usrp->get_rx_freq();
         const double bb_tone_freq = actual_tx_freq + tx_wave_freq - actual_rx_freq;
         const double bb_imag_freq = actual_tx_freq - tx_wave_freq - actual_rx_freq;
+        if (vm.count("verbose")) printf("actual_rx_rate = %0.2f MHz\n", actual_rx_rate/1e6);
+        if (vm.count("verbose")) printf("actual_tx_freq = %0.2f MHz\n", actual_tx_freq/1e6);
+        if (vm.count("verbose")) printf("actual_rx_freq = %0.2f MHz\n", actual_rx_freq/1e6);
+        if (vm.count("verbose")) printf("bb_tone_freq = %0.2f MHz\n", bb_tone_freq/1e6);
+        if (vm.count("verbose")) printf("bb_imag_freq = %0.2f MHz\n", bb_imag_freq/1e6);
 
         //capture initial uncorrected value
         usrp->set_tx_iq_balance(std::polar<double>(1.0, 0.0));
         capture_samples(usrp, rx_stream, buff, nsamps);
-        const double initial_suppression = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate) - compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
+        const double initial_tone_dbrms = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate);
+        const double initial_image_dbrms = compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
+        const double initial_suppression = initial_tone_dbrms - initial_image_dbrms;
+        if (vm.count("verbose")) printf("initial_tone_dbrms = %2.0f dB\n", initial_tone_dbrms);
+        if (vm.count("verbose")) printf("initial_image_dbrms = %2.0f dB\n", initial_image_dbrms);
+        if (vm.count("verbose")) printf("initial_suppression = %2.0f dB\n", initial_suppression);
+
+        if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
         //bounds and results from searching
         std::complex<double> best_correction;
@@ -199,12 +220,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         double best_suppression = initial_suppression, best_phase_corr = 0, best_ampl_corr = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
+            if (vm.count("verbose")) printf("  iteration %d\n", i);
 
             phase_corr_step = (phase_corr_stop - phase_corr_start)/(num_search_steps-1);
             ampl_corr_step = (ampl_corr_stop - ampl_corr_start)/(num_search_steps-1);
 
             for (double phase_corr = phase_corr_start; phase_corr <= phase_corr_stop + phase_corr_step/2; phase_corr += phase_corr_step){
             for (double ampl_corr = ampl_corr_start; ampl_corr <= ampl_corr_stop + ampl_corr_step/2; ampl_corr += ampl_corr_step){
+                if (vm.count("verbose")) printf("    phase_corr = %0.2f ampl_corr = %0.2f", phase_corr, ampl_corr);
 
                 const std::complex<double> correction = std::polar(ampl_corr+1, phase_corr*tau);
                 usrp->set_tx_iq_balance(correction);
@@ -215,13 +238,19 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                 const double tone_dbrms = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate);
                 const double imag_dbrms = compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
                 const double suppression = tone_dbrms - imag_dbrms;
+                if (vm.count("verbose")) printf("    tone_dbrms = %2.0f dB", tone_dbrms);
+                if (vm.count("verbose")) printf("    imag_dbrms = %2.0f dB", imag_dbrms);
+                if (vm.count("verbose")) printf("    suppression = %2.0f dB", suppression);
 
                 if (suppression > best_suppression){
                     best_correction = correction;
                     best_suppression = suppression;
                     best_phase_corr = phase_corr;
                     best_ampl_corr = ampl_corr;
+                    if (vm.count("verbose")) printf("    *");
+                    if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
                 }
+                if (vm.count("verbose")) printf("\n");
 
             }}
 
@@ -234,6 +263,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             ampl_corr_start = best_ampl_corr - ampl_corr_step;
             ampl_corr_stop = best_ampl_corr + ampl_corr_step;
         }
+
+        if (vm.count("verbose")) printf("  best_corr phase = %0.5f ampl = %0.5f real = %0.5f imag = %0.5f",
+                                        best_phase_corr, best_ampl_corr, best_correction.real(), best_correction.imag());
+        if (vm.count("verbose")) printf("  suppression = %2.0f dB\n", best_suppression);
 
         if (best_suppression > 30){ //most likely valid, keep result
             result_t result;
