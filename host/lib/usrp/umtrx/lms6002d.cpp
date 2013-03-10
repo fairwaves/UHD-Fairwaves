@@ -376,12 +376,12 @@ void lms6002d_dev::lpf_bandwidth_tuning(int ref_clock, uint8_t lpf_bandwidth_cod
 
 void lms6002d_dev::auto_calibration(int ref_clock, int lpf_bandwidth_code)
 {
-    printf("LPF Tuning...\n");
+    if (verbosity > 0) printf("LPF Tuning...\n");
     lpf_tuning_dc_calibration();
-    printf("LPF Bandwidth Tuning...\n");
+    if (verbosity > 0) printf("LPF Bandwidth Tuning...\n");
     lpf_bandwidth_tuning(ref_clock, lpf_bandwidth_code);
 
-    printf("Tx LPF DC calibration...\n");
+    if (verbosity > 0) printf("Tx LPF DC calibration...\n");
     txrx_lpf_dc_calibration(true);
 
     // Disable Rx
@@ -405,9 +405,9 @@ void lms6002d_dev::auto_calibration(int ref_clock, int lpf_bandwidth_code)
     // Set RxVGA2 gain to max
     uint8_t rx_vga2gain = set_rx_vga2gain(30);
     // Calibrate!
-    printf("Rx LPF DC calibration...\n");
+    if (verbosity > 0) printf("Rx LPF DC calibration...\n");
     txrx_lpf_dc_calibration(false);
-    printf("RxVGA2 DC calibration...\n");
+    if (verbosity > 0) printf("RxVGA2 DC calibration...\n");
     rxvga2_dc_calibration();
 
     // Restore saved values
