@@ -310,7 +310,7 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     BOOST_FOREACH(const std::string &name, lms_rx_gain_ranges.keys()){
         this->get_rx_subtree()->create<double>("gains/"+name+"/value")
             .coerce(boost::bind(&db_lms6002d::set_rx_gain, this, _1, name))
-            .set((lms_rx_gain_ranges[name].start()+lms_rx_gain_ranges[name].start())/2.0);
+            .set((lms_rx_gain_ranges[name].start()+lms_rx_gain_ranges[name].stop())/2.0);
         this->get_rx_subtree()->create<meta_range_t>("gains/"+name+"/range")
             .set(lms_rx_gain_ranges[name]);
     }
@@ -346,7 +346,7 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     BOOST_FOREACH(const std::string &name, lms_tx_gain_ranges.keys()){
         this->get_tx_subtree()->create<double>("gains/"+name+"/value")
             .coerce(boost::bind(&db_lms6002d::set_tx_gain, this, _1, name))
-            .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].start())/2.0);
+            .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].stop())/2.0);
         this->get_tx_subtree()->create<meta_range_t>("gains/"+name+"/range")
             .set(lms_tx_gain_ranges[name]);
     }
