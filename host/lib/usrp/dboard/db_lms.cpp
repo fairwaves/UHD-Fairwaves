@@ -374,10 +374,10 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set(lms_bandwidth_range);
 
     // UmTRX specific calibration
-    this->get_tx_subtree()->create<uint8_t>("cal/dc_i/value")
+    this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_i/value")
         .subscribe(boost::bind(&db_lms6002d::_set_tx_vga1dc_i_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_i_int, &lms));
-    this->get_tx_subtree()->create<uint8_t>("cal/dc_q/value")
+    this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_q/value")
         .subscribe(boost::bind(&db_lms6002d::_set_tx_vga1dc_q_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_q_int, &lms));
 }
