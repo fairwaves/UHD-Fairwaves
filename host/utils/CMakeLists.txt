@@ -23,6 +23,7 @@ SET(util_runtime_sources
     uhd_usrp_probe.cpp
     uhd_cal_rx_iq_balance.cpp
     uhd_cal_tx_dc_offset.cpp
+    uhd_cal_tx_dc_offset_lms.cpp
     uhd_cal_tx_iq_balance.cpp
 )
 
