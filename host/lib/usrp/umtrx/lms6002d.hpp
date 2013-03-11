@@ -295,17 +295,22 @@ public:
         // Enable AUX PA
         //////////////////
 
-        // Our testing shows that seeting this bit is not required.
-        // PD_DRVAUX = 0
-//        lms_clear_bits(0x44, (1 << 1));
+        // AUX PA is controlled by different bits in different revisions
+        // of LMS6002D chip, so we set both bits for safety.
+        // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
+        // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
+        lms_clear_bits(0x44, (3 << 1));
 
         ////////////////////
         // Enable loopback
         ////////////////////
 
-        // Our testing shows that seeting this bit is not required.
+        // This setting has effect when  in test mode
+        // (i.e. when register 0x05[7] is set to '1').
+        // We set it here to be safe, in case someone
+        // enabled test mode earlier.
         // PD[0] = 1
-//        lms_set_bits(0x0b, (1 << 0));
+        lms_set_bits(0x0b, (1 << 0));
         // Select RXMIX input for loopback
         // LBRFEN[3:0] = lna
         lms_write_bits(0x08, 0x0f, lna);
@@ -317,7 +322,7 @@ public:
         /////////////////////
 
         // PD[0] = 0
-//        lms_clear_bits(0x0b, (1 << 0));
+        lms_clear_bits(0x0b, (1 << 0));
         // Select RXMIX input for loopback
         // LBRFEN[3:0] = 0 (disabled)
         lms_write_bits(0x08, 0x0f, 0);
@@ -326,8 +331,9 @@ public:
         // Disable AUX PA
         ///////////////////
 
-        // PD_DRVAUX = 1
-//        lms_set_bits(0x44, (1 << 1));
+        // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
+        // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
+        lms_set_bits(0x44, (3 << 1));
 
         ///////////////////
         //  Power up LNAs
