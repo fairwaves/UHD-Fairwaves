@@ -42,7 +42,7 @@ void lms6002d_dev::dump()
             case 0x6D:
                 continue;
         }
-        printf("i=%x LMS=%x\n", i, read_reg(i));
+        printf("reg[0x%02x] = 0x%02x\n", i, read_reg(i));
     }
 }
 
