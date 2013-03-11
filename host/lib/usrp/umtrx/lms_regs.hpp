@@ -30,4 +30,8 @@
 #define LMS_DC_ADDR_SHIFT          0
 #define LMS_DC_ADDR_MASK           (7<<LMS_DC_ADDR_SHIFT)
 
+// Defined for the U2_REG_MISC_CTRL_CLOCK register
+#define LMS1_RESET  (1<<5)
+#define LMS2_RESET  (1<<6)
+
 #endif

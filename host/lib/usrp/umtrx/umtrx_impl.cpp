@@ -230,6 +230,16 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
 
         ////////////////////////////////////////////////////////////////
+        // reset LMS chips
+        ////////////////////////////////////////////////////////////////
+
+        {
+            const boost::uint32_t clock_ctrl = _mbc[mb].iface->peek32(U2_REG_MISC_CTRL_CLOCK);
+            _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, clock_ctrl & ~(LMS1_RESET|LMS2_RESET));
+            _mbc[mb].iface->poke32(U2_REG_MISC_CTRL_CLOCK, clock_ctrl |  (LMS1_RESET|LMS2_RESET));
+        }
+
+        ////////////////////////////////////////////////////////////////
         // create (fake) daughterboard entries
         ////////////////////////////////////////////////////////////////
         _mbc[mb].dbc["A"];
