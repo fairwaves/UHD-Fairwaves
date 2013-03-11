@@ -169,11 +169,11 @@ void lms6002d_dev::init()
     write_reg(0x79, 0x37);
     write_reg(0x59, 0x09);
     write_reg(0x47, 0x40);
-    // RF Settings
-//    write_reg(0x41, 0x15); // VGA1GAIN
-//    write_reg(0x45, 0x00); // VGA2GAIN, ENVD
 
-    //reg_dump();
+    // Disable AUX PA
+    // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
+    // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
+    lms_set_bits(0x44, (3 << 1));
 }
 
 int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibration_reg_base)
