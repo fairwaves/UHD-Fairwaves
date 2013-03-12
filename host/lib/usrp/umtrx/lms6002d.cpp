@@ -352,7 +352,8 @@ void lms6002d_dev::lpf_bandwidth_tuning(int ref_clock, uint8_t lpf_bandwidth_cod
     lms_clear_bits(0x06, (1 << 3) | (1 << 2));
 
     // Set TopSPI::BWC_LPFCAL
-    uint8_t t = lms_write_bits(0x07, 0x0f, lpf_bandwidth_code);
+    // Set EN_CAL_LPFCAL := 1 (Block enabled)
+    uint8_t t = lms_write_bits(0x07, 0x8f, (1<<7)|lpf_bandwidth_code);
     if (verbosity >= 3) printf("code = %x %x %x\n", lpf_bandwidth_code, t, read_reg(0x07));
     // TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
     lms_set_bits(0x06, 0x01);
@@ -362,13 +363,16 @@ void lms6002d_dev::lpf_bandwidth_tuning(int ref_clock, uint8_t lpf_bandwidth_cod
     // RCCAL := TopSPI::RCCAL_LPFCAL
     _lpf_rccal = read_reg(0x01) >> 5;
     if (verbosity >= 3) printf("RCCAL = %d\n", _lpf_rccal);
-    // Shut down calibration unit
-    // TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
-    lms_set_bits(0x06, 0x01);
     // RxLPFSPI::RCCAL_LPF := RCCAL
     lms_write_bits(0x56, (7 << 4), (_lpf_rccal << 4));
     // TxLPFSPI::RCCAL_LPF := RCCAL
     lms_write_bits(0x36, (7 << 4), (_lpf_rccal << 4));
+
+    // Shut down calibration unit
+    // TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
+    lms_set_bits(0x06, 0x01);
+    // Set EN_CAL_LPFCAL := 0 (Block disabled)
+    lms_clear_bits(0x07, (1 << 7));
 
     // Restore registers 0x05, 0x06 and 0x09
     write_reg(0x06, reg_save_06);
