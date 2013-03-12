@@ -360,15 +360,15 @@ void lms6002d_dev::lpf_bandwidth_tuning(int ref_clock, uint8_t lpf_bandwidth_cod
     // TopSPI::RST_CAL_LPFCAL := 0 (Rst Inactive)
     lms_clear_bits(0x06, 0x01);
     // RCCAL := TopSPI::RCCAL_LPFCAL
-    uint8_t RCCAL = read_reg(0x01) >> 5;
-    if (verbosity >= 3) printf("RCCAL = %d\n", RCCAL);
+    _lpf_rccal = read_reg(0x01) >> 5;
+    if (verbosity >= 3) printf("RCCAL = %d\n", _lpf_rccal);
     // Shut down calibration unit
     // TopSPI::RST_CAL_LPFCAL := 1 (Rst Active)
     lms_set_bits(0x06, 0x01);
     // RxLPFSPI::RCCAL_LPF := RCCAL
-    lms_write_bits(0x56, (7 << 4), (RCCAL << 4));
+    lms_write_bits(0x56, (7 << 4), (_lpf_rccal << 4));
     // TxLPFSPI::RCCAL_LPF := RCCAL
-    lms_write_bits(0x36, (7 << 4), (RCCAL << 4));
+    lms_write_bits(0x36, (7 << 4), (_lpf_rccal << 4));
 
     // Restore registers 0x05, 0x06 and 0x09
     write_reg(0x06, reg_save_06);

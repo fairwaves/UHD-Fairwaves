@@ -27,7 +27,11 @@
  */
 class lms6002d_dev {
 public:
-    virtual ~lms6002d_dev() {}
+
+    lms6002d_dev()
+        :_lpf_rccal(3) // Value recommended by LimeMicro
+    {}
+    ~lms6002d_dev() {}
 
     void init();
     void dump();
@@ -245,6 +249,21 @@ public:
     width is in kHz [750 .. 14000]
     Returns the old width value in kHz */
     int8_t set_tx_lpf(int width) {
+        // This is a *hack*.
+        if (width == 500) {
+            // If we set LPF bandwidth calibration value to the maximum
+            // value (7), we could reduce bandwidth of the 750kHz filter
+            // to be around or a bit more than 500kHz.
+            width = 750;
+            // Set RCCAL_LPF to maximum = 7
+            // RCCAL_LPF[2:0]: Calibration value, coming from TRX_LPF_CAL module.
+            lms_write_bits(0x36, (0x07<<4), (7<<4));
+        } else {
+            // Set RCCAL_LPF to a normal calibrated value.
+            // RCCAL_LPF[2:0]: Calibration value, coming from TRX_LPF_CAL module.
+            lms_write_bits(0x36, (0x07<<4), (_lpf_rccal<<4));
+        }
+
         int8_t width_code = lpf_width_to_code(width);
         int8_t old_bits = lms_write_bits(0x34, (0x0f<<2), (width_code<<2));
         return lpf_code_to_width((old_bits>>2) & 0x0f);
@@ -254,13 +273,35 @@ public:
     Returns the width value in kHz */
     int8_t get_tx_lpf() {
         int8_t code = lms_read_shift(0x34, (0x0f<<2), 2);
-        return lpf_code_to_width(code);
+        int width;
+        // This is a *hack*.
+        // See description at the set_tx_lpf() function.
+        if (code == 0xf && lms_read_shift(0x36, (0x07<<4), 4) == 7) {
+            width = 500;
+        } else {
+            width = lpf_code_to_width(code);
+        }
+        return width;
     }
 
     /**  Set Rx LPF width.
     width is in kHz [750 .. 14000]
     Returns the old width value in kHz */
     int8_t set_rx_lpf(int width) {
+        // This is a *hack*.
+        if (width == 500) {
+            // If we set LPF bandwidth calibration value to the maximum
+            // value (7), we could reduce bandwidth of the 750kHz filter
+            // to be around or a bit more than 500kHz.
+            width = 750;
+            // Set RCCAL_LPF to maximum = 7
+            // RCCAL_LPF[2:0]: Calibration value, coming from TRX_LPF_CAL module.
+            lms_write_bits(0x56, (0x07<<4), (7<<4));
+        } else {
+            // Set RCCAL_LPF to a normal calibrated value.
+            // RCCAL_LPF[2:0]: Calibration value, coming from TRX_LPF_CAL module.
+            lms_write_bits(0x56, (0x07<<4), (_lpf_rccal<<4));
+        }
         int8_t width_code = lpf_width_to_code(width);
         int8_t old_bits = lms_write_bits(0x54, (0x0f<<2), (width_code<<2));
         return lpf_code_to_width((old_bits>>2) & 0x0f);
@@ -270,7 +311,15 @@ public:
     Returns the width value in kHz */
     int8_t get_rx_lpf() {
         int8_t code = lms_read_shift(0x54, (0x0f<<2), 2);
-        return lpf_code_to_width(code);
+        int width;
+        // This is a *hack*.
+        // See description at the set_rx_lpf() function.
+        if (code == 0xf && lms_read_shift(0x56, (0x07<<4), 4) == 7) {
+            width = 500;
+        } else {
+            width = lpf_code_to_width(code);
+        }
+        return width;
     }
 
     void rf_loopback_enable(int lna) {
@@ -406,6 +455,8 @@ protected:
     uint8_t lms_read_shift(uint8_t address, uint8_t mask, uint8_t shift) {
         return (read_reg(address) & mask) >> shift;
     }
+
+    uint8_t _lpf_rccal;  // Saved value for RCCAL_LPFCAL
 
 };
 

@@ -31,6 +31,7 @@ static const freq_range_t lms_freq_range(0.2325e9, 3.72e9);
 
 //Multiplied by 2 for conversion to complex bandpass from lowpass
 static const freq_range_t lms_bandwidth_range = list_of
+    (range_t(2 * 0.5   * 1e6)) // A hack. See implementation for details.
     (range_t(2 * 0.75  * 1e6))
     (range_t(2 * 0.875 * 1e6))
     (range_t(2 * 1.25  * 1e6))
