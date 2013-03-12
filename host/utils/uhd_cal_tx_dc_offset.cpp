@@ -205,7 +205,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         double lowest_offset = 0, best_dc_i = 0, best_dc_q = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
-            if (vm.count("verbose")) printf("  iteration %d\n", i);
+            if (vm.count("verbose")) printf("  iteration %lu\n", i);
 
             dc_i_step = (dc_i_stop - dc_i_start)/(num_search_steps-1);
             dc_q_step = (dc_q_stop - dc_q_start)/(num_search_steps-1);

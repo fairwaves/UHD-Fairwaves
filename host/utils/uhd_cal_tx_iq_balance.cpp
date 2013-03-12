@@ -220,7 +220,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         double best_suppression = initial_suppression, best_phase_corr = 0, best_ampl_corr = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
-            if (vm.count("verbose")) printf("  iteration %d\n", i);
+            if (vm.count("verbose")) printf("  iteration %lu\n", i);
 
             phase_corr_step = (phase_corr_stop - phase_corr_start)/(num_search_steps-1);
             ampl_corr_step = (ampl_corr_stop - ampl_corr_start)/(num_search_steps-1);
