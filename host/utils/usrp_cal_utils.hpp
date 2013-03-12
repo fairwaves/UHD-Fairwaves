@@ -59,7 +59,6 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
         usrp->set_tx_bandwidth(3e6);
         usrp->set_rx_rate(13e6/24);
         usrp->set_rx_bandwidth(3e6);
-        return;
     }
     else if (mb_name.find("B100") != std::string::npos){
         usrp->set_tx_rate(4e6);
@@ -91,7 +90,7 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
         usrp->set_rx_gain(25);
     }
     else if (rx_name.find("LMS6002D") != std::string::npos){
-        usrp->set_rx_gain(15);
+        usrp->set_rx_gain(10);
     }
     else{
         throw std::runtime_error("self-calibration is not supported for this hardware");
