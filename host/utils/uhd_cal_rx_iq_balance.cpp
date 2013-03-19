@@ -75,7 +75,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double rx_l
     tx_tune_req.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
     tx_tune_req.dsp_freq = 0;
     usrp->set_tx_freq(tx_tune_req);
-/*
+
     //wait for the LOs to become locked
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::system_time start = boost::get_system_time();
@@ -84,7 +84,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double rx_l
             throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
         }
     }
-*/
+
     return usrp->get_rx_freq();
 }
 

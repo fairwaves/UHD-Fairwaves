@@ -78,7 +78,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
 
     //tune the receiver
     usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
-/*
+
     //wait for the LOs to become locked
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::system_time start = boost::get_system_time();
@@ -87,7 +87,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
             throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
         }
     }
-*/
+
     return usrp->get_tx_freq();
 }
 
