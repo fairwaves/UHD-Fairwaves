@@ -33,8 +33,11 @@ public:
     {}
     ~lms6002d_dev() {}
 
-    void init();
+    /** Dump chip registers to console (for debug use only) */
     void dump();
+
+    /** Obligatory initialization steps */
+    void init();
 
     /** Write through SPI */
     virtual void write_reg(uint8_t addr, uint8_t val) = 0;
