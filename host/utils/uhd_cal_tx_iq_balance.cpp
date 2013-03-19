@@ -268,7 +268,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                                         best_phase_corr, best_ampl_corr, best_correction.real(), best_correction.imag());
         if (vm.count("verbose")) printf("  suppression = %2.0f dB\n", best_suppression);
 
-        if (best_suppression > 30){ //most likely valid, keep result
+        if (best_suppression > 10){ //most likely valid, keep result
             result_t result;
             result.freq = tx_lo;
             result.real_corr = best_correction.real();

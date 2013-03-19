@@ -104,7 +104,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("debug_raw_data", "save raw captured signals to files")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("tx_offset", po::value<double>(&tx_offset)->default_value(0.1e6), "TX LO offset from the RX LO in Hz")
+        ("tx_offset", po::value<double>(&tx_offset)->default_value(1e6), "TX LO offset from the RX LO in Hz")
 	("compl_i", po::value<double>(&compl_i), "Enforced correction for I (complex)")
         ("compl_q", po::value<double>(&compl_q), "Enforced correction for Q (complex)")
 	("polar_i", po::value<double>(&polar_i), "Enforced correction for I (polar)")
@@ -258,7 +258,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                                         best_phase_corr, best_ampl_corr, best_correction.real(), best_correction.imag());
         if (vm.count("verbose")) printf("  suppression = %2.0f dB\n", best_suppression);
 
-        if (best_suppression > 30){ //most likely valid, keep result
+        if (best_suppression > 10){ //most likely valid, keep result
             result_t result;
             result.freq = rx_lo;
             result.real_corr = best_correction.real();
