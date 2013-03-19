@@ -328,7 +328,9 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set("RX1");
     this->get_rx_subtree()->create<std::vector<std::string> >("antenna/options")
         .set(lms_rx_antennas);
-    this->get_rx_subtree()->create<int>("sensors"); //phony property so this dir exists
+    // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
+    this->get_rx_subtree()->create<sensor_value_t>("sensors/lo_locked")
+        .set(sensor_value_t("LO", true, "locked", "unlocked"));
     this->get_rx_subtree()->create<std::string>("connection").set("IQ");
     this->get_rx_subtree()->create<bool>("enabled")
         .coerce(boost::bind(&db_lms6002d::set_enabled, this, dboard_iface::UNIT_RX, _1));
@@ -364,7 +366,9 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set("TX2");
     this->get_tx_subtree()->create<std::vector<std::string> >("antenna/options")
         .set(lms_tx_antennas);
-    this->get_tx_subtree()->create<int>("sensors"); //phony property so this dir exists
+    // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
+    this->get_tx_subtree()->create<sensor_value_t>("sensors/lo_locked")
+        .set(sensor_value_t("LO", true, "locked", "unlocked"));
     this->get_tx_subtree()->create<std::string>("connection").set("IQ");
     this->get_tx_subtree()->create<bool>("enabled")
         .coerce(boost::bind(&db_lms6002d::set_enabled, this, dboard_iface::UNIT_TX, _1));
