@@ -374,9 +374,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
                 .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsps[dspno], _1))
                 .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, dspno, _1));
             _tree->create<double>(tx_dsp_path / "freq/value")
-                .coerce(boost::bind(&umtrx_impl::set_tx_dsp_freq, this, mb, dspno, _1));
+                .coerce(boost::bind(&tx_dsp_core_200::set_freq, _mbc[mb].tx_dsps[dspno], _1));
             _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
-                .publish(boost::bind(&umtrx_impl::get_tx_dsp_freq_range, this, mb, dspno));
+                .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _mbc[mb].tx_dsps[dspno]));
         }
 
         //setup dsp flow control
@@ -557,36 +557,4 @@ void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const std::string 
 void umtrx_impl::set_tcxo_dac(const std::string &mb, const uint16_t val){
     if (verbosity>0) printf("umtrx_impl::set_tcxo_dac(%d)\n", val);
     _mbc[mb].iface->write_spi(4, spi_config_t::EDGE_FALL, val, 16);
-}
-
-
-#include <boost/math/special_functions/round.hpp>
-#include <boost/math/special_functions/sign.hpp>
-
-double umtrx_impl::set_tx_dsp_freq(const std::string &mb, const size_t dsp, const double freq_){
-/*
-    double new_freq = freq_;
-    const double tick_rate = _tree->access<double>("/mboards/"+mb+"/tick_rate").get();
-
-    //calculate the DAC shift (multiples of rate)
-    const int sign = boost::math::sign(new_freq);
-    const int zone = std::min(boost::math::iround(new_freq/tick_rate), 2);
-    const double dac_shift = sign*zone*tick_rate;
-    new_freq -= dac_shift; //update FPGA DSP target freq
-
-    //set the DAC shift (modulation mode)
-    if (zone == 0) _mbc[mb].codec->set_tx_mod_mode(0); //no shift
-    else _mbc[mb].codec->set_tx_mod_mode(sign*4/zone); //DAC interp = 4
-
-    return _mbc[mb].tx_dsps[dsp]->set_freq(new_freq) + dac_shift; //actual freq
-*/
-    if (verbosity>0) printf("umtrx_impl::set_tx_dsp_freq(%s, %d, %f)\n", mb.c_str(), dsp, freq_);
-    // TODO: HACK: I'm not sure this works as expected.
-    return _mbc[mb].tx_dsps[dsp]->set_freq(freq_); //actual freq
-}
-
-meta_range_t umtrx_impl::get_tx_dsp_freq_range(const std::string &mb, const size_t dsp){
-    const double tick_rate = _tree->access<double>("/mboards/"+mb+"/tick_rate").get();
-    const meta_range_t dsp_range = _mbc[mb].tx_dsps[dsp]->get_freq_range();
-    return meta_range_t(dsp_range.start() - tick_rate*2, dsp_range.stop() + tick_rate*2, dsp_range.step());
 }

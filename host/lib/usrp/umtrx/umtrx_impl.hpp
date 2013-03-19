@@ -135,8 +135,6 @@ private:
     //update spec methods are coercers until we only accept db_name == A
     void update_rx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
     void update_tx_subdev_spec(const std::string &, const uhd::usrp::subdev_spec_t &);
-    double set_tx_dsp_freq(const std::string &, const size_t, const double);
-    uhd::meta_range_t get_tx_dsp_freq_range(const std::string &, const size_t);
     void update_clock_source(const std::string &, const std::string &);
 
     //helper functions
