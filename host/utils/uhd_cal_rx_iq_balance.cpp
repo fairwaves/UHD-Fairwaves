@@ -176,6 +176,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     for (double rx_lo_i = freq_start; rx_lo_i <= freq_stop; rx_lo_i += freq_step){
         const double rx_lo = tune_rx_and_tx(usrp, rx_lo_i, tx_offset);
+        if (vm.count("verbose")) printf("-------------------------\n");
+        if (vm.count("verbose")) printf("Calibrating for %0.1f MHz\n", rx_lo/1e6);
 
         //frequency constants for this tune event
         const double actual_rx_rate = usrp->get_rx_rate();
@@ -208,12 +210,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         double best_suppression = initial_suppression, best_phase_corr = 0, best_ampl_corr = 0;
 
         for (size_t i = 0; i < num_search_iters; i++){
+            if (vm.count("verbose")) printf("  iteration %lu\n", i);
 
             phase_corr_step = (phase_corr_stop - phase_corr_start)/(num_search_steps-1);
             ampl_corr_step = (ampl_corr_stop - ampl_corr_start)/(num_search_steps-1);
 
             for (double phase_corr = phase_corr_start; phase_corr <= phase_corr_stop + phase_corr_step/2; phase_corr += phase_corr_step){
             for (double ampl_corr = ampl_corr_start; ampl_corr <= ampl_corr_stop + ampl_corr_step/2; ampl_corr += ampl_corr_step){
+                if (vm.count("verbose")) printf("    phase_corr = %0.2f ampl_corr = %0.2f", phase_corr, ampl_corr);
 
                 const std::complex<double> correction = std::polar(ampl_corr+1, phase_corr*tau);
                 usrp->set_rx_iq_balance(correction);
@@ -224,14 +228,19 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                 const double tone_dbrms = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate);
                 const double imag_dbrms = compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
                 const double suppression = tone_dbrms - imag_dbrms;
+                if (vm.count("verbose")) printf("    tone_dbrms = %2.0f dB", tone_dbrms);
+                if (vm.count("verbose")) printf("    imag_dbrms = %2.0f dB", imag_dbrms);
+                if (vm.count("verbose")) printf("    suppression = %2.0f dB", suppression);
 
                 if (suppression > best_suppression){
                     best_correction = correction;
                     best_suppression = suppression;
                     best_phase_corr = phase_corr;
                     best_ampl_corr = ampl_corr;
+                    if (vm.count("verbose")) printf("    *");
                     if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
                 }
+                if (vm.count("verbose")) printf("\n");
 
             }}
 
@@ -244,6 +253,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             ampl_corr_start = best_ampl_corr - ampl_corr_step;
             ampl_corr_stop = best_ampl_corr + ampl_corr_step;
         }
+
+        if (vm.count("verbose")) printf("  best_corr phase = %0.5f ampl = %0.5f real = %0.5f imag = %0.5f",
+                                        best_phase_corr, best_ampl_corr, best_correction.real(), best_correction.imag());
+        if (vm.count("verbose")) printf("  suppression = %2.0f dB\n", best_suppression);
 
         if (best_suppression > 30){ //most likely valid, keep result
             result_t result;
