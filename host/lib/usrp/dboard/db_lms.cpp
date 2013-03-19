@@ -293,6 +293,8 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     // LMS6002D initialization
     ////////////////////////////////////////////////////////////////////
     lms.init();
+    // Set proper values for Tx and Rx Fsync and IQ interleaving.
+    lms.set_txrx_polarity_and_interleaving(0, lms6002d_dev::INTERLEAVE_IQ, 1, lms6002d_dev::INTERLEAVE_QI);
     // Rx and Tx will be enabled/disabled during the property tree initialization
     // at later steps of initialization, so it doesn't hurt that we enable them here.
     lms.rx_enable();

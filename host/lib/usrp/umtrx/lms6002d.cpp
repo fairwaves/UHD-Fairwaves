@@ -176,6 +176,18 @@ void lms6002d_dev::init()
     lms_set_bits(0x44, (3 << 1));
 }
 
+void lms6002d_dev::set_txrx_polarity_and_interleaving(int rx_fsync_polarity,
+                                                      txrx_interleaving rx_interleaving,
+                                                      int tx_fsync_polarity,
+                                                      txrx_interleaving tx_interleaving)
+{
+    uint8_t data = (rx_fsync_polarity << 7)
+                 | ((rx_interleaving==INTERLEAVE_IQ)?0:(1 << 6))
+                 | (tx_fsync_polarity << 4)
+                 | ((tx_interleaving==INTERLEAVE_IQ)?0:(1 << 3));
+    lms_write_bits(0x5A, 0xD8, data);
+}
+
 int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibration_reg_base)
 {
     uint8_t reg_val;

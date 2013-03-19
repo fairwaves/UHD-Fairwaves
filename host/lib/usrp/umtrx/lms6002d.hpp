@@ -28,6 +28,11 @@
 class lms6002d_dev {
 public:
 
+    enum txrx_interleaving {
+        INTERLEAVE_IQ,
+        INTERLEAVE_QI
+    };
+
     lms6002d_dev()
         :_lpf_rccal(3) // Value recommended by LimeMicro
     {}
@@ -38,6 +43,12 @@ public:
 
     /** Obligatory initialization steps */
     void init();
+
+    /** Set parameters for Rx and Tx fsync and IQ interleaving */
+    void set_txrx_polarity_and_interleaving(int rx_fsync_polarity,
+                                            txrx_interleaving rx_interleaving,
+                                            int tx_fsync_polarity,
+                                            txrx_interleaving tx_interleaving);
 
     /** Write through SPI */
     virtual void write_reg(uint8_t addr, uint8_t val) = 0;
