@@ -13,7 +13,11 @@
 #include <i2c.h>
 #include <memory_map.h>
 #include <nonstdio.h>
+#ifdef SPARTAN6
+#include <xilinx_s6_icap.h>
+#else
 #include <xilinx_s3_icap.h>
+#endif
 #include <mdelay.h>
 #include "spi.h"
 
@@ -75,7 +79,11 @@ void do_the_bootload_thing(void) {
 			puts("Valid production FPGA image found. Attempting to boot.");
 			set_safe_booted_flag(1);
 			mdelay(300); //so serial output can finish
-			icap_reload_fpga(PROD_FPGA_IMAGE_LOCATION_ADDR);
+#ifdef SPARTAN6
+			icap_s6_reload_fpga(PROD_FPGA_IMAGE_LOCATION_ADDR, SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#else
+			icap_s3_reload_fpga(PROD_FPGA_IMAGE_LOCATION_ADDR);
+#endif
 		}
 		puts("No valid production FPGA image found.\n");
 //		return;
@@ -89,7 +97,11 @@ void do_the_bootload_thing(void) {
 		puts("ERROR: Return from main program! This should never happen!");
 		//if this happens, though, the safest thing to do is reboot the whole FPGA and start over.
 		mdelay(300);
-		icap_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#ifdef SPARTAN6
+		icap_s6_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR, SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#else
+		icap_s3_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#endif
 		return;
 	}
 	puts("No valid production firmware found. Falling through to built-in firmware.");
@@ -101,7 +113,11 @@ void do_the_bootload_thing(void) {
 		start_program();
 		puts("ERROR: return from main program! This should never happen!");
 		mdelay(300);
-		icap_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#ifdef SPARTAN6
+		icap_s6_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR, SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#else
+		icap_s3_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#endif
 		return;
 	}
     puts("ERROR: no safe firmware image available. Falling through to built-in firmware.");

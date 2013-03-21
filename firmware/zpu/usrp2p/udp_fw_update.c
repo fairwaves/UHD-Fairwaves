@@ -26,7 +26,12 @@
 #include <string.h>
 #include "ethernet.h"
 #include "udp_fw_update.h"
+#include "bootloader_utils.h"
+#ifdef SPARTAN6
+#include "xilinx_s6_icap.h"
+#else
 #include "xilinx_s3_icap.h"
+#endif
 #include "i2c.h"
 
 uint16_t get_hw_rev(void) {
@@ -120,7 +125,11 @@ void handle_udp_fw_update_packet(struct socket_address src, struct socket_addres
     //should reset via icap_reload_fpga(uint32_t flash_address);
     update_data_out.id = USRP2_FW_UPDATE_ID_RESETTIN_TEH_COMPUTORZ_OMG;
     //you should note that if you get a reply packet to this the reset has obviously failed
-    icap_reload_fpga(0);
+#ifdef SPARTAN6
+    icap_s6_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR, SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#else
+    icap_s3_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
+#endif
     break;
 
 //  case USRP2_FW_UPDATE_ID_KTHXBAI: //see ya

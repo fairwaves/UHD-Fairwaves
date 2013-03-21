@@ -47,13 +47,13 @@ swap8(unsigned char x)
   return r;
 }
 
-void
+static inline void
 wr_icap(uint8_t x)
 {
     icap_regs->icap = swap8(x);
 }
 
-uint8_t
+static inline uint8_t
 rd_icap(void)
 {
     return swap8(icap_regs->icap);
@@ -61,9 +61,8 @@ rd_icap(void)
 
 
 void
-icap_reload_fpga(uint32_t flash_address)
+icap_s3_reload_fpga(uint32_t flash_address)
 {
-/*
     union {
         uint32_t i;
         uint8_t c[4];
@@ -71,7 +70,7 @@ icap_reload_fpga(uint32_t flash_address)
     t.i = flash_address;
 
     //note! t.c[0] MUST contain the byte-wide read command for the flash device used.
-    //for the 25P64, and most other flash devices, this is 0x03.
+    //for the 25P64, and most other flash devices, this is 0x0b.
     t.c[0] = FAST_READ_CMD;
 
     //TODO: look up the watchdog timer, ensure it won't fire too soon
@@ -97,5 +96,4 @@ icap_reload_fpga(uint32_t flash_address)
     wr_icap(0x00); //Type 1 NOP
     wr_icap(0x20);
     wr_icap(0x00);
-*/
 }

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDED_XILINX_S3_ICAP_H
-#define INCLUDED_XILINX_S3_ICAP_H
+#ifndef INCLUDED_XILINX_S6_ICAP_H
+#define INCLUDED_XILINX_S6_ICAP_H
 
 #include <stdint.h>
 
@@ -25,7 +25,7 @@
  * Attempt to reload the fpga from \p flash_address.
  * Shouldn't return, but might.
  */
-void icap_s3_reload_fpga(uint32_t flash_address);
+void icap_s6_reload_fpga(uint32_t flash_address, uint32_t fallback_flash_address);
 
 
-#endif /* INCLUDED_XILINX_S3_ICAP_H */
+#endif /* INCLUDED_XILINX_S6_ICAP_H */
