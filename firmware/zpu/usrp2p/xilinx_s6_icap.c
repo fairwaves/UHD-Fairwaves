@@ -53,6 +53,7 @@ static inline void
 wr_icap(uint16_t x)
 {
     icap_regs->icap = swap16(x);
+    mdelay(10);
 }
 
 static inline uint16_t
@@ -100,7 +101,6 @@ icap_s6_reload_fpga(uint32_t flash_address, uint32_t fallback_flash_address)
     t.c[0] = FAST_READ_CMD;
     s.i = fallback_flash_address;
     s.c[0] = FAST_READ_CMD;
-    mdelay(500);
 
     //TODO: look up the watchdog timer, ensure it won't fire too soon
 
