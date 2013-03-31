@@ -162,6 +162,12 @@ module u2plus_core
    //Diversity switches
    output DivSw1,
    output DivSw2,
+   input aux_scl_pad_i,
+   output aux_scl_pad_o,
+   output aux_scl_pad_oen_o,
+   input aux_sda_pad_i,
+   output aux_sda_pad_o,
+   output aux_sda_pad_oen_o,
 `endif // !`ifndef UMTRX
    
    // GPIO to DBoards
@@ -244,7 +250,7 @@ module u2plus_core
    wire 	dsp_rst = wb_rst;
    
    wire [31:0] 	status;
-   wire 	bus_error, spi_int, i2c_int, pps_int, onetime_int, periodic_int, buffer_int;
+   wire 	bus_error, spi_int, i2c_int, aux_i2c_int, pps_int, onetime_int, periodic_int, buffer_int;
    wire 	proc_int, overrun0, overrun1, underrun;
 `ifdef LMS602D_FRONTEND
    wire 	 underrun1;
@@ -301,7 +307,7 @@ module u2plus_core
 		.s6_addr(8'b0110_0000),.s6_mask(8'b1111_0000),  // Ethernet MAC
 		.s7_addr(8'b0111_0000),.s7_mask(8'b1111_0000),  // Settings Bus (only uses 1K)
 		.s8_addr(8'b1000_0000),.s8_mask(8'b1111_1100),  // PIC
-		.s9_addr(8'b1000_0100),.s9_mask(8'b1111_1100),  // Unused
+		.s9_addr(8'b1000_0100),.s9_mask(8'b1111_1100),  // I2C AUX
 		.sa_addr(8'b1000_1000),.sa_mask(8'b1111_1100),  // UART
 		.sb_addr(8'b1000_1100),.sb_mask(8'b1111_1100),  // Unused
 		.sc_addr(8'b1001_0000),.sc_mask(8'b1111_0000),  // Unused
@@ -345,8 +351,8 @@ module u2plus_core
       .sf_dat_o(sf_dat_o),.sf_adr_o(sf_adr),.sf_sel_o(sf_sel),.sf_we_o(sf_we),.sf_cyc_o(sf_cyc),.sf_stb_o(sf_stb),
       .sf_dat_i(sf_dat_i),.sf_ack_i(sf_ack),.sf_err_i(0),.sf_rty_i(0));
 
-   // Unused Slaves 9, b, c
-   assign s9_ack = 0;   assign sb_ack = 0;   assign sc_ack = 0;
+   // Unused Slaves b, c
+   assign sb_ack = 0;   assign sc_ack = 0;
    
    // ////////////////////////////////////////////////////////////////////////////////////////
    // Reset Controller
@@ -503,8 +509,17 @@ module u2plus_core
 	  .wb_ack_o(s3_ack),.wb_inta_o(i2c_int),
 	  .scl_pad_i(scl_pad_i),.scl_pad_o(scl_pad_o),.scl_padoen_o(scl_pad_oen_o),
 	  .sda_pad_i(sda_pad_i),.sda_pad_o(sda_pad_o),.sda_padoen_o(sda_pad_oen_o) );
+     
+   i2c_master_top #(.ARST_LVL(1)) 
+     aux_i2c (.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),.arst_i(1'b0), 
+	  .wb_adr_i(s9_adr[4:2]),.wb_dat_i(s9_dat_o[7:0]),.wb_dat_o(s9_dat_i[7:0]),
+	  .wb_we_i(s9_we),.wb_stb_i(s9_stb),.wb_cyc_i(s9_cyc),
+	  .wb_ack_o(s9_ack),.wb_inta_o(aux_i2c_int),
+	  .scl_pad_i(aux_scl_pad_i),.scl_pad_o(aux_scl_pad_o),.scl_padoen_o(aux_scl_pad_oen_o),
+	  .sda_pad_i(aux_sda_pad_i),.sda_pad_o(aux_sda_pad_o),.sda_padoen_o(aux_sda_pad_oen_o) );
 
    assign 	 s3_dat_i[31:8] = 24'd0;
+   assign 	 s9_dat_i[31:8] = 24'd0;
    
    // /////////////////////////////////////////////////////////////////////////
    // GPIOs
@@ -660,7 +675,7 @@ module u2plus_core
    assign irq= {{8'b0},
 		{uart_tx_int[3:0], uart_rx_int[3:0]},
 		{4'b0, clk_status, 3'b0},
-		{3'b0, PHY_INTn,i2c_int,spi_int,gpsdo_int,1'b0}};
+		{2'b0,aux_i2c_int, PHY_INTn, i2c_int,spi_int,gpsdo_int,1'b0}};
    
    pic pic(.clk_i(wb_clk),.rst_i(wb_rst),.cyc_i(s8_cyc),.stb_i(s8_stb),.adr_i(s8_adr[4:2]),
 	   .we_i(s8_we),.dat_i(s8_dat_o),.dat_o(s8_dat_i),.ack_o(s8_ack),.int_o(proc_int),

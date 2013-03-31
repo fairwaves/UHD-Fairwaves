@@ -76,8 +76,8 @@ module u2plus_umtrx_v2
    input AUX_LD1,
    input AUX_LD2,
    input AUX_XX,
-//   inout AUX_SCL,
-//   inout AUX_SDA,
+   inout AUX_SCL,
+   inout AUX_SDA,
 
    // PPS
    input PPS_IN,
@@ -302,6 +302,9 @@ wire DivSw1, DivSw2;
    // I2C -- Don't use external transistors for open drain, the FPGA implements this
    IOBUF scl_pin(.O(scl_pad_i), .IO(SCL), .I(scl_pad_o), .T(scl_pad_oen_o));
    IOBUF sda_pin(.O(sda_pad_i), .IO(SDA), .I(sda_pad_o), .T(sda_pad_oen_o));
+   
+   IOBUF aux_scl_pin(.O(aux_scl_pad_i), .IO(AUX_SCL), .I(aux_scl_pad_o), .T(aux_scl_pad_oen_o));
+   IOBUF aux_sda_pin(.O(aux_sda_pad_i), .IO(AUX_SDA), .I(aux_sda_pad_o), .T(aux_sda_pad_oen_o));
 
    // LEDs are active low outputs
 `ifndef UMTRX
@@ -577,6 +580,12 @@ wire DivSw1, DivSw2;
 		     .clk_sel		(),
 		     .clk_func		(),
 		     .clk_status	(),
+		     .aux_scl_pad_i		(aux_scl_pad_i),
+		     .aux_scl_pad_o		(aux_scl_pad_o),
+		     .aux_scl_pad_oen_o	(aux_scl_pad_oen_o),
+		     .aux_sda_pad_i		(aux_sda_pad_i),
+		     .aux_sda_pad_o		(aux_sda_pad_o),
+		     .aux_sda_pad_oen_o	(aux_sda_pad_oen_o),
 `endif // !`ifndef UMTRX
 		     .sclk		(sclk),
 		     .mosi		(mosi),
