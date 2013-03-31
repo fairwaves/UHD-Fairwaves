@@ -69,10 +69,10 @@ module u2plus_umtrx_v2
    inout SCL, inout SDA,   // I2C
    
    //AUX
-   inout AUX_SDAT,
-//   output AUX_SCLK,
-//   output AUX_SEN1,
-//   output AUX_SEN2,
+   output AUX_SDAT,
+   output AUX_SCLK,
+   output AUX_SEN1,
+   output AUX_SEN2,
    input AUX_LD1,
    input AUX_LD2,
    input AUX_XX,
@@ -336,6 +336,7 @@ wire DivSw1, DivSw2;
    assign 	{SCLK_DAC,MISO_DAC} = ~SEN_DAC ? {sclk,mosi} : 2'B0;
    assign 	{SCLK1,MOSI1}       = ~SEN1    ? {sclk,mosi} : 2'B0;
    assign 	{SCLK2,MOSI2}       = ~SEN2    ? {sclk,mosi} : 2'B0;
+   assign 	{AUX_SCLK,AUX_SDAT} = (~AUX_SEN1 | ~AUX_SEN2) ? {sclk,mosi} : 2'B0;
    
    assign 	miso 	= (~SEN1 & MISO1) | (~SEN2 & MISO2) ;
 `endif // !`ifndef UMTRX
@@ -586,6 +587,10 @@ wire DivSw1, DivSw2;
 		     .aux_sda_pad_i		(aux_sda_pad_i),
 		     .aux_sda_pad_o		(aux_sda_pad_o),
 		     .aux_sda_pad_oen_o	(aux_sda_pad_oen_o),
+           .aux_sen1 (AUX_SEN1),
+           .aux_sen2 (AUX_SEN2),
+           .aux_ld1 (AUX_LD1),
+           .aux_ld2 (AUX_LD2),         
 `endif // !`ifndef UMTRX
 		     .sclk		(sclk),
 		     .mosi		(mosi),
