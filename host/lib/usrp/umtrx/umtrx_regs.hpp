@@ -30,6 +30,7 @@
 #define ETH_BASE            0x6000
 #define SETTING_REGS_BASE   0x7000
 #define PIC_BASE            0x8000
+#define I2C_AUX_BASE        0x8400
 #define UART_BASE           0x8800
 #define ATR_BASE            0x8C00
 
