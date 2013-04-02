@@ -88,6 +88,8 @@ typedef struct {
 #define SPI_SS_LMS1    1
 #define SPI_SS_LMS2    2
 #define SPI_SS_DAC     4
+#define SPI_SS_AUX1    8
+#define SPI_SS_AUX2    16
 
 #define LMS_RD_CMD(addr) ((uint16_t)(addr)<<8)
 #define LMS_WR_CMD(addr, val) ( 0x8000 | ((uint16_t)(addr)<<8) | (val) )
