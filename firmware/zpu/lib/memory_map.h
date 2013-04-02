@@ -413,6 +413,8 @@ typedef struct {
 #define	IRQ_CLKSTATUS	11
 #define IRQ_PERIODIC    12
 #define IRQ_BUTTON	13
+#define IRQ_LOCK_DETECT1	14
+#define IRQ_LOCK_DETECT2	15
 
 #define IRQ_TO_MASK(x) (1 << (x))
 
@@ -430,6 +432,8 @@ typedef struct {
 #define PIC_SERDES        IRQ_TO_MASK(IRQ_SERDES)
 #define PIC_CLKSTATUS     IRQ_TO_MASK(IRQ_CLKSTATUS)
 #define PIC_BUTTON				IRQ_TO_MASK(IRQ_BUTTON)
+#define PIC_LOCK_DETECT1			IRQ_TO_MASK(IRQ_LOCK_DETECT1)
+#define PIC_LOCK_DETECT2			IRQ_TO_MASK(IRQ_LOCK_DETECT2)
 
 typedef struct {
   volatile uint32_t edge_enable; // mask: 1 -> edge triggered, 0 -> level
