@@ -83,6 +83,8 @@
 #define SPI_SS_LMS1    1
 #define SPI_SS_LMS2    2
 #define SPI_SS_DAC     4
+#define SPI_SS_AUX1    8
+#define SPI_SS_AUX2    16
 
 /////////////////////////////////////////////////
 // Misc Control
