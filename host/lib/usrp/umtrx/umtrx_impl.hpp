@@ -79,11 +79,6 @@ public:
     uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
     bool recv_async_msg(uhd::async_metadata_t &, double);
 
-    // LMS-specific functions
-    void reg_dump();
-    void lms_write(uint8_t LMS_number, uint8_t address, uint8_t value, bool rise = true);
-    uint32_t lms_read(uint8_t LMS_number, uint8_t address, bool rise = true);
-
 private:
     uhd::property_tree::sptr _tree;
     struct mb_container_type{
