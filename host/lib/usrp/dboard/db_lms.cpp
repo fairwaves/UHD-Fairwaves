@@ -80,12 +80,12 @@ public:
     virtual void write_reg(uint8_t addr, uint8_t data) {
         if (verbosity>2) printf("db_lms6002d::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        _db_iface->write_spi((uhd::usrp::dboard_iface::unit_t)-1, // unit id is ignored
+        _db_iface->write_spi(uhd::usrp::dboard_iface::UNIT_LMS,
                                      spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-        uint8_t data = _db_iface->read_write_spi((uhd::usrp::dboard_iface::unit_t)-1, // unit id is ignored
+        uint8_t data = _db_iface->read_write_spi(uhd::usrp::dboard_iface::UNIT_LMS,
             spi_config_t::EDGE_RISE, addr << 8, 16);
         if (verbosity>2) printf("db_lms6002d::read_reg(addr=0x%x) data=0x%x\n", addr, data);
         return data;
@@ -286,8 +286,9 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     lms.tx_enable();
     // -10dB is a good value for calibration if don't know a target gain yet
     lms.set_tx_vga1gain(-10);
+
     // Perform autocalibration
-    lms.auto_calibration(26e6, 0xf);
+    lms.auto_calibration(get_iface()->get_clock_rate(dboard_iface::UNIT_LMS), 0xf);
 
     ////////////////////////////////////////////////////////////////////
     // Register RX properties

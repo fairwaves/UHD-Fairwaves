@@ -63,7 +63,11 @@ public:
     //! tells the host which unit to use
     enum unit_t{
         UNIT_RX = int('r'),
-        UNIT_TX = int('t')
+        UNIT_TX = int('t'),
+
+        // UmTRX specific
+        UNIT_LMS = int('l'),
+        UNIT_SYNT = int('s')
     };
 
     //! possible atr registers

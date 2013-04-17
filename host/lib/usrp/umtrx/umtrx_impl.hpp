@@ -62,7 +62,7 @@ static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
  * \param iface the UmTRX interface object
  * \return a sptr to a new dboard interface
  */
-uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface, int lms_spi_number);
+uhd::usrp::dboard_iface::sptr make_umtrx_dboard_iface(usrp2_iface::sptr iface, const std::string dboard, double ref_clk);
 
 /*!
  * UmTRX implementation guts:
@@ -102,6 +102,7 @@ private:
         mb_container_type(void): rx_chan_occ(0), tx_chan_occ(0){}
     };
     uhd::dict<std::string, mb_container_type> _mbc;
+    unsigned _mcr; // Master ClockRate
 
     void set_mb_eeprom(const std::string &, const uhd::usrp::mboard_eeprom_t &);
 //    void set_db_eeprom(const std::string &, const std::string &, const uhd::usrp::dboard_eeprom_t &);
@@ -114,7 +115,7 @@ private:
     void set_tcxo_dac(const std::string &mb, const uint16_t val);
     uint16_t get_tcxo_dac(const std::string &mb);
 
-    double get_master_clock_rate() const { return 13e6; }
+    double get_master_clock_rate() const { return _mcr; }
 
     //device properties interface
     uhd::property_tree::sptr get_tree(void) const{

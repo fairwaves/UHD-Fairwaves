@@ -104,6 +104,7 @@ static zero_copy_if::sptr make_xport(
  * Structors
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
+    : _mcr(26e6/2) // sample rate = ref_clk / 2
 {
     UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
     device_addr_t device_addr = _device_addr;
@@ -442,7 +443,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             tx_db_eeprom.serial = _mbc[mb].iface->mb_eeprom["serial"] + "." + board;
 
             //create dboard interface
-            _mbc[mb].dbc[board].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface, (board=="A")?1:2);
+            _mbc[mb].dbc[board].dboard_iface = make_umtrx_dboard_iface(_mbc[mb].iface, board,
+                                                                       2*get_master_clock_rate()); // ref_clk = 2 * sample rate
             _mbc[mb].dbc[board].dboard_manager = dboard_manager::make(
                 rx_db_eeprom.id, tx_db_eeprom.id, gdb_eeprom.id,
                 _mbc[mb].dbc[board].dboard_iface, _tree->subtree(mb_path / "dboards" / board)
