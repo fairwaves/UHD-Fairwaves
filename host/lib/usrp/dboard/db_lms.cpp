@@ -328,7 +328,7 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set(lms_bandwidth_range);
 
     ////////////////////////////////////////////////////////////////////
-    // Register RX properties
+    // Register TX properties
     ////////////////////////////////////////////////////////////////////
     this->get_tx_subtree()->create<std::string>("name")
         .set(std::string(str(boost::format("%s - %s") % get_tx_id().to_pp_string() % get_subdev_name())));
