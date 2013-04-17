@@ -98,21 +98,6 @@ class db_lms6002d : public xcvr_dboard_base {
 public:
     db_lms6002d(ctor_args_t args);
 
-    virtual void write_reg(uint8_t addr, uint8_t data) {
-        if (verbosity>2) printf("db_lms6002d::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
-        uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        this->get_iface()->write_spi((uhd::usrp::dboard_iface::unit_t)-1, // unit id is ignored
-                                     spi_config_t::EDGE_RISE, command, 16);
-    }
-    virtual uint8_t read_reg(uint8_t addr) {
-        if(addr > 127) return 0; // incorrect address, 7 bit long expected
-        uint8_t data = this->get_iface()->read_write_spi((uhd::usrp::dboard_iface::unit_t)-1, // unit id is ignored
-            spi_config_t::EDGE_RISE, addr << 8, 16);
-        if (verbosity>2) printf("db_lms6002d::read_reg(addr=0x%x) data=0x%x\n", addr, data);
-        return data;
-    }
-
-
     double set_freq(dboard_iface::unit_t unit, double f) {
         if (verbosity>0) printf("db_lms6002d::set_freq(%f)\n", f);
         double actual_freq = (unit==dboard_iface::UNIT_RX)
