@@ -529,23 +529,7 @@ umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(
 void umtrx_impl::set_mb_eeprom(const std::string &mb, const uhd::usrp::mboard_eeprom_t &mb_eeprom){
     mb_eeprom.commit(*(_mbc[mb].iface), mboard_eeprom_t::MAP_UMTRX);
 }
-/*
-void usrp2_impl::set_db_eeprom(const std::string &mb, const std::string &type, const uhd::usrp::dboard_eeprom_t &db_eeprom){
-    if (type == "rx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_RX_DB);
-    if (type == "tx") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB);
-    if (type == "gdb") db_eeprom.store(*_mbc[mb].iface, USRP2_I2C_ADDR_TX_DB ^ 5);
-}
 
-sensor_value_t umtrx_impl::get_mimo_locked(const std::string &mb){
-    const bool lock = (_mbc[mb].iface->peek32(U2_REG_IRQ_RB) & (1<<10)) != 0;
-    return sensor_value_t("MIMO", lock, "locked", "unlocked");
-}
-
-sensor_value_t umtrx_impl::get_ref_locked(const std::string &mb){
-    const bool lock = (_mbc[mb].iface->peek32(U2_REG_IRQ_RB) & (1<<11)) != 0;
-    return sensor_value_t("Ref", lock, "locked", "unlocked");
-}
-*/
 void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
     apply_rx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
 }
