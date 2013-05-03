@@ -217,15 +217,15 @@ NET "DivSw1_N" LOC = M1; // in v1a was DivSw2_N !!!
 NET "DivSw1_P" LOC = M2; // in v1a was DivSw2_P !!!
 
 ## additional SPI and controls for AUX board in v2 !!!
-#NET "AUX_SCLK" LOC = AB12;
+NET "AUX_SCLK" LOC = AB12;
 NET "AUX_SDAT" LOC = AB8;
-#NET "AUX_SEN1" LOC = AA8; // ch1 ADF4350 load/enable
-#NET "AUX_SEN2" LOC = AB11; // ch2 ADF4350 load/enable
+NET "AUX_SEN1" LOC = AA8; // ch1 ADF4350 load/enable
+NET "AUX_SEN2" LOC = AB11; // ch2 ADF4350 load/enable
 NET "AUX_LD1" LOC = AB6; // ch1 ADF4350 lock detect input
 NET "AUX_LD2" LOC = AB9; // ch2 ADF4350 lock detect input
 NET "AUX_XX" LOC = AA6; // empty awhile
-#NET "AUX_SCL" LOC = AB7;//  I2C clock (teperature sensor etc.)
-#NET "AUX_SDA" LOC = AB10;//  I2C data (teperature sensor etc.)
+NET "AUX_SCL" LOC = AB7;//  I2C clock (teperature sensor etc.)
+NET "AUX_SDA" LOC = AB10;//  I2C data (teperature sensor etc.)
 
 ## LEDS
 NET "leds[1]" LOC = Y3;
@@ -321,11 +321,13 @@ NET "DivSw2_P" IOSTANDARD = LVCMOS25;
 
 ## additional SPI and controls for AUX board in v1b !!!
 NET "AUX_SDAT" IOSTANDARD = LVCMOS33;// FPGA input/output !!!
-#NET "AUX_SCLK" IOSTANDARD = LVCMOS33;// FPGA output !!!
-#NET "AUX_SEN1" IOSTANDARD = LVCMOS33;// FPGA output !!!
-#NET "AUX_SEN2" IOSTANDARD = LVCMOS33;// FPGA output !!!
+NET "AUX_SCLK" IOSTANDARD = LVCMOS33;// FPGA output !!!
+NET "AUX_SEN1" IOSTANDARD = LVCMOS33;// FPGA output !!!
+NET "AUX_SEN2" IOSTANDARD = LVCMOS33;// FPGA output !!!
 NET "AUX_LD1" IOSTANDARD = LVCMOS33;// FPGA input !!!
 NET "AUX_LD2" IOSTANDARD = LVCMOS33;// FPGA input !!!
+NET "AUX_SDA" IOSTANDARD = LVCMOS33;// FPGA input !!!
+NET "AUX_SCL" IOSTANDARD = LVCMOS33;// FPGA input !!!
 NET "AUX_XX" IOSTANDARD = LVCMOS33;// FPGA input !!!
 
 NET "CLK_FPGA_P" TNM_NET = "CLK_FPGA_P";
