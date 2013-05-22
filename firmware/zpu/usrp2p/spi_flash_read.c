@@ -43,7 +43,7 @@ size_t spi_flash_log2_memory_size(void)
     }
     if (_spi_flash_log2_memory_size < 22 ||
         _spi_flash_log2_memory_size > 24 ){
-        putstr("\nWrong flash size. Achtung!\n");
+        printf("\nWrong flash size: %d Achtung!\n", _spi_flash_log2_memory_size);
         abort();
     }
     return _spi_flash_log2_memory_size;
