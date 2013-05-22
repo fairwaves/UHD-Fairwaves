@@ -69,6 +69,9 @@ public:
     //! A version string for firmware
     virtual const std::string get_fw_version_string(void) = 0;
 
+    //! A hack: Perform an action on the ZPU
+    virtual uint32_t send_zpu_action(uint32_t action, uint32_t data) = 0;
+
     //motherboard eeprom map structure
     uhd::usrp::mboard_eeprom_t mb_eeprom;
 };

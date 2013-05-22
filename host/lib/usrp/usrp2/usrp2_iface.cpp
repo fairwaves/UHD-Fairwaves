@@ -266,6 +266,25 @@ public:
     }
 
 /***********************************************************************
+ * Send/Recv a ZPU action
+ **********************************************************************/
+
+    uint32_t send_zpu_action(uint32_t action, uint32_t data)
+    {
+        //setup the out data
+        usrp2_ctrl_data_t out_data = usrp2_ctrl_data_t();
+        out_data.id = htonl(UMTRX_CTRL_ID_ZPU_REQUEST);
+        out_data.data.zpu_action.action = htonl(action);
+        out_data.data.zpu_action.data = htonl(data);
+
+        //send and recv
+        usrp2_ctrl_data_t in_data = this->ctrl_send_and_recv(out_data, MIN_PROTO_COMPAT_SPI);
+        UHD_ASSERT_THROW(ntohl(in_data.id) == UMTRX_CTRL_ID_ZPU_RESPONSE);
+
+        return ntohl(in_data.data.zpu_action.data);
+    }
+
+/***********************************************************************
  * Send/Recv over control
  **********************************************************************/
     usrp2_ctrl_data_t ctrl_send_and_recv(

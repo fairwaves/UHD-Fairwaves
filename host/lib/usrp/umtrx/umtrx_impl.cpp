@@ -540,5 +540,11 @@ void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const std::string 
 
 void umtrx_impl::set_tcxo_dac(const std::string &mb, const uint16_t val){
     if (verbosity>0) printf("umtrx_impl::set_tcxo_dac(%d)\n", val);
-    _mbc[mb].iface->write_spi(4, spi_config_t::EDGE_FALL, val, 16);
+    _mbc[mb].iface->send_zpu_action(UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC, val);
+}
+
+uint16_t umtrx_impl::get_tcxo_dac(const std::string &mb){
+    uint16_t val = _mbc[mb].iface->send_zpu_action(UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC, 0);
+    if (verbosity>0) printf("umtrx_impl::get_tcxo_dac(): %d\n", val);
+    return (uint16_t)val;
 }
