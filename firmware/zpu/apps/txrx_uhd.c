@@ -22,6 +22,9 @@
 #include "i2c.h"
 #include "hal_io.h"
 #include "pic.h"
+#ifdef UMTRX
+#  include "gpsdo.h"
+#endif
 
 //printf headers
 #include "nonstdio.h"
@@ -159,6 +162,25 @@ static void handle_udp_ctrl_packet(
     case USRP2_CTRL_ID_WAZZUP_BRO:
         ctrl_data_out.id = USRP2_CTRL_ID_WAZZUP_DUDE;
         memcpy(&ctrl_data_out.data.ip_addr, get_ip_addr(), sizeof(struct ip_addr));
+        break;
+#endif
+
+    /*******************************************************************
+     * ZPU actions
+     ******************************************************************/
+#ifdef UMTRX
+    case UMTRX_CTRL_ID_ZPU_REQUEST:{
+            ctrl_data_out.id = UMTRX_CTRL_ID_ZPU_RESPONSE;
+            ctrl_data_out.data.zpu_action.action = ctrl_data_in->data.zpu_action.action;
+            switch (ctrl_data_in->data.zpu_action.action) {
+            case UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC:
+                ctrl_data_out.data.zpu_action.data = (uint32_t)get_vctcxo_dac();
+                break;
+            case UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC:
+                set_vctcxo_dac((uint16_t)ctrl_data_in->data.zpu_action.data);
+                break;
+            }
+        }
         break;
 #endif
 

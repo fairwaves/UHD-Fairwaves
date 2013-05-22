@@ -95,6 +95,9 @@ typedef enum{
     USRP2_CTRL_ID_HOLLER_AT_ME_BRO = 'l',
     USRP2_CTRL_ID_HOLLER_BACK_DUDE = 'L',
 
+    UMTRX_CTRL_ID_ZPU_REQUEST  = 'z',
+    UMTRX_CTRL_ID_ZPU_RESPONSE = 'Z',
+
     USRP2_CTRL_ID_PEACE_OUT = '~'
 
 } usrp2_ctrl_id_t;
@@ -117,6 +120,12 @@ typedef enum{
     USRP2_REG_ACTION_FW_PEEK32   = 5,
     USRP2_REG_ACTION_FW_POKE32   = 6
 } usrp2_reg_action_t;
+
+typedef enum{
+    UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC = 1,
+    UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC = 2
+    /* GPSDO control to be here */
+} umtrx_zpu_action_t;
 
 typedef struct{
     uint32_t proto_ver;
@@ -145,6 +154,10 @@ typedef struct{
         struct {
             uint32_t len;
         } echo_args;
+        struct {
+            uint32_t action;
+            uint32_t data;
+        } zpu_action;
     } data;
 } usrp2_ctrl_data_t;
 

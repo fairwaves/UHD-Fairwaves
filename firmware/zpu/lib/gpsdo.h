@@ -21,5 +21,10 @@
 
 void gpsdo_init(void);
 
+/* Set value of the VCTCXO DAC */
+int set_vctcxo_dac(uint16_t v);
+
+/* Get the current VCTCXO DAC value */
+uint16_t get_vctcxo_dac(void);
 
 #endif /* INCLUDED_GPSDO_H */

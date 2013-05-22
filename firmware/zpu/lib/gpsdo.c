@@ -39,12 +39,15 @@
 
 #define DAC_BITS	12
 
-static int
-_gpsdo_set_dac(uint16_t v)
+uint16_t dac_value; /* Current DAC value */
+
+int
+set_vctcxo_dac(uint16_t v)
 {
 #ifdef GPSDO_DEBUG
   printf("DAC: %d\n", v);
 #endif
+  dac_value = v;
   return spi_transact(
     SPI_TXRX, SPI_SS_DAC,
     v & ((1 << DAC_BITS) - 1),
@@ -52,6 +55,11 @@ _gpsdo_set_dac(uint16_t v)
   );
 }
 
+uint16_t
+get_vctcxo_dac(void)
+{
+    return dac_value;
+}
 
 /* PID */
 /* --- */
@@ -61,6 +69,7 @@ _gpsdo_set_dac(uint16_t v)
 #define PID_TARGET	52000000	/* 52 MHz */
 #define PID_MAX_ERR	10000		/* 10 kHz off max */
 #define PID_MAX_DEV	((1 << (DAC_BITS-1)) - 1)
+#define PID_MID_VAL	(1 << (DAC_BITS-1))	/* 2048 - the middle value of the DAC */
 
 #define MAX_INT ((1<<31)-1)
 
@@ -131,7 +140,7 @@ _gpsdo_pid_step(int32_t val)
     tot = -PID_MAX_DEV;
 
   /* Update DAC */
-  _gpsdo_set_dac( (1 << (DAC_BITS-1)) + tot );
+  set_vctcxo_dac( PID_MID_VAL + tot );
 }
 
 
@@ -156,6 +165,10 @@ _gpsdo_irq_handler(unsigned irq)
     /* Next request */
     gpsdo_regs->csr = GPSDO_CSR_REQ;
 
+    /* TODO:: Save the current wall time to be able check
+       time passed since the last lock later. This is useful
+       e.g. to check whether we still have a GPS lock.*/
+
     /* Check validity of value */
     if (abs(val - PID_TARGET) < 100000)
     {
@@ -172,7 +185,7 @@ void
 gpsdo_init(void)
 {
   /* Set the DAC to mid value */
-  _gpsdo_set_dac( 1 << (DAC_BITS-1) );
+  set_vctcxo_dac( PID_MID_VAL );
 
   /* Register IRQ handler */
   pic_register_handler(IRQ_GPSDO, _gpsdo_irq_handler);
