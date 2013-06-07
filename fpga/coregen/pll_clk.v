@@ -52,24 +52,24 @@
 // None
 //
 //----------------------------------------------------------------------------
-// Output     Output      Phase    Duty Cycle   Pk-to-Pk     Phase
-// Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
+// "Output    Output      Phase     Duty      Pk-to-Pk        Phase"
+// "Clock    Freq (MHz) (degrees) Cycle (%) Jitter (ps)  Error (ps)"
 //----------------------------------------------------------------------------
-// CLK_OUT1    52.001      0.000      50.0      329.317    276.415
-// CLK_OUT2   104.001      0.000      50.0      289.929    276.415
-// CLK_OUT3   104.001      0.000      50.0      289.929    276.415
-// CLK_OUT4   104.001    270.000      50.0      289.929    276.415
-// CLK_OUT5    13.000    180.000      50.0      424.762    276.415
-// CLK_OUT6    26.000      0.000      50.0      374.029    276.415
+// CLK_OUT1____61.440______0.000______50.0______293.392____250.091
+// CLK_OUT2___122.880______0.000______50.0______258.324____250.091
+// CLK_OUT3___122.880______0.000______50.0______258.324____250.091
+// CLK_OUT4___122.880____270.000______50.0______258.324____250.091
+// CLK_OUT5____15.360____180.000______50.0______378.372____250.091
+// CLK_OUT6____30.720______0.000______50.0______333.199____250.091
 //
 //----------------------------------------------------------------------------
-// Input Clock   Input Freq (MHz)   Input Jitter (UI)
+// "Input Clock   Freq (MHz)    Input Jitter (UI)"
 //----------------------------------------------------------------------------
-// primary          26.000           0.0010
+// __primary_________30.7200____________0.001
 
 `timescale 1ps/1ps
 
-(* CORE_GENERATION_INFO = "pll_clk,clk_wiz_v3_1,{component_name=pll_clk,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=6,clkin1_period=38.461,clkin2_period=38.461,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
+(* CORE_GENERATION_INFO = "pll_clk,clk_wiz_v3_6,{component_name=pll_clk,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=6,clkin1_period=32.552,clkin2_period=32.552,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
 module pll_clk
  (// Clock in ports
   input         clk_in,
@@ -126,7 +126,7 @@ module pll_clk
     .CLKOUT5_DIVIDE         (16),
     .CLKOUT5_PHASE          (0.000),
     .CLKOUT5_DUTY_CYCLE     (0.500),
-    .CLKIN_PERIOD           (38.461),
+    .CLKIN_PERIOD           (32.552),
     .REF_JITTER             (0.001))
   pll_base_inst
     // Output clocks
