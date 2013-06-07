@@ -66,7 +66,7 @@ get_vctcxo_dac(void)
 
 #define PID_SCALE_SHIFT 7
 
-#define PID_TARGET	52000000	/* 52 MHz */
+#define PID_TARGET	61440000	/* 61.44 MHz */
 #define PID_MAX_ERR	10000		/* 10 kHz off max */
 #define PID_MAX_DEV	((1 << (DAC_BITS-1)) - 1)
 #define PID_MID_VAL	(1 << (DAC_BITS-1))	/* 2048 - the middle value of the DAC */

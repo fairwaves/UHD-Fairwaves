@@ -30,7 +30,7 @@ spi_init(void)
   /*
    * f_sclk = f_wb / ((div + 1) * 2)
    */
-  spi_regs->div = 1;  // 0 = Div by 2 (25 MHz); 1 = Div-by-4 (12.5 MHz)
+  spi_regs->div = 1;  // 0 = Div by 2 (30.72 MHz); 1 = Div-by-4 (15.36 MHz)
 }
 
 void
