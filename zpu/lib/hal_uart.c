@@ -40,14 +40,14 @@ divisor_table[NSPEEDS] = {
   217	//  230400
 };
 #else
-//uart_clock_rate is 52MHz for UmTRX.
+//uart_clock_rate is 61.440MHz for LTE at UmTRX board.
 divisor_table[NSPEEDS] = {
-  5417,	//    9600
-  2708,	//   19200
-  1354,	//   38400
-  903,	//   57600
-  451,	//  115200
-  226	//  230400
+  6400,	//    9600
+  3200,	//   19200
+  1600,	//   38400
+  1067,	//   57600
+  533,	//  115200
+  267	//  230400
 };
 #endif //UMTRX
 

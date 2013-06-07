@@ -23,9 +23,9 @@
 #include "wb_utils.h"
 
 // The master clock rate in FPGA
-# define MASTER_CLK_RATE 104000000 // UmTRX:    104 MHz
+# define MASTER_CLK_RATE 122880000 // UmTRX:    122.8 MHz
 // The TIME64 / VITA TIMER clock rate in FPGA
-# define TIME64_CLK_RATE 26000000  // UmTRX:    26 MHz
+# define TIME64_CLK_RATE 15360000  // UmTRX:    15.36 MHz
 
 ////////////////////////////////////////////////////////////////////////
 // Define slave bases

@@ -22,7 +22,7 @@
 #include <string.h>
 #include "nonstdio.h"
 
-#define MAX_WB_DIV 4	// maximum wishbone divisor (from 100 MHz MASTER_CLK)
+#define MAX_WB_DIV 4	// maximum wishbone divisor (from 122.88 MHz MASTER_CLK)
 
 // prescaler divisor values for 100 kHz I2C [uses 5 * SCLK internally]
 
@@ -30,10 +30,10 @@
 
 static uint16_t prescaler_values[MAX_WB_DIV+1] = {
   0xffff,	// 0: can't happen
-  PRESCALER(1),	// 1: 100 MHz
-  PRESCALER(2), // 2:  50 MHz
-  PRESCALER(3), // 3:  33.333 MHz
-  PRESCALER(4), // 4:  25 MHz
+  PRESCALER(1),	// 1: 122.88 MHz
+  PRESCALER(2), // 2:  61.44 MHz
+  PRESCALER(3), // 3:  40.96 MHz
+  PRESCALER(4), // 4:  30.72 MHz
 };
 
 void
