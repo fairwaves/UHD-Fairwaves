@@ -58,7 +58,7 @@ typedef u32_t mem_ptr_t;
 
 //#define LWIP_PLATFORM_ASSERT(msg) ((void)0)
 void abort(void);
-#define LWIP_PLATFORM_ASSERT(msg) abort()
+#define LWIP_PLATFORM_ASSERT(msg) {putstr(msg); abort();}
 
 
 #endif /* INCLUDED_ARCH_CC_H */
