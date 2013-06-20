@@ -104,7 +104,7 @@ static zero_copy_if::sptr make_xport(
  * Structors
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
-    : _mcr(26e6/2) // sample rate = ref_clk / 2
+    : _mcr(30.72e6/2) // sample rate = ref_clk / 2
 {
     UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
     device_addr_t device_addr = _device_addr;
