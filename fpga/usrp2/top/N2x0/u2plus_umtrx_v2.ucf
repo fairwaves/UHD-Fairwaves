@@ -127,36 +127,11 @@ NET "PPS_IN" LOC = AB18;
 NET "GPS_ON" LOC = AA4; // !!!! 0-GPS_standby, 1-GPS_active.
 
 ## SRAM
-NET "RAM_A[0]" LOC = A14;
-NET "RAM_A[1]" LOC = C14;
-NET "RAM_A[2]" LOC = A6;
-NET "RAM_A[3]" LOC = B6;
-NET "RAM_A[4]" LOC = D3;
-NET "RAM_A[5]" LOC = D1;
-NET "RAM_A[6]" LOC = D2;
-NET "RAM_A[7]" LOC = B18;
-NET "RAM_A[8]" LOC = A18;
-NET "RAM_A[9]" LOC = C17;
-NET "RAM_A[10]" LOC = A17;
-NET "RAM_A[11]" LOC = B16;
-NET "RAM_A[12]" LOC = A16;
-NET "RAM_A[13]" LOC = C16;
-NET "RAM_A[14]" LOC = A13;
-NET "RAM_A[15]" LOC = B12;
-NET "RAM_A[16]" LOC = A12;
-NET "RAM_A[17]" LOC = A11;
-NET "RAM_A[18]" LOC = C1;// in v2 it possible the last address in ISSI 512Kx36 SRAM !!!
-NET "RAM_A[19]" LOC = A15;
-NET "RAM_A[20]" LOC = B14;
 NET "RAM_BWn[0]" LOC = C4;
 NET "RAM_BWn[1]" LOC = A4;
 NET "RAM_BWn[2]" LOC = D5; // in v1a was D7; in v2 "RAM_D[17]" LOC = D7; !!!
 NET "RAM_BWn[3]" LOC = A5;
-NET "RAM_CENn" LOC = C3;
 NET "RAM_CLK" LOC = B3;
-NET "RAM_LDn" LOC = B1;
-NET "RAM_OEn" LOC = B2;
-NET "RAM_WEn" LOC = A2;
 NET "RAM_ZZ" LOC = F16;
 NET "RAM_D[0]" LOC = E12;
 NET "RAM_D[1]" LOC = D12;

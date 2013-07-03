@@ -52,15 +52,15 @@ module packet_router
         input [35:0] ser_inp_data, input ser_inp_valid, output ser_inp_ready,
         input [35:0] dsp0_inp_data, input dsp0_inp_valid, output dsp0_inp_ready,
         input [35:0] dsp1_inp_data, input dsp1_inp_valid, output dsp1_inp_ready,
+        input [35:0] dsp2_inp_data, input dsp2_inp_valid, output dsp2_inp_ready,
+        input [35:0] dsp3_inp_data, input dsp3_inp_valid, output dsp3_inp_ready,
         input [35:0] eth_inp_data, input eth_inp_valid, output eth_inp_ready,
-        input [35:0] err_inp_data, input err_inp_valid, output err_inp_ready,
 
         // Output Interfaces (out of router)
         output [35:0] ser_out_data, output ser_out_valid, input ser_out_ready,
         output [35:0] dsp_out_data, output dsp_out_valid, input dsp_out_ready,
 `ifdef LMS602D_FRONTEND
         output dsp1_out_valid, input dsp1_out_ready,
-        input [35:0] err_inp1_data, input err_inp1_valid, output err_inp1_ready,
 `endif // !`ifdef LMS602D_FRONTEND
         output [35:0] eth_out_data, output eth_out_valid, input eth_out_ready
     );
@@ -195,38 +195,11 @@ module packet_router
     wire [35:0] _combiner0_data, _combiner1_data;
     wire        _combiner0_valid, _combiner1_valid;
     wire        _combiner0_ready, _combiner1_ready;
+    wire [35:0] _combiner2_data, _combiner3_data;
+    wire        _combiner2_valid, _combiner3_valid;
+    wire        _combiner2_ready, _combiner3_ready;
 
-`ifdef LMS602D_FRONTEND
-    wire [35:0] _combiner0_0_data;
-    wire        _combiner0_0_valid;
-    wire        _combiner0_0_ready;
-
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner0_0(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(err_inp_data), .src0_rdy_i(err_inp_valid), .dst0_rdy_o(err_inp_ready),
-        .data1_i(err_inp1_data), .src1_rdy_i(err_inp1_valid), .dst1_rdy_o(err_inp1_ready),
-        .data_o(_combiner0_0_data), .src_rdy_o(_combiner0_0_valid), .dst_rdy_i(_combiner0_0_ready)
-    );
-
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner0(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(_combiner0_0_data), .src0_rdy_i(_combiner0_0_valid), .dst0_rdy_o(_combiner0_0_ready),
-        .data1_i(cpu_inp_data), .src1_rdy_i(cpu_inp_valid), .dst1_rdy_o(cpu_inp_ready),
-        .data_o(_combiner0_data), .src_rdy_o(_combiner0_valid), .dst_rdy_i(_combiner0_ready)
-    );
-`else
-    
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner0(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(err_inp_data), .src0_rdy_i(err_inp_valid), .dst0_rdy_o(err_inp_ready),
-        .data1_i(cpu_inp_data), .src1_rdy_i(cpu_inp_valid), .dst1_rdy_o(cpu_inp_ready),
-        .data_o(_combiner0_data), .src_rdy_o(_combiner0_valid), .dst_rdy_i(_combiner0_ready)
-    );
-`endif // !`ifdef LMS602D_FRONTEND
-
+// DSP RX for LMS 0
     fifo36_mux #(.prio(0)) // No priority, fair sharing
      _com_output_combiner1(
         .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
@@ -235,11 +208,28 @@ module packet_router
         .data_o(_combiner1_data), .src_rdy_o(_combiner1_valid), .dst_rdy_i(_combiner1_ready)
     );
 
+// DSP RX for LMS 1
+    fifo36_mux #(.prio(0)) // No priority, fair sharing
+     _com_output_combiner2(
+        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
+        .data0_i(dsp2_inp_data), .src0_rdy_i(dsp2_inp_valid), .dst0_rdy_o(dsp2_inp_ready),
+        .data1_i(dsp3_inp_data), .src1_rdy_i(dsp3_inp_valid), .dst1_rdy_o(dsp3_inp_ready),
+        .data_o(_combiner2_data), .src_rdy_o(_combiner2_valid), .dst_rdy_i(_combiner2_ready)
+    );
+
+    fifo36_mux #(.prio(0)) // No priority, fair sharing
+     _com_output_combiner3(
+        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
+        .data0_i(_combiner1_data), .src0_rdy_i(_combiner1_valid), .dst0_rdy_o(_combiner1_ready),
+        .data1_i(_combiner2_data), .src1_rdy_i(_combiner2_valid), .dst1_rdy_o(_combiner2_ready),
+        .data_o(_combiner3_data), .src_rdy_o(_combiner3_valid), .dst_rdy_i(_combiner3_ready)
+    );
+
     fifo36_mux #(.prio(1)) // Give priority to err/cpu over dsp
      com_output_source(
         .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(_combiner0_data), .src0_rdy_i(_combiner0_valid), .dst0_rdy_o(_combiner0_ready),
-        .data1_i(_combiner1_data), .src1_rdy_i(_combiner1_valid), .dst1_rdy_o(_combiner1_ready),
+        .data0_i(cpu_inp_data), .src0_rdy_i(cpu_inp_valid), .dst0_rdy_o(cpu_inp_ready),
+        .data1_i(_combiner3_data), .src1_rdy_i(_combiner3_valid), .dst1_rdy_o(_combiner3_ready),
         .data_o(udp_out_data), .src_rdy_o(udp_out_valid), .dst_rdy_i(udp_out_ready)
     );
 
@@ -322,7 +312,6 @@ module packet_router
         //inputs to the router (12)
         dsp0_inp_ready, dsp0_inp_valid,
         dsp1_inp_ready, dsp1_inp_valid,
-        err_inp_ready, err_inp_valid,
         ser_inp_ready, ser_inp_valid,
         eth_inp_ready, eth_inp_valid,
         cpu_inp_ready, cpu_inp_valid,
