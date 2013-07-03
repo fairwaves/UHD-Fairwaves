@@ -71,14 +71,18 @@ static void handle_udp_data_packet(
         sr_rx_ctrl1->time_ticks = 0; //latch the command
         break;
 
-    case USRP2_UDP_TX_DSP0_PORT:
-        //end async update packets per second
-        sr_tx_ctrl0->cyc_per_up = 0;
+    case USRP2_UDP_RX_DSP0_2_PORT:
+        //the end continuous streaming command
+        sr_rx_ctrl0_2->cmd = 1 << 31 | 1 << 28; //no samples now
+        sr_rx_ctrl0_2->time_secs = 0;
+        sr_rx_ctrl0_2->time_ticks = 0; //latch the command
         break;
 
-    case USRP2_UDP_TX_DSP1_PORT:
-        //end async update packets per second
-        sr_tx_ctrl1->cyc_per_up = 0;
+    case USRP2_UDP_RX_DSP1_2_PORT:
+        //the end continuous streaming command
+        sr_rx_ctrl1_2->cmd = 1 << 31 | 1 << 28; //no samples now
+        sr_rx_ctrl1_2->time_secs = 0;
+        sr_rx_ctrl1_2->time_ticks = 0; //latch the command
         break;
 
     default: return;
@@ -95,11 +99,11 @@ static void handle_udp_data_packet(
         which = 2;
         break;
 
-    case USRP2_UDP_TX_DSP0_PORT:
+    case USRP2_UDP_RX_DSP0_2_PORT:
         which = 1;
         break;
 
-    case USRP2_UDP_TX_DSP1_PORT:
+    case USRP2_UDP_RX_DSP1_2_PORT:
         which = 3;
         break;
 
@@ -355,15 +359,15 @@ main(void)
 
   //1) register the addresses into the network stack
   register_addrs(ethernet_mac_addr(), get_ip_addr());
-  pkt_ctrl_program_inspector(get_ip_addr(), USRP2_UDP_TX_DSP0_PORT, USRP2_UDP_TX_DSP1_PORT);
+  pkt_ctrl_program_inspector(get_ip_addr());
 
   //2) register callbacks for udp ports we service
   init_udp_listeners();
   register_udp_listener(USRP2_UDP_CTRL_PORT, handle_udp_ctrl_packet);
   register_udp_listener(USRP2_UDP_RX_DSP0_PORT, handle_udp_data_packet);
   register_udp_listener(USRP2_UDP_RX_DSP1_PORT, handle_udp_data_packet);
-  register_udp_listener(USRP2_UDP_TX_DSP0_PORT, handle_udp_data_packet);
-  register_udp_listener(USRP2_UDP_TX_DSP1_PORT, handle_udp_data_packet);
+  register_udp_listener(USRP2_UDP_RX_DSP0_2_PORT, handle_udp_data_packet);
+  register_udp_listener(USRP2_UDP_RX_DSP1_2_PORT, handle_udp_data_packet);
   
 #ifdef USRP2P
 #ifndef NO_FLASH

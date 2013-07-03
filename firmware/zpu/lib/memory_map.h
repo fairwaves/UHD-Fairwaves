@@ -252,22 +252,19 @@ typedef struct {
 #define SR_RX_FRONT  20   // 5
 #define SR_RX_FRONT1  25   // 5
 #endif
-#define SR_RX_CTRL0  32   // 9
-#define SR_RX_DSP0   48   // 7
-#define SR_RX_CTRL1  80   // 9
-#define SR_RX_DSP1   96   // 7
+#define SR_RX_CTRL0  32   // 10
+#define SR_RX_DSP0   42   // 7
+#define SR_RX_CTRL1  49   // 10
+#define SR_RX_DSP1   59   // 7
+#define SR_RX_CTRL0_2  66   // 10
+#define SR_RX_DSP0_2   76   // 7
+#define SR_RX_CTRL1_2  117   // 10
+#define SR_RX_DSP1_2   127   // 7
 
 #ifndef UMTRX
 #define SR_TX_FRONT 128   // ?
 #define SR_TX_CTRL  144   // 6
 #define SR_TX_DSP   160   // 5
-#else
-#define SR_TX_FRONT0 110   // ?
-#define SR_TX_CTRL0  126   // 6
-#define SR_TX_DSP0   135   // 5
-#define SR_TX_FRONT1 145   // ?
-#define SR_TX_CTRL1  161   // 6
-#define SR_TX_DSP1   170   // 5
 #endif
 
 #define SR_UDP_SM   192   // 64
@@ -349,8 +346,6 @@ typedef struct {
   volatile uint32_t     packets_per_up;
 } sr_tx_ctrl_t;
 
-#define sr_tx_ctrl0 ((sr_tx_ctrl_t *) _SR_ADDR(SR_TX_CTRL0))
-#define sr_tx_ctrl1 ((sr_tx_ctrl_t *) _SR_ADDR(SR_TX_CTRL1))
 
 // --- VITA RX CTRL regs ---
 typedef struct {
@@ -363,6 +358,8 @@ typedef struct {
 
 #define sr_rx_ctrl0 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL0))
 #define sr_rx_ctrl1 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL1))
+#define sr_rx_ctrl0_2 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL0_2))
+#define sr_rx_ctrl1_2 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL1_2))
 
 // ----------------------------------------------------------------
 // VITA49 64 bit time (write only)

@@ -30,8 +30,7 @@ typedef enum {
 
 //! Program the decision values into the packet inspector
 void pkt_ctrl_program_inspector(
-    const struct ip_addr *ip_addr, uint16_t data_port0, uint16_t data_port1
-);
+    const struct ip_addr *ip_addr);
 
 //! Set the routing mode for this device
 void pkt_ctrl_set_routing_mode(pkt_ctrl_routing_mode_t mode);
