@@ -45,17 +45,21 @@
 #define SR_RX_FRONT0  20   // 5
 #define SR_RX_FRONT1  25   // 5
 
-#define SR_RX_CTRL0  32   // 9
-#define SR_RX_DSP0   48   // 7
-#define SR_RX_CTRL1  80   // 9
-#define SR_RX_DSP1   96   // 7
+#define SR_RX_CTRL0  32   // 10
+#define SR_RX_DSP0   42   // 7
+#define SR_RX_CTRL1  49   // 10
+#define SR_RX_DSP1   59   // 7
+#define SR_RX_CTRL0_2  66   // 10
+#define SR_RX_DSP0_2   76   // 7
+#define SR_RX_CTRL1_2  117   // 10
+#define SR_RX_DSP1_2   127   // 7
 
-#define SR_TX_FRONT0 110   // ?
-#define SR_TX_CTRL0  126   // 6
-#define SR_TX_DSP0   135   // 5
-#define SR_TX_FRONT1 145   // ?
-#define SR_TX_CTRL1  161   // 6
-#define SR_TX_DSP1   170   // 5
+#define SR_TX_FRONT0 150   // ?
+#define SR_TX_CTRL0  150   // 6
+#define SR_TX_DSP0   150   // 5
+#define SR_TX_FRONT1 150   // ?
+#define SR_TX_CTRL1  150   // 6
+#define SR_TX_DSP1   150   // 5
 
 // DSPs to frontends mapping controls
 #define SR_RX_FRONT_SW 176 // 1

@@ -34,10 +34,12 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/make_shared.hpp>
 #include <iostream>
+#include <boost/assign/list_of.hpp>
 
 using namespace uhd;
 using namespace uhd::usrp;
 using namespace uhd::transport;
+using namespace boost::assign;
 namespace asio = boost::asio;
 namespace pt = boost::posix_time;
 
@@ -254,11 +256,16 @@ void umtrx_impl::update_rates(void){
     }
 }
 
+
 void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
     fs_path root = "/mboards/" + which_mb + "/dboards";
 
     //sanity checking
     validate_subdev_spec(_tree, spec, "rx", which_mb);
+
+    // Read the current value of the DSP mapping register
+//    boost::uint32_t dsp_mapping = _mbc[which_mb].iface->peek32(U2_REG_SR_ADDR(SR_RX_FRONT_SW));
+    boost::uint32_t dsp_mapping = 0;
 
     //setup DSPs and frontends IQ mux for this spec
     for (size_t i = 0; i < spec.size(); i++){
@@ -268,15 +275,14 @@ void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
         // it works in our limited case, so don't bother.
         _mbc[which_mb].rx_dsps[i]->set_mux(conn, fe_swapped);
         _mbc[which_mb].rx_fes[fe_num_for_db(spec[i].db_name)]->set_mux(fe_swapped);
+
+        // Add this subdev spec to the DSP<->FE mapping
+        boost::uint32_t val = (spec[i].db_name == "A")?0:1;
+        dsp_mapping |= (val << i);
     }
+
     //set DSPs to frontends mapping
-    if (spec[0].db_name == "A") {
-        //default: DSP0<-frontend0, DSP1<-frontend1
-        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_RX_FRONT_SW), 0);
-    } else {
-        //swapped: DSP0<-frontend1, DSP1<-frontend0
-        _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_RX_FRONT_SW), 1);
-    }
+    _mbc[which_mb].iface->poke32(U2_REG_SR_ADDR(SR_RX_FRONT_SW), dsp_mapping);
 
     //compute the new occupancy and resize
     _mbc[which_mb].rx_chan_occ = spec.size();

@@ -55,6 +55,8 @@ static const std::vector<std::string> lms_tx_antennas = list_of("TX0")("TX1")("T
 
 static const std::vector<std::string> lms_rx_antennas = list_of("RX0")("RX1")("RX2")("RX3")("CAL");
 
+static const std::vector<std::string> subdevs_4xddc = list_of("0")("1")("2")("3");
+
 static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_of
 //    ("VGA1", gain_range_t(-35, -4, double(1.0)))
 //    ("VGA2", gain_range_t(0, 25, double(1.0)))
@@ -461,6 +463,7 @@ static dboard_base::sptr make_lms6002d(dboard_base::ctor_args_t args) {
 
 UHD_STATIC_BLOCK(reg_lms_dboards){
     dboard_manager::register_dboard(0xfa07, 0xfa09, &make_lms6002d, "LMS6002D");
+    dboard_manager::register_dboard(0xfa0a, 0xfa0b, &make_lms6002d, "LMS6002D 4xDDC", subdevs_4xddc);
 }
 
 // LMS RX dboard configuration

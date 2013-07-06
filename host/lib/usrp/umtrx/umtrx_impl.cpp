@@ -44,6 +44,7 @@
 #include <uhd/usrp/dboard_iface.hpp>
 
 static int verbosity = 0;
+static int version_4xddc = 1;
 
 using namespace uhd;
 using namespace uhd::usrp;
@@ -204,6 +205,16 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         _mbc[mb].rx_dsp_xports.push_back(make_xport(
             addr, BOOST_STRINGIZE(USRP2_UDP_RX_DSP1_PORT), device_args_i, "recv"
         ));
+        if (version_4xddc) {
+            UHD_LOG << "Making transport for RX DSP0_2..." << std::endl;
+            _mbc[mb].rx_dsp_xports.push_back(make_xport(
+                addr, BOOST_STRINGIZE(USRP2_UDP_RX_DSP0_2_PORT), device_args_i, "recv"
+            ));
+            UHD_LOG << "Making transport for RX DSP1_2..." << std::endl;
+            _mbc[mb].rx_dsp_xports.push_back(make_xport(
+			    addr, BOOST_STRINGIZE(USRP2_UDP_RX_DSP1_2_PORT), device_args_i, "recv"
+            ));
+        }
         UHD_LOG << "Making transport for TX DSP0..." << std::endl;
         _mbc[mb].tx_dsp_xports.push_back(make_xport(
             addr, BOOST_STRINGIZE(USRP2_UDP_TX_DSP0_PORT), device_args_i, "send"
@@ -335,6 +346,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         _mbc[mb].rx_dsps.push_back(rx_dsp_core_200::make(
             _mbc[mb].iface, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), USRP2_RX_SID_BASE + 1, true
         ));
+        if (version_4xddc) {
+            _mbc[mb].rx_dsps.push_back(rx_dsp_core_200::make(
+                _mbc[mb].iface, U2_REG_SR_ADDR(SR_RX_DSP0_2), U2_REG_SR_ADDR(SR_RX_CTRL0_2), USRP2_RX_SID_BASE + 2, true
+            ));
+            _mbc[mb].rx_dsps.push_back(rx_dsp_core_200::make(
+                _mbc[mb].iface, U2_REG_SR_ADDR(SR_RX_DSP1_2), U2_REG_SR_ADDR(SR_RX_CTRL1_2), USRP2_RX_SID_BASE + 3, true
+            ));
+        }
         for (size_t dspno = 0; dspno < _mbc[mb].rx_dsps.size(); dspno++){
             _mbc[mb].rx_dsps[dspno]->set_link_rate(USRP2_LINK_RATE_BPS);
             _tree->access<double>(mb_path / "tick_rate")
@@ -430,10 +449,15 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 
         // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
         dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_eeprom;
-        rx_db_eeprom.id = 0xfa07;
         rx_db_eeprom.revision = _mbc[mb].iface->mb_eeprom["revision"];
-        tx_db_eeprom.id = 0xfa09;
         tx_db_eeprom.revision = _mbc[mb].iface->mb_eeprom["revision"];
+        if (version_4xddc) {
+            rx_db_eeprom.id = 0xfa0a;
+            tx_db_eeprom.id = 0xfa0b;
+        } else {
+            rx_db_eeprom.id = 0xfa07;
+            tx_db_eeprom.id = 0xfa09;
+        }
         //gdb_eeprom.id = 0x0000;
 
         BOOST_FOREACH(const std::string &board, _mbc[mb].dbc.keys()){
