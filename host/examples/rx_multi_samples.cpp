@@ -21,7 +21,9 @@
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 #include <iostream>
+#include <fstream>
 #include <complex>
 
 namespace po = boost::program_options;
@@ -112,7 +114,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //create a receive streamer
     //linearly map channels (index0 = channel0, index1 = channel1, ...)
-    uhd::stream_args_t stream_args("fc32"); //complex floats
+    uhd::stream_args_t stream_args("sc16"); //complex floats
     for (size_t chan = 0; chan < usrp->get_rx_num_channels(); chan++)
         stream_args.channels.push_back(chan); //linear mapping
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
@@ -141,6 +143,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::vector<std::complex<float> *> buff_ptrs;
     for (size_t i = 0; i < buffs.size(); i++) buff_ptrs.push_back(&buffs[i].front());
 
+    std::vector<boost::shared_ptr<std::ofstream> > outfiles;
+    for (size_t i = 0; i < buffs.size(); i++){
+        std::string outfilename = str(boost::format("data%d.cfile") % i);
+        outfiles.push_back(boost::shared_ptr<std::ofstream>(new std::ofstream(outfilename.c_str(), std::ofstream::binary)));
+    }
+
+
     //the first call to recv() will block this many seconds before receiving
     double timeout = seconds_in_future + 0.1; //timeout (delay before receive + padding)
 
@@ -162,6 +171,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             ) % md.error_code));
         }
 
+        for (size_t i = 0; i < buffs.size(); i++){
+            outfiles[i]->write((const char*)&buffs[i].front(), num_rx_samps*sizeof(short));
+        }
+
         if(verbose) std::cout << boost::format(
             "Received packet: %u samples, %u full secs, %f frac secs"
         ) % num_rx_samps % md.time_spec.get_full_secs() % md.time_spec.get_frac_secs() << std::endl;
@@ -173,6 +186,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
+
+    for (size_t i = 0; i < buffs.size(); i++){
+        outfiles[i]->close();
+    }
 
     return 0;
 }
