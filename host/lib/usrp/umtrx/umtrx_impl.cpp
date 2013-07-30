@@ -475,16 +475,17 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             }
 
             //set Tx DC calibration values, which are read from mboard EEPROM
-            if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"].empty()) {
+            std::string tx_name = (board=="A")?"tx1":"tx2";
+            if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"].empty()) {
                 BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
                     _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_i/value")
-                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-i"]));
+                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"]));
                 }
             }
-            if (_mbc[mb].iface->mb_eeprom.has_key("tx-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"].empty()) {
+            if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"].empty()) {
                 BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
                     _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_q/value")
-                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom["tx-vga1-dc-q"]));
+                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"]));
                 }
             }
         }

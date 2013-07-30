@@ -212,12 +212,14 @@ static void store_n100(const mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
  **********************************************************************/
 static const uhd::dict<std::string, boost::uint8_t> UMTRX_OFFSETS = boost::assign::map_list_of
     // Start filling this from the end of EEPROM
-    ("tx-vga1-dc-i", 0xFF-0)  // 1 byte
-    ("tx-vga1-dc-q", 0xFF-1)  // 1 byte
+    ("tx1-vga1-dc-i", 0xFF-0)  // 1 byte
+    ("tx1-vga1-dc-q", 0xFF-1)  // 1 byte
     ("tcxo-dac", 0xFF-3)      // 2 bytes
+    ("tx2-vga1-dc-i", 0xFF-4)  // 1 byte
+    ("tx2-vga1-dc-q", 0xFF-5)  // 1 byte
 ;
 
-#if 0x18 + SERIAL_LEN + NAME_MAX_LEN >= 0xFF-2
+#if 0x18 + SERIAL_LEN + NAME_MAX_LEN >= 0xFF-5
 #   error EEPROM address overlap! Get a bigger EEPROM.
 #endif
 
@@ -227,12 +229,20 @@ static void load_umtrx(mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
 
     //extract the Tx VGA1 DC I/Q offset values
     {
-        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx-vga1-dc-i"], 1).at(0));
-        mb_eeprom["tx-vga1-dc-i"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx1-vga1-dc-i"], 1).at(0));
+        mb_eeprom["tx1-vga1-dc-i"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
     }
     {
-        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx-vga1-dc-q"], 1).at(0));
-        mb_eeprom["tx-vga1-dc-q"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx1-vga1-dc-q"], 1).at(0));
+        mb_eeprom["tx1-vga1-dc-q"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
+    }
+    {
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx2-vga1-dc-i"], 1).at(0));
+        mb_eeprom["tx2-vga1-dc-i"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
+    }
+    {
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["tx2-vga1-dc-q"], 1).at(0));
+        mb_eeprom["tx2-vga1-dc-q"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
     }
 
     //extract the TCXO DAC calibration value
@@ -245,13 +255,21 @@ static void store_umtrx(const mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
     store_n100(mb_eeprom, iface);
 
     //store the Tx VGA1 DC I/Q offset values
-    if (mb_eeprom.has_key("tx-vga1-dc-i")) iface.write_eeprom(
-        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx-vga1-dc-i"],
-        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx-vga1-dc-i"]))
+    if (mb_eeprom.has_key("tx1-vga1-dc-i")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx1-vga1-dc-i"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx1-vga1-dc-i"]))
     );
-    if (mb_eeprom.has_key("tx-vga1-dc-q")) iface.write_eeprom(
-        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx-vga1-dc-q"],
-        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx-vga1-dc-q"]))
+    if (mb_eeprom.has_key("tx1-vga1-dc-q")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx1-vga1-dc-q"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx1-vga1-dc-q"]))
+    );
+    if (mb_eeprom.has_key("tx2-vga1-dc-i")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx2-vga1-dc-i"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx2-vga1-dc-i"]))
+    );
+    if (mb_eeprom.has_key("tx2-vga1-dc-q")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["tx2-vga1-dc-q"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["tx2-vga1-dc-q"]))
     );
 
     //extract the TCXO DAC calibration value
