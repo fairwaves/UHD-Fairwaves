@@ -63,7 +63,8 @@ static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_
 ;
 
 static const uhd::dict<std::string, gain_range_t> lms_rx_gain_ranges = map_list_of
-    // We limit Rx VGA2 to 30dB, as docs say higher values are dangerous
+    ("VGA1", gain_range_t(0, 126, double(1.0)))
+	// We limit Rx VGA2 to 30dB, as docs say higher values are dangerous
     ("VGA2", gain_range_t(0, 30, double(3.0)))
 // ToDo: Add LNA control here
 ;
@@ -148,7 +149,9 @@ public:
     double set_rx_gain(double gain, const std::string &name) {
         if (verbosity>0) printf("db_lms6002d::set_rx_gain(%f, %s)\n", gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
-        if(name == "VGA2"){
+		if(name == "VGA1"){
+            lms.set_rx_vga1gain(gain);
+		} else if(name == "VGA2"){
             lms.set_rx_vga2gain(gain);
         } else UHD_THROW_INVALID_CODE_PATH();
         return gain;
