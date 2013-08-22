@@ -343,7 +343,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
                 .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _mbc[mb].rx_dsps[dspno]));
             _tree->create<double>(rx_dsp_path / "rate/value")
-                .set(1e6) //some default
+                .set(_mcr/12) //some default
                 .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _mbc[mb].rx_dsps[dspno], _1))
                 .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, mb, dspno, _1));
             _tree->create<double>(rx_dsp_path / "freq/value")
@@ -371,7 +371,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
                 .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsps[dspno]));
             _tree->create<double>(tx_dsp_path / "rate/value")
-                .set(1e6) //some default
+                .set(_mcr/12) //some default
                 .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsps[dspno], _1))
                 .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, dspno, _1));
             _tree->create<double>(tx_dsp_path / "freq/value")
