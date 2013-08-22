@@ -103,7 +103,7 @@ public:
     db_lms6002d(ctor_args_t args);
 
     double set_freq(dboard_iface::unit_t unit, double f) {
-        if (verbosity>0) printf("db_lms6002d::set_freq(%f)\n", f);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_freq(%f)\n", get_subdev_name().c_str(), f);
         unsigned ref_freq = get_iface()->get_clock_rate(dboard_iface::UNIT_LMS);
         double actual_freq;
         if (unit==dboard_iface::UNIT_TX) {
@@ -132,7 +132,7 @@ public:
     }
 
     bool set_enabled(dboard_iface::unit_t unit, bool en) {
-        if (verbosity>0) printf("db_lms6002d::set_enabled(%d)\n", en);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_enabled(%d)\n", get_subdev_name().c_str(), en);
         if (unit==dboard_iface::UNIT_RX) {
             if (en)
                 lms.rx_enable();
@@ -149,7 +149,7 @@ public:
     }
 
     double set_rx_gain(double gain, const std::string &name) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_gain(%f, %s)\n", gain, name.c_str());
+        if (verbosity>0) printf("db_lms6002d(%s)::set_rx_gain(%f, %s)\n", get_subdev_name().c_str(), gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
 		if(name == "VGA1"){
             lms.set_rx_vga1gain(gain);
@@ -160,14 +160,14 @@ public:
     }
 
     void set_rx_ant(const std::string &ant) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_ant(%s)\n", ant.c_str());
+        if (verbosity>0) printf("db_lms6002d(%s)::set_rx_ant(%s)\n", get_subdev_name().c_str(), ant.c_str());
         //validate input
         assert_has(lms_rx_antennas, ant, "LMS6002D rx antenna name");
 
         if (ant == "CAL") {
             // Enable RF loopback if disabled
             if (!rf_loopback_enabled) {
-                if (verbosity>0) printf("db_lms6002d::set_rx_ant(%s) enabling RF loopback for LNA%d\n", ant.c_str(), lms.get_rx_lna());
+                if (verbosity>0) printf("db_lms6002d(%s)::set_rx_ant(%s) enabling RF loopback for LNA%d\n", get_subdev_name().c_str(), ant.c_str(), lms.get_rx_lna());
                 lms.rf_loopback_enable(lms.get_rx_lna());
                 rf_loopback_enabled = true;
             }
@@ -193,7 +193,7 @@ public:
     }
 
     double set_rx_bandwidth(double bandwidth) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_bandwidth(%f)\n", bandwidth);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_rx_bandwidth(%f)\n", get_subdev_name().c_str(), bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
 
@@ -204,7 +204,7 @@ public:
     }
 
     double set_tx_gain(double gain, const std::string &name) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_gain(%f, %s)\n", gain, name.c_str());
+        if (verbosity>0) printf("db_lms6002d(%s)::set_tx_gain(%f, %s)\n", get_subdev_name().c_str(), gain, name.c_str());
         //validate input
         assert_has(lms_tx_gain_ranges.keys(), name, "LMS6002D tx gain name");
 
@@ -222,7 +222,7 @@ public:
             tx_vga1gain = int(gain) - tx_vga2gain;
 
             // Set the gains in hardware
-            if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA1=%d VGA2=%d\n", tx_vga1gain, tx_vga2gain);
+            if (verbosity>1) printf("db_lms6002d(%s)::set_tx_gain() VGA1=%d VGA2=%d\n", get_subdev_name().c_str(), tx_vga1gain, tx_vga2gain);
             lms.set_tx_vga1gain(tx_vga1gain);
             lms.set_tx_vga2gain(tx_vga2gain);
         } else {
@@ -234,7 +234,7 @@ public:
     }
 
     void set_tx_ant(const std::string &ant) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_ant(%s)\n", ant.c_str());
+        if (verbosity>0) printf("db_lms6002d(%s)::set_tx_ant(%s)\n", get_subdev_name().c_str(), ant.c_str());
         //validate input
         assert_has(lms_tx_antennas, ant, "LMS6002D tx antenna ant");
 
@@ -253,7 +253,7 @@ public:
     }
 
     double set_tx_bandwidth(double bandwidth) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_bandwidth(%f)\n", bandwidth);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_tx_bandwidth(%f)\n", get_subdev_name().c_str(), bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
 
@@ -264,13 +264,13 @@ public:
     }
 
     uint8_t _set_tx_vga1dc_i_int(uint8_t offset) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_vga1dc_i_int(%d)\n", offset);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_tx_vga1dc_i_int(%d)\n", get_subdev_name().c_str(), offset);
         lms.set_tx_vga1dc_i_int(offset);
         return offset;
     }
 
     uint8_t _set_tx_vga1dc_q_int(uint8_t offset) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_vga1dc_q_int(%d)\n", offset);
+        if (verbosity>0) printf("db_lms6002d(%s)::set_tx_vga1dc_q_int(%d)\n", get_subdev_name().c_str(), offset);
         lms.set_tx_vga1dc_q_int(offset);
         return offset;
     }
