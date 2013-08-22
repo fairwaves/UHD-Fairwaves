@@ -100,6 +100,7 @@ public:
 
 class db_lms6002d : public xcvr_dboard_base {
 public:
+    friend class db_lms6002d_mxddc;
     db_lms6002d(ctor_args_t args);
 
     double set_freq(dboard_iface::unit_t unit, double f) {
@@ -455,15 +456,222 @@ double db_lms6002d::tune_adf4350(double target_freq) {
     return actual_freq;
 }
 
+
+class db_lms6002d_mxddc : public xcvr_dboard_base {
+public:
+    typedef boost::shared_ptr<db_lms6002d>  db_lms6002d_ptr_t;
+
+    struct ifdata {
+        db_lms6002d_ptr_t ptr;
+        unsigned count;
+        unsigned enabled_mask_rx;
+        unsigned enabled_mask_tx;
+        ifdata() : count(0), enabled_mask_rx(0), enabled_mask_tx(0) {}
+    };
+
+    typedef std::map<dboard_iface*, ifdata> ifdata_storage_t;
+
+    db_lms6002d_mxddc(ctor_args_t args) : xcvr_dboard_base(args) {
+
+        ifdata& d = _ifmap[get_iface().get()];
+        if (d.ptr.get() == NULL) {
+            d.ptr.reset(new db_lms6002d(args));
+        }
+        d.count++;
+
+        _ifd = &d;
+        _db = d.ptr;
+
+        _num = atoi(get_subdev_name().c_str());
+
+        register_properties();
+
+        printf("db_lms6002d_mxddc(%s %s) iface=%p num=%d count=%d\n", get_subdev_name().c_str(), get_rx_id().to_pp_string().c_str(), get_iface().get(), _num, d.count);
+    }
+
+    ~db_lms6002d_mxddc() {
+        set_enabled(dboard_iface::UNIT_RX, false);
+        set_enabled(dboard_iface::UNIT_TX, false);
+    }
+
+    double set_freq(dboard_iface::unit_t unit, double f) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s %p)::set_freq(%f)\n", get_subdev_name().c_str(), get_iface().get(), f);
+        return _db->set_freq(unit, f);
+    }
+
+    bool set_enabled(dboard_iface::unit_t unit, bool en) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s %c %p)::set_enabled(%d)\n", get_subdev_name().c_str(), unit, get_iface().get(), en);
+
+        unsigned* mask = (unit == dboard_iface::UNIT_RX) ? &_ifd->enabled_mask_rx : &_ifd->enabled_mask_tx;
+        unsigned prev = *mask;
+        bool res = en;
+        if (en) {
+            *mask |= 1 << _num;
+            if (*mask && !prev) {
+                if (verbosity>0) printf("db_lms6002d_mxddc(%s)::enabling\n", get_subdev_name().c_str());
+                res = _db->set_enabled(unit, en);
+            }
+
+        } else {
+            *mask &= ~(1 << _num);
+            if (*mask == 0 && prev) {
+                if (verbosity>0) printf("db_lms6002d_mxddc(%s)::disabling\n", get_subdev_name().c_str());
+                res = _db->set_enabled(unit, en);
+            }
+        }
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s %p)::mask %x\n", get_subdev_name().c_str(), get_iface().get(), *mask);
+        return res;
+    }
+
+    double set_rx_gain(double gain, const std::string &name) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_rx_gain(%f, %s)\n", get_subdev_name().c_str(), gain, name.c_str());
+        return _db->set_rx_gain(gain, name);
+    }
+
+    void set_rx_ant(const std::string &ant) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_rx_ant(%s)\n", get_subdev_name().c_str(), ant.c_str());
+        return _db->set_rx_ant(ant);
+    }
+
+    double set_rx_bandwidth(double bandwidth) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_rx_bandwidth(%f)\n", get_subdev_name().c_str(), bandwidth);
+        return _db->set_rx_bandwidth(bandwidth);
+    }
+
+    double set_tx_gain(double gain, const std::string &name) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_tx_gain(%f, %s)\n", get_subdev_name().c_str(), gain, name.c_str());
+        return _db->set_tx_gain(gain, name);
+    }
+
+    void set_tx_ant(const std::string &ant) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_tx_ant(%s)\n", get_subdev_name().c_str(), ant.c_str());
+        return _db->set_tx_ant(ant);
+    }
+
+    double set_tx_bandwidth(double bandwidth) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_tx_bandwidth(%f)\n", get_subdev_name().c_str(), bandwidth);
+        return _db->set_tx_bandwidth(bandwidth);
+    }
+
+    uint8_t _set_tx_vga1dc_i_int(uint8_t offset) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_tx_vga1dc_i_int(%d)\n", get_subdev_name().c_str(), offset);
+        return _db->_set_tx_vga1dc_i_int(offset);
+    }
+
+    uint8_t _set_tx_vga1dc_q_int(uint8_t offset) {
+        if (verbosity>0) printf("db_lms6002d_mxddc(%s)::set_tx_vga1dc_q_int(%d)\n", get_subdev_name().c_str(), offset);
+        return _db->_set_tx_vga1dc_q_int(offset);
+    }
+
+    void register_properties()
+    {
+        ////////////////////////////////////////////////////////////////////
+        // Register RX properties
+        ////////////////////////////////////////////////////////////////////
+        this->get_rx_subtree()->create<std::string>("name")
+            .set(std::string(str(boost::format("%s - %s") % get_rx_id().to_pp_string() % get_subdev_name())));
+
+        BOOST_FOREACH(const std::string &name, lms_rx_gain_ranges.keys()){
+            this->get_rx_subtree()->create<double>("gains/"+name+"/value")
+                .coerce(boost::bind(&db_lms6002d_mxddc::set_rx_gain, this, _1, name))
+                .set((lms_rx_gain_ranges[name].start()+lms_rx_gain_ranges[name].stop())/2.0);
+            this->get_rx_subtree()->create<meta_range_t>("gains/"+name+"/range")
+                .set(lms_rx_gain_ranges[name]);
+        }
+
+        this->get_rx_subtree()->create<double>("freq/value")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_freq, this, dboard_iface::UNIT_RX, _1));
+        this->get_rx_subtree()->create<meta_range_t>("freq/range")
+            .set(lms_freq_range);
+
+        this->get_rx_subtree()->create<std::string>("antenna/value")
+            .subscribe(boost::bind(&db_lms6002d_mxddc::set_rx_ant, this, _1))
+            .set("RX1");
+        this->get_rx_subtree()->create<std::vector<std::string> >("antenna/options")
+            .set(lms_rx_antennas);
+        // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
+        this->get_rx_subtree()->create<sensor_value_t>("sensors/lo_locked")
+            .set(sensor_value_t("LO", true, "locked", "unlocked"));
+        this->get_rx_subtree()->create<std::string>("connection").set("IQ");
+        this->get_rx_subtree()->create<bool>("enabled")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_enabled, this, dboard_iface::UNIT_RX, _1));
+
+        this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
+        this->get_rx_subtree()->create<double>("bandwidth/value")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_rx_bandwidth, this, _1))
+            .set(double(2*0.75e6));
+        this->get_rx_subtree()->create<meta_range_t>("bandwidth/range")
+            .set(lms_bandwidth_range);
+
+        ////////////////////////////////////////////////////////////////////
+        // Register TX properties
+        ////////////////////////////////////////////////////////////////////
+        this->get_tx_subtree()->create<std::string>("name")
+            .set(std::string(str(boost::format("%s - %s") % get_tx_id().to_pp_string() % get_subdev_name())));
+
+        BOOST_FOREACH(const std::string &name, lms_tx_gain_ranges.keys()){
+            this->get_tx_subtree()->create<double>("gains/"+name+"/value")
+                .coerce(boost::bind(&db_lms6002d_mxddc::set_tx_gain, this, _1, name))
+                .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].stop())/2.0);
+            this->get_tx_subtree()->create<meta_range_t>("gains/"+name+"/range")
+                .set(lms_tx_gain_ranges[name]);
+        }
+
+        this->get_tx_subtree()->create<double>("freq/value")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_freq, this, dboard_iface::UNIT_TX, _1));
+        this->get_tx_subtree()->create<meta_range_t>("freq/range")
+            .set(lms_freq_range);
+
+        this->get_tx_subtree()->create<std::string>("antenna/value")
+            .subscribe(boost::bind(&db_lms6002d_mxddc::set_tx_ant, this, _1))
+            .set("TX2");
+        this->get_tx_subtree()->create<std::vector<std::string> >("antenna/options")
+            .set(lms_tx_antennas);
+        // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
+        this->get_tx_subtree()->create<sensor_value_t>("sensors/lo_locked")
+            .set(sensor_value_t("LO", true, "locked", "unlocked"));
+        this->get_tx_subtree()->create<std::string>("connection").set("IQ");
+        this->get_tx_subtree()->create<bool>("enabled")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_enabled, this, dboard_iface::UNIT_TX, _1));
+
+        this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
+        this->get_tx_subtree()->create<double>("bandwidth/value")
+            .coerce(boost::bind(&db_lms6002d_mxddc::set_tx_bandwidth, this, _1))
+            .set(double(2*0.75e6));
+        this->get_tx_subtree()->create<meta_range_t>("bandwidth/range")
+            .set(lms_bandwidth_range);
+
+        // UmTRX specific calibration
+        this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_i/value")
+            .subscribe(boost::bind(&db_lms6002d_mxddc::_set_tx_vga1dc_i_int, this, _1))
+            .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_i_int, &_db->lms));
+        this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_q/value")
+            .subscribe(boost::bind(&db_lms6002d_mxddc::_set_tx_vga1dc_q_int, this, _1))
+            .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_q_int, &_db->lms));
+    }
+
+    db_lms6002d_ptr_t _db;
+    ifdata* _ifd;
+    unsigned _num;
+    static ifdata_storage_t _ifmap;
+};
+
+db_lms6002d_mxddc::ifdata_storage_t db_lms6002d_mxddc::_ifmap;
+
 // Register the LMS dboards
 
 static dboard_base::sptr make_lms6002d(dboard_base::ctor_args_t args) {
     return dboard_base::sptr(new db_lms6002d(args));
 }
 
+static dboard_base::sptr make_lms6002d_mxddc(dboard_base::ctor_args_t args) {
+    return dboard_base::sptr(new db_lms6002d_mxddc(args));
+}
+
+
 UHD_STATIC_BLOCK(reg_lms_dboards){
-    dboard_manager::register_dboard(0xfa07, 0xfa09, &make_lms6002d, "LMS6002D");
-    dboard_manager::register_dboard(0xfa0a, 0xfa0b, &make_lms6002d, "LMS6002D 4xDDC", subdevs_4xddc);
+    //dboard_manager::register_dboard(0xfa07, 0xfa09, &make_lms6002d, "LMS6002D");
+    dboard_manager::register_dboard(0xfa0a, 0xfa0b, &make_lms6002d_mxddc, "LMS6002D 4xDDC", subdevs_4xddc);
 }
 
 // LMS RX dboard configuration
@@ -490,6 +698,7 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     // Perform autocalibration
     lms.auto_calibration(get_iface()->get_clock_rate(dboard_iface::UNIT_LMS), 0xf);
 
+#if 0
     ////////////////////////////////////////////////////////////////////
     // Register RX properties
     ////////////////////////////////////////////////////////////////////
@@ -573,5 +782,6 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_q/value")
         .subscribe(boost::bind(&db_lms6002d::_set_tx_vga1dc_q_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_q_int, &lms));
+#endif
 }
 
