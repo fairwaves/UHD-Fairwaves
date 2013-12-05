@@ -36,7 +36,7 @@ namespace po = boost::program_options;
 /***********************************************************************
  * Transmit thread
  **********************************************************************/
-static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
+static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_ampl){
     uhd::set_thread_priority_safe();
 
     //create a transmit streamer
@@ -49,9 +49,6 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_fre
     std::vector<samp_type> buff(tx_stream->get_max_num_samps()*10);
 
     //values for the wave table lookup
-    size_t index = 0;
-    const double tx_rate = usrp->get_tx_rate();
-    const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
     wave_table table(tx_wave_ampl);
 
     //fill buff and send until interrupted
@@ -79,16 +76,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
 
     //tune the receiver
     usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
-/*
-    //wait for the LOs to become locked
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-    boost::system_time start = boost::get_system_time();
-    while (not usrp->get_tx_sensor("lo_locked").to_bool() or not usrp->get_rx_sensor("lo_locked").to_bool()){
-        if (boost::get_system_time() > start + boost::posix_time::milliseconds(100)){
-            throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
-        }
-    }
-*/
+
     return usrp->get_tx_freq();
 }
 
@@ -150,7 +138,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //create a transmitter thread
     boost::thread_group threads;
-    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_freq, tx_wave_ampl));
+    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_ampl));
 
     //re-usable buffer for samples
     std::vector<samp_type> buff;
@@ -195,7 +183,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
         for (size_t i = 0; i < 10; i++){
-            if (vm.count("verbose")) printf("  iteration %d\n", i);
+            if (vm.count("verbose")) printf("  iteration %zu\n", i);
 
             bool has_improvement = false;
 

@@ -103,7 +103,7 @@ public:
     double set_freq(dboard_iface::unit_t unit, double f) {
         if (verbosity>0) printf("db_lms6002d::set_freq(%f)\n", f);
         unsigned ref_freq = get_iface()->get_clock_rate(dboard_iface::UNIT_LMS);
-        double actual_freq;
+        double actual_freq = 0;
         if (unit==dboard_iface::UNIT_TX) {
             actual_freq = lms.tx_pll_tune(ref_freq, f);
         } else if (unit==dboard_iface::UNIT_RX) {
@@ -423,7 +423,6 @@ double db_lms6002d::tune_adf4350(double target_freq) {
 
     //write the registers
     //correct power-up sequence to write registers (5, 4, 3, 2, 1, 0)
-    int addr;
 
 #if 0
     for(addr=5; addr>=0; addr--){

@@ -97,9 +97,9 @@ public:
 //            return _iface->read_spi(_adf4350_spi_number, config, data, num_bits);
             return _iface->read_spi(SPI_SS_AUX1, config, data, num_bits);
             return _iface->read_spi(SPI_SS_AUX2, config, data, num_bits);
-        } else {
-            assert(!"Wrong unit_t pased to umtrx_dboard_iface::write_spi.");
         }
+            assert(!"Wrong unit_t pased to umtrx_dboard_iface::write_spi.");
+    	    return 0; // FIXME: propagate error for non-assert builds
     }
 };
 
