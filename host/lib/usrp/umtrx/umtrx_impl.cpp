@@ -260,21 +260,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         }
 
         ////////////////////////////////////////////////////////////////
-        // create gpsdo control objects
-        ////////////////////////////////////////////////////////////////
-        if (_mbc[mb].iface->mb_eeprom["gpsdo"] == "internal"){
-            _mbc[mb].gps = gps_ctrl::make(udp_simple::make_uart(udp_simple::make_connected(
-                addr, BOOST_STRINGIZE(umtrx_UDP_UART_GPS_PORT)
-            )));
-            if(_mbc[mb].gps->gps_detected()) {
-                BOOST_FOREACH(const std::string &name, _mbc[mb].gps->get_sensors()){
-                    _tree->create<sensor_value_t>(mb_path / "sensors" / name)
-                        .publish(boost::bind(&gps_ctrl::get_sensor, _mbc[mb].gps, name));
-                }
-            }
-        }
-
-        ////////////////////////////////////////////////////////////////
         // and do the misc mboard sensors
         ////////////////////////////////////////////////////////////////
 //        _tree->create<sensor_value_t>(mb_path / "sensors/mimo_locked")
