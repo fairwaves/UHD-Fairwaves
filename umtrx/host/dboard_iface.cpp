@@ -24,7 +24,7 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/asio.hpp> //htonl and ntohl
 #include <boost/math/special_functions/round.hpp>
-#include "../usrp2/usrp2_iface.hpp"
+#include "usrp2_iface.hpp"
 #include <cstdio>
 
 using namespace uhd;

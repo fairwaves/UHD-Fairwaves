@@ -17,9 +17,9 @@
 #include "umtrx_impl.hpp"
 #include "lms_regs.hpp"
 #include "umtrx_regs.hpp"
-#include "../usrp2/fw_common.h"
-#include "../../transport/super_recv_packet_handler.hpp"
-#include "../../transport/super_send_packet_handler.hpp"
+#include "fw_common.h"
+#include "super_recv_packet_handler.hpp"
+#include "super_send_packet_handler.hpp"
 #include "apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>

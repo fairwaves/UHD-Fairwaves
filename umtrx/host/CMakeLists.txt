@@ -1,5 +1,5 @@
 #
-# Copyright 2012 Fairwaves
+# Copyright 2012-2014 Fairwaves
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,13 +22,39 @@ cmake_minimum_required(VERSION 2.8)
 project(UmTRX_UHD)
 
 ########################################################################
+## Create a list of module sources
+########################################################################
+list(APPEND UMTRX_SOURCES
+    #dboard_iface.cpp
+    validate_subdev_spec.cpp
+    io_impl.cpp
+    lms6002d.cpp
+    gpio_core_200.cpp
+    rx_dsp_core_200.cpp
+    rx_frontend_core_200.cpp
+    time64_core_200.cpp
+    tx_dsp_core_200.cpp
+    tx_frontend_core_200.cpp
+    umtrx_impl.cpp
+    usrp2_iface.cpp
+    usrp2_impl.cpp
+)
+
+########################################################################
 ## Find UHD dev environment
 ########################################################################
+#expand pkg-config search path to include CMAKE_INSTALL_PREFIX
+set(ENV{PKG_CONFIG_PATH}
+    "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/pkgconfig/:$ENV{PKG_CONFIG_PATH}")
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(UHD REQUIRED)
 
 INCLUDE_DIRECTORIES(${UHD_INCLUDE_DIRS})
 list(APPEND UMTRX_LIBRARIES ${UHD_LIBRARIES})
+
+MESSAGE(STATUS "UHD include directories: ${UHD_INCLUDE_DIRS}")
+MESSAGE(STATUS "UHD libraries: ${UHD_LIBRARIES}")
 
 ########################################################################
 # Setup Boost
@@ -77,7 +103,14 @@ MESSAGE(STATUS "Boost libraries: ${Boost_LIBRARIES}")
 ########################################################################
 # Build the UmTRX module
 ########################################################################
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+add_library(umtrx MODULE ${UMTRX_SOURCES})
+target_link_libraries(umtrx ${POTHOS_LIBRARIES} ${UMTRX_LIBRARIES})
 
 ########################################################################
 # Install the UmTRX module
 ########################################################################
+install(
+    TARGETS umtrx
+    DESTINATION lib${LIB_SUFFIX}/UHD/modules
+)

@@ -17,8 +17,8 @@
 //
 
 #include "validate_subdev_spec.hpp"
-#include "../../transport/super_recv_packet_handler.hpp"
-#include "../../transport/super_send_packet_handler.hpp"
+#include "super_recv_packet_handler.hpp"
+#include "super_send_packet_handler.hpp"
 #include "umtrx_impl.hpp"
 #include "umtrx_regs.hpp"
 #include <uhd/utils/log.hpp>
@@ -45,6 +45,86 @@ namespace pt = boost::posix_time;
  * constants
  **********************************************************************/
 static const size_t vrt_send_header_offset_words32 = 1;
+
+/***********************************************************************
+ * helpers
+ **********************************************************************/
+static UHD_INLINE pt::time_duration to_time_dur(double timeout){
+    return pt::microseconds(long(timeout*1e6));
+}
+
+static UHD_INLINE double from_time_dur(const pt::time_duration &time_dur){
+    return 1e-6*time_dur.total_microseconds();
+}
+
+/***********************************************************************
+ * flow control monitor for a single tx channel
+ *  - the pirate thread calls update
+ *  - the get send buffer calls check
+ **********************************************************************/
+class flow_control_monitor{
+public:
+    typedef boost::uint32_t seq_type;
+    typedef boost::shared_ptr<flow_control_monitor> sptr;
+
+    /*!
+     * Make a new flow control monitor.
+     * \param max_seqs_out num seqs before throttling
+     */
+    flow_control_monitor(seq_type max_seqs_out):_max_seqs_out(max_seqs_out){
+        this->clear();
+        _ready_fcn = boost::bind(&flow_control_monitor::ready, this);
+    }
+
+    //! Clear the monitor, Ex: when a streamer is created
+    void clear(void){
+        _last_seq_out = 0;
+        _last_seq_ack = 0;
+    }
+
+    /*!
+     * Gets the current sequence number to go out.
+     * Increments the sequence for the next call
+     * \return the sequence to be sent to the dsp
+     */
+    UHD_INLINE seq_type get_curr_seq_out(void){
+        return _last_seq_out++;
+    }
+
+    /*!
+     * Check the flow control condition.
+     * \param timeout the timeout in seconds
+     * \return false on timeout
+     */
+    UHD_INLINE bool check_fc_condition(double timeout){
+        boost::mutex::scoped_lock lock(_fc_mutex);
+        if (this->ready()) return true;
+        boost::this_thread::disable_interruption di; //disable because the wait can throw
+        return _fc_cond.timed_wait(lock, to_time_dur(timeout), _ready_fcn);
+    }
+
+    /*!
+     * Update the flow control condition.
+     * \param seq the last sequence number to be ACK'd
+     */
+    UHD_INLINE void update_fc_condition(seq_type seq){
+        boost::mutex::scoped_lock lock(_fc_mutex);
+        _last_seq_ack = seq;
+        lock.unlock();
+        _fc_cond.notify_one();
+    }
+
+private:
+    bool ready(void){
+        return seq_type(_last_seq_out -_last_seq_ack) < _max_seqs_out;
+    }
+
+    boost::mutex _fc_mutex;
+    boost::condition _fc_cond;
+    seq_type _last_seq_out, _last_seq_ack;
+    const seq_type _max_seqs_out;
+    boost::function<bool(void)> _ready_fcn;
+};
 
 /***********************************************************************
  * io impl details (internal to this file)

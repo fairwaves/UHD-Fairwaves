@@ -19,9 +19,9 @@
 #ifndef INCLUDED_UMTRX_IMPL_HPP
 #define INCLUDED_UMTRX_IMPL_HPP
 
-#include "../usrp2/fw_common.h"
-#include "../usrp2/usrp2_iface.hpp"
-#include "../usrp2/usrp2_impl.hpp"
+#include "fw_common.h"
+#include "usrp2_iface.hpp"
+//#include "usrp2_impl.hpp"
 #include "rx_frontend_core_200.hpp"
 #include "tx_frontend_core_200.hpp"
 #include "rx_dsp_core_200.hpp"
@@ -56,6 +56,11 @@
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
 static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
+
+
+static const boost::uint32_t USRP2_TX_ASYNC_SID_BASE = 2;
+static const boost::uint32_t USRP2_TX_ASYNC_SID = USRP2_TX_ASYNC_SID_BASE;
+static const boost::uint32_t USRP2_RX_SID_BASE = 4;
 
 /*!
  * Make a UmTRX dboard interface.
