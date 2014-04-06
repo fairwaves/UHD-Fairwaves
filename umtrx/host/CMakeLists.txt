@@ -121,5 +121,5 @@ target_link_libraries(umtrx ${POTHOS_LIBRARIES} ${UMTRX_LIBRARIES})
 ########################################################################
 install(
     TARGETS umtrx
-    DESTINATION lib${LIB_SUFFIX}/UHD/modules
+    DESTINATION lib${LIB_SUFFIX}/uhd/modules
 )

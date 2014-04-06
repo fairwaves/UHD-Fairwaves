@@ -38,6 +38,9 @@ device_addrs_t umtrx_find(const device_addr_t &hint) {
     //since a resource is intended for a different, non-USB, device.
     if (hint.has_key("resource")) return umtrx_addrs;
 
+    //return an empty list of addresses when type is set to non-umtrx
+    if (hint.has_key("type") and hint["type"] != "umtrx") return umtrx_addrs;
+
     //if no address was specified, send a broadcast on each interface
     if (not hint.has_key("addr")){
         BOOST_FOREACH(const if_addrs_t &if_addrs, get_if_addrs()){
@@ -72,7 +75,7 @@ device_addrs_t umtrx_find(const device_addr_t &hint) {
     //send a hello control packet
     usrp2_ctrl_data_t ctrl_data_out = usrp2_ctrl_data_t();
     ctrl_data_out.proto_ver = uhd::htonx<boost::uint32_t>(USRP2_FW_COMPAT_NUM);
-    ctrl_data_out.id = uhd::htonx<boost::uint32_t>(USRP2_CTRL_ID_WAZZUP_BRO);
+    ctrl_data_out.id = uhd::htonx<boost::uint32_t>(UMTRX_CTRL_ID_REQUEST);
     try
     {
         udp_transport->send(boost::asio::buffer(&ctrl_data_out, sizeof(ctrl_data_out)));
@@ -91,11 +94,11 @@ device_addrs_t umtrx_find(const device_addr_t &hint) {
     const usrp2_ctrl_data_t *ctrl_data_in = reinterpret_cast<const usrp2_ctrl_data_t *>(usrp2_ctrl_data_in_mem);
     while(true){
         size_t len = udp_transport->recv(asio::buffer(usrp2_ctrl_data_in_mem));
-        if (len > offsetof(usrp2_ctrl_data_t, data) and ntohl(ctrl_data_in->id) == USRP2_CTRL_ID_WAZZUP_DUDE){
+        if (len > offsetof(usrp2_ctrl_data_t, data) and ntohl(ctrl_data_in->id) == UMTRX_CTRL_ID_RESPONSE){
 
             //make a boost asio ipv4 with the raw addr in host byte order
             device_addr_t new_addr;
-            new_addr["type"] = "usrp2";
+            new_addr["type"] = "umtrx";
             //We used to get the address from the control packet.
             //Now now uses the socket itself to yield the address.
             //boost::asio::ip::address_v4 ip_addr(ntohl(ctrl_data_in->data.ip_addr));
@@ -110,7 +113,7 @@ device_addrs_t umtrx_find(const device_addr_t &hint) {
             );
             ctrl_xport->send(boost::asio::buffer(&ctrl_data_out, sizeof(ctrl_data_out)));
             size_t len = ctrl_xport->recv(asio::buffer(usrp2_ctrl_data_in_mem));
-            if (len > offsetof(usrp2_ctrl_data_t, data) and ntohl(ctrl_data_in->id) == USRP2_CTRL_ID_WAZZUP_DUDE){
+            if (len > offsetof(usrp2_ctrl_data_t, data) and ntohl(ctrl_data_in->id) == UMTRX_CTRL_ID_RESPONSE){
                 //found the device, open up for communication!
             }
             else{
