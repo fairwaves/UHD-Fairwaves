@@ -25,19 +25,11 @@ project(UmTRX_UHD)
 ## Create a list of module sources
 ########################################################################
 list(APPEND UMTRX_SOURCES
-    #dboard_iface.cpp
-    validate_subdev_spec.cpp
-    io_impl.cpp
-    lms6002d.cpp
-    gpio_core_200.cpp
-    rx_dsp_core_200.cpp
-    rx_frontend_core_200.cpp
-    time64_core_200.cpp
-    tx_dsp_core_200.cpp
-    tx_frontend_core_200.cpp
     umtrx_impl.cpp
-    usrp2_iface.cpp
-    usrp2_impl.cpp
+    umtrx_find.cpp
+    umtrx_iface.cpp
+    umtrx_eeprom.cpp
+    platform.cpp #not properly exported from uhd, so we had to copy it
 )
 
 ########################################################################
@@ -99,6 +91,23 @@ list(APPEND UMTRX_LIBRARIES ${Boost_LIBRARIES})
 MESSAGE(STATUS "Boost include directories: ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost library directories: ${Boost_LIBRARY_DIRS}")
 MESSAGE(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+
+########################################################################
+# Helpful compiler flags
+########################################################################
+if(CMAKE_COMPILER_IS_GNUCXX)
+
+    #force a compile-time error when symbols are missing
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined")
+
+    #common warnings to help encourage good coding practices
+    add_definitions(-Wall)
+    add_definitions(-Wextra)
+
+    #symbols are only exported from libraries/modules explicitly
+    add_definitions(-fvisibility=hidden)
+
+endif()
 
 ########################################################################
 # Build the UmTRX module
