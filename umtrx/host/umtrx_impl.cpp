@@ -21,6 +21,7 @@
 #include <uhd/utils/msg.hpp>
 #include <uhd/types/sensors.hpp>
 #include <boost/bind.hpp>
+#include <boost/assign/list_of.hpp>
 
 static int verbosity = 0;
 
@@ -212,6 +213,38 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
             .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _tx_dsps[dspno]));
     }
+
+    ////////////////////////////////////////////////////////////////
+    // create time control objects
+    ////////////////////////////////////////////////////////////////
+    time64_core_200::readback_bases_type time64_rb_bases;
+    time64_rb_bases.rb_hi_now = U2_REG_TIME64_SECS_RB_IMM;
+    time64_rb_bases.rb_lo_now = U2_REG_TIME64_TICKS_RB_IMM;
+    time64_rb_bases.rb_hi_pps = U2_REG_TIME64_SECS_RB_PPS;
+    time64_rb_bases.rb_lo_pps = U2_REG_TIME64_TICKS_RB_PPS;
+    _time64 = time64_core_200::make(_iface, U2_REG_SR_ADDR(SR_TIME64), time64_rb_bases);
+
+    _tree->access<double>(mb_path / "tick_rate")
+        .subscribe(boost::bind(&time64_core_200::set_tick_rate, _time64, _1));
+    _tree->create<time_spec_t>(mb_path / "time" / "now")
+        .publish(boost::bind(&time64_core_200::get_time_now, _time64))
+        .subscribe(boost::bind(&time64_core_200::set_time_now, _time64, _1));
+    _tree->create<time_spec_t>(mb_path / "time" / "pps")
+        .publish(boost::bind(&time64_core_200::get_time_last_pps, _time64))
+        .subscribe(boost::bind(&time64_core_200::set_time_next_pps, _time64, _1));
+    //setup time source props
+    _tree->create<std::string>(mb_path / "time_source" / "value")
+        .subscribe(boost::bind(&time64_core_200::set_time_source, _time64, _1));
+    _tree->create<std::vector<std::string> >(mb_path / "time_source" / "options")
+        .publish(boost::bind(&time64_core_200::get_time_sources, _time64));
+    //setup reference source props
+   _tree->create<std::string>(mb_path / "clock_source" / "value");
+        //??            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
+
+    static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external");
+    _tree->create<std::vector<std::string> >(mb_path / "clock_source"/ "options").set(clock_sources);
+
+    //TODO time64 self test once FPGA core is updated
 
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing

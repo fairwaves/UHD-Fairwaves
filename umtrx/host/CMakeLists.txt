@@ -37,6 +37,7 @@ list(APPEND UMTRX_SOURCES
     cores/tx_frontend_core_200.cpp
     cores/rx_dsp_core_200.cpp
     cores/tx_dsp_core_200.cpp
+    cores/time64_core_200.cpp
 )
 
 ########################################################################

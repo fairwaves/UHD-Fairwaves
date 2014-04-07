@@ -26,10 +26,7 @@
 #include "cores/tx_frontend_core_200.hpp"
 #include "cores/rx_dsp_core_200.hpp"
 #include "cores/tx_dsp_core_200.hpp"
-
-/*
-#include "time64_core_200.hpp"
-*/
+#include "cores/time64_core_200.hpp"
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/device.hpp>
@@ -93,6 +90,7 @@ private:
     std::vector<tx_frontend_core_200::sptr> _tx_fes;
     std::vector<rx_dsp_core_200::sptr> _rx_dsps;
     std::vector<tx_dsp_core_200::sptr> _tx_dsps;
+    time64_core_200::sptr _time64;
 
     //helper routines
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
