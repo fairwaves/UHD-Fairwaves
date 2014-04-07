@@ -213,6 +213,102 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _tx_dsps[dspno]));
     }
 
+    ////////////////////////////////////////////////////////////////////
+    // create RF frontend interfacing
+    ////////////////////////////////////////////////////////////////////
+    _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate());
+    _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
+
+    BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
+    {
+        lms6002d_ctrl::sptr ctrl = _lms_ctrl[fe_name];
+
+        const fs_path rx_rf_fe_path = mb_path / "dboards" / fe_name / "rx_frontends" / "0";
+        const fs_path tx_rf_fe_path = mb_path / "dboards" / fe_name / "tx_frontends" / "0";
+
+        _tree->create<std::string>(rx_rf_fe_path / "name").set("LMS-RX-FE");
+        _tree->create<std::string>(tx_rf_fe_path / "name").set("LMS-TX-FE");
+
+        //sensors -- TODO needs lo locked
+        _tree->create<int>(rx_rf_fe_path / "sensors"); //empty TODO
+        _tree->create<int>(tx_rf_fe_path / "sensors"); //empty TODO
+
+        //rx gains
+        BOOST_FOREACH(const std::string &name, ctrl->get_rx_gains())
+        {
+            _tree->create<meta_range_t>(rx_rf_fe_path / "gains" / name / "range")
+                .publish(boost::bind(&lms6002d_ctrl::get_rx_gain_range, ctrl, name));
+
+            _tree->create<double>(rx_rf_fe_path / "gains" / name / "value")
+                .coerce(boost::bind(&lms6002d_ctrl::set_rx_gain, ctrl, _1, name))
+                .set((ctrl->get_rx_gain_range(name).start() + ctrl->get_rx_gain_range(name).stop())/2.0);
+        }
+
+        //tx gains
+        BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
+        {
+            _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / name / "range")
+                .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
+
+            _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
+                .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
+                .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
+        }
+
+        //rx freq
+        _tree->create<double>(rx_rf_fe_path / "freq" / "value")
+            .coerce(boost::bind(&lms6002d_ctrl::set_rx_freq, ctrl, _1));
+        _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
+            .publish(boost::bind(&lms6002d_ctrl::get_rx_freq_range, ctrl));
+        _tree->create<bool>(rx_rf_fe_path / "use_lo_offset").set(false);
+
+        //tx freq
+        _tree->create<double>(tx_rf_fe_path / "freq" / "value")
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_freq, ctrl, _1));
+        _tree->create<meta_range_t>(tx_rf_fe_path / "freq" / "range")
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_freq_range, ctrl));
+        _tree->create<bool>(tx_rf_fe_path / "use_lo_offset").set(false);
+
+        //rx ant
+        _tree->create<std::vector<std::string> >(rx_rf_fe_path / "antenna" / "options")
+            .publish(boost::bind(&lms6002d_ctrl::get_rx_antennas, ctrl));
+        _tree->create<std::string>(rx_rf_fe_path / "antenna" / "value")
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rx_ant, ctrl, _1))
+            .set("RX1");
+
+        //tx ant
+        _tree->create<std::vector<std::string> >(tx_rf_fe_path / "antenna" / "options")
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_antennas, ctrl));
+        _tree->create<std::string>(tx_rf_fe_path / "antenna" / "value")
+            .subscribe(boost::bind(&lms6002d_ctrl::set_tx_ant, ctrl, _1))
+            .set("TX2");
+
+        //misc
+        _tree->create<std::string>(rx_rf_fe_path / "connection").set("IQ");
+        _tree->create<std::string>(tx_rf_fe_path / "connection").set("IQ");
+        _tree->create<bool>(rx_rf_fe_path / "enabled")
+            .coerce(boost::bind(&lms6002d_ctrl::set_rx_enabled, ctrl, _1));
+        _tree->create<bool>(tx_rf_fe_path / "enabled")
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_enabled, ctrl, _1));
+
+        //rx bw
+        _tree->create<double>(rx_rf_fe_path / "bandwidth" / "value")
+            .coerce(boost::bind(&lms6002d_ctrl::set_rx_bandwidth, ctrl, _1))
+            .set(2*0.75e6);
+        _tree->create<meta_range_t>(rx_rf_fe_path / "bandwidth" / "range")
+            .publish(boost::bind(&lms6002d_ctrl::get_rx_bw_range, ctrl));
+
+        //tx bw
+        _tree->create<double>(tx_rf_fe_path / "bandwidth" / "value")
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_bandwidth, ctrl, _1))
+            .set(2*0.75e6);
+        _tree->create<meta_range_t>(tx_rf_fe_path / "bandwidth" / "range")
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_bw_range, ctrl));
+
+        //TODO // UmTRX specific calibration
+
+    }
+
 }
 
 umtrx_impl::~umtrx_impl(void){

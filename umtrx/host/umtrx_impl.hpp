@@ -21,6 +21,7 @@
 
 #include "fw_common.h"
 #include "umtrx_iface.hpp"
+#include "lms6002d_ctrl.hpp"
 #include "cores/rx_frontend_core_200.hpp"
 #include "cores/tx_frontend_core_200.hpp"
 #include "cores/rx_dsp_core_200.hpp"
@@ -83,6 +84,9 @@ private:
 
     //communication interfaces
     umtrx_iface::sptr _iface;
+
+    //controls for perifs
+    uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
 
     //control for FPGA cores
     std::vector<rx_frontend_core_200::sptr> _rx_fes;

@@ -564,84 +564,8 @@ lms6002d_ctrl_impl::lms6002d_ctrl_impl(uhd::spi_iface::sptr spiface, const int l
     // Perform autocalibration
     lms.auto_calibration(_clock_rate, 0xf);
 
-    /*
-    ////////////////////////////////////////////////////////////////////
-    // Register RX properties
-    ////////////////////////////////////////////////////////////////////
-    this->get_rx_subtree()->create<std::string>("name")
-        .set(std::string(str(boost::format("%s - %s") % get_rx_id().to_pp_string() % get_subdev_name())));
-
-    BOOST_FOREACH(const std::string &name, lms_rx_gain_ranges.keys()){
-        this->get_rx_subtree()->create<double>("gains/"+name+"/value")
-            .coerce(boost::bind(&lms6002d_ctrl_impl::set_rx_gain, this, _1, name))
-            .set((lms_rx_gain_ranges[name].start()+lms_rx_gain_ranges[name].stop())/2.0);
-        this->get_rx_subtree()->create<meta_range_t>("gains/"+name+"/range")
-            .set(lms_rx_gain_ranges[name]);
-    }
-
-    this->get_rx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_freq, this, dboard_iface::UNIT_RX, _1));
-    this->get_rx_subtree()->create<meta_range_t>("freq/range")
-        .set(lms_freq_range);
-
-    this->get_rx_subtree()->create<std::string>("antenna/value")
-        .subscribe(boost::bind(&lms6002d_ctrl_impl::set_rx_ant, this, _1))
-        .set("RX1");
-    this->get_rx_subtree()->create<std::vector<std::string> >("antenna/options")
-        .set(lms_rx_antennas);
-    // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
-    this->get_rx_subtree()->create<sensor_value_t>("sensors/lo_locked")
-        .set(sensor_value_t("LO", true, "locked", "unlocked"));
-    this->get_rx_subtree()->create<std::string>("connection").set("IQ");
-    this->get_rx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_enabled, this, dboard_iface::UNIT_RX, _1));
-
-    this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
-    this->get_rx_subtree()->create<double>("bandwidth/value")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_rx_bandwidth, this, _1))
-        .set(double(2*0.75e6));
-    this->get_rx_subtree()->create<meta_range_t>("bandwidth/range")
-        .set(lms_bandwidth_range);
-
-    ////////////////////////////////////////////////////////////////////
-    // Register TX properties
-    ////////////////////////////////////////////////////////////////////
-    this->get_tx_subtree()->create<std::string>("name")
-        .set(std::string(str(boost::format("%s - %s") % get_tx_id().to_pp_string() % get_subdev_name())));
-
-    BOOST_FOREACH(const std::string &name, lms_tx_gain_ranges.keys()){
-        this->get_tx_subtree()->create<double>("gains/"+name+"/value")
-            .coerce(boost::bind(&lms6002d_ctrl_impl::set_tx_gain, this, _1, name))
-            .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].stop())/2.0);
-        this->get_tx_subtree()->create<meta_range_t>("gains/"+name+"/range")
-            .set(lms_tx_gain_ranges[name]);
-    }
-
-    this->get_tx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_freq, this, dboard_iface::UNIT_TX, _1));
-    this->get_tx_subtree()->create<meta_range_t>("freq/range")
-        .set(lms_freq_range);
-
-    this->get_tx_subtree()->create<std::string>("antenna/value")
-        .subscribe(boost::bind(&lms6002d_ctrl_impl::set_tx_ant, this, _1))
-        .set("TX2");
-    this->get_tx_subtree()->create<std::vector<std::string> >("antenna/options")
-        .set(lms_tx_antennas);
-    // In LMS tuning procedure doesn't finish until LO is locked, so we declare it's always locked.
-    this->get_tx_subtree()->create<sensor_value_t>("sensors/lo_locked")
-        .set(sensor_value_t("LO", true, "locked", "unlocked"));
-    this->get_tx_subtree()->create<std::string>("connection").set("IQ");
-    this->get_tx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_enabled, this, dboard_iface::UNIT_TX, _1));
-
-    this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
-    this->get_tx_subtree()->create<double>("bandwidth/value")
-        .coerce(boost::bind(&lms6002d_ctrl_impl::set_tx_bandwidth, this, _1))
-        .set(double(2*0.75e6));
-    this->get_tx_subtree()->create<meta_range_t>("bandwidth/range")
-        .set(lms_bandwidth_range);
-
     // UmTRX specific calibration
+/*
     this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_i/value")
         .subscribe(boost::bind(&lms6002d_ctrl_impl::_set_tx_vga1dc_i_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_i_int, &lms));
