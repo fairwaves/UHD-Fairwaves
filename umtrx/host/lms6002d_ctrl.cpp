@@ -1,3 +1,11 @@
+/***********************************************************************
+ * The interface to lms6002d that get registered into the property tree
+ **********************************************************************/
+
+#include "lms6002d_ctrl.hpp"
+#include "lms6002d.hpp"
+#include "cores/adf4350_regs.hpp"
+
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/static.hpp>
 #include <uhd/utils/assert_has.hpp>
@@ -17,9 +25,6 @@
 #include <cmath>
 #include <cfloat>
 #include <limits>
-
-#include "../umtrx/lms6002d.hpp"
-#include "adf4350_regs.hpp"
 
 using namespace uhd;
 using namespace uhd::usrp;
@@ -75,34 +80,103 @@ static int verbosity = 0;
 // LMS6002D interface class for UmTRX
 
 class umtrx_lms6002d_dev: public lms6002d_dev {
-    dboard_iface::sptr _db_iface;
+    uhd::spi_iface::sptr _spiface;
+    const int _slaveno;
 public:
-    umtrx_lms6002d_dev(dboard_iface::sptr db_iface) : _db_iface(db_iface) {};
+    umtrx_lms6002d_dev(uhd::spi_iface::sptr spiface, const int slaveno) : _spiface(spiface), _slaveno(slaveno) {};
 
     virtual void write_reg(uint8_t addr, uint8_t data) {
-        if (verbosity>2) printf("db_lms6002d::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
+        if (verbosity>2) printf("lms6002d_ctrl_impl::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
-        _db_iface->write_spi(uhd::usrp::dboard_iface::UNIT_LMS,
-                                     spi_config_t::EDGE_RISE, command, 16);
+        _spiface->write_spi(_slaveno, spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
-        uint8_t data = _db_iface->read_write_spi(uhd::usrp::dboard_iface::UNIT_LMS,
-            spi_config_t::EDGE_RISE, addr << 8, 16);
-        if (verbosity>2) printf("db_lms6002d::read_reg(addr=0x%x) data=0x%x\n", addr, data);
+        uint8_t data = _spiface->read_spi(_slaveno, spi_config_t::EDGE_RISE, addr << 8, 16);
+        if (verbosity>2) printf("lms6002d_ctrl_impl::read_reg(addr=0x%x) data=0x%x\n", addr, data);
         return data;
     }
 };
 
 // LMS6002D virtual daughter board for UmTRX
 
-class db_lms6002d : public xcvr_dboard_base {
+class lms6002d_ctrl_impl : public lms6002d_ctrl {
 public:
-    db_lms6002d(ctor_args_t args);
+    lms6002d_ctrl_impl(uhd::spi_iface::sptr spiface, const int lms_spi_number, const int adf4350_spi_number, const double clock_rate);
+
+    double set_rx_freq(const double freq)
+    {
+        return this->set_freq(dboard_iface::UNIT_RX, freq);
+    }
+
+    double set_tx_freq(const double freq)
+    {
+        return this->set_freq(dboard_iface::UNIT_TX, freq);
+    }
+
+    bool set_rx_enabled(const bool enb)
+    {
+        return this->set_enabled(dboard_iface::UNIT_RX, enb);
+    }
+
+    bool set_tx_enabled(const bool enb)
+    {
+        return this->set_enabled(dboard_iface::UNIT_RX, enb);
+    }
+
+    uhd::freq_range_t get_rx_bw_range(void)
+    {
+        return lms_bandwidth_range;
+    }
+
+    uhd::freq_range_t get_tx_bw_range(void)
+    {
+        return lms_bandwidth_range;
+    }
+
+    uhd::freq_range_t get_rx_freq_range(void)
+    {
+        return lms_freq_range;
+    }
+
+    uhd::freq_range_t get_tx_freq_range(void)
+    {
+        return lms_freq_range;
+    }
+
+    std::vector<std::string> get_tx_antennas(void)
+    {
+        return lms_tx_antennas;
+    }
+
+    std::vector<std::string> get_rx_antennas(void)
+    {
+        return lms_rx_antennas;
+    }
+
+    std::vector<std::string> get_tx_gains(void)
+    {
+        return lms_tx_gain_ranges.keys();
+    }
+
+    std::vector<std::string> get_rx_gains(void)
+    {
+        return lms_rx_gain_ranges.keys();
+    }
+
+    uhd::gain_range_t get_rx_gain_range(const std::string &name)
+    {
+        return lms_rx_gain_ranges[name];
+    }
+
+    uhd::gain_range_t get_tx_gain_range(const std::string &name)
+    {
+        return lms_tx_gain_ranges[name];
+    }
 
     double set_freq(dboard_iface::unit_t unit, double f) {
-        if (verbosity>0) printf("db_lms6002d::set_freq(%f)\n", f);
-        unsigned ref_freq = get_iface()->get_clock_rate(dboard_iface::UNIT_LMS);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq(%f)\n", f);
+        unsigned ref_freq = _clock_rate;
         double actual_freq = 0;
         if (unit==dboard_iface::UNIT_TX) {
             actual_freq = lms.tx_pll_tune(ref_freq, f);
@@ -113,24 +187,24 @@ public:
             // New beta version of the code for UmSEL support.
             const double umsel_if = 359.5e6;
             double actual_lms_freq = lms.rx_pll_tune(ref_freq, umsel_if);
-            if (verbosity>0) printf("db_lms6002d::set_freq() actual_lms_freq=%f\n", actual_lms_freq);
+            if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq() actual_lms_freq=%f\n", actual_lms_freq);
             double adf4350_freq = f - actual_lms_freq;
             actual_freq = tune_adf4350(adf4350_freq);
-            if (verbosity>0) printf("db_lms6002d::set_freq() adf4350 freq=%f\n", actual_freq);
+            if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq() adf4350 freq=%f\n", actual_freq);
             actual_freq += actual_lms_freq;
-            if (verbosity>0) printf("db_lms6002d::set_freq() actual_freq=%f\n", actual_freq);
+            if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq() actual_freq=%f\n", actual_freq);
 #endif
         } else {
-            assert(!"Wrong units_t value passed to db_lms6002d::set_freq()");
+            assert(!"Wrong units_t value passed to lms6002d_ctrl_impl::set_freq()");
         }
         if (actual_freq<0)
             actual_freq = 0;
-        if (verbosity>0) printf("db_lms6002d::set_freq() actual_freq=%f\n", actual_freq);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq() actual_freq=%f\n", actual_freq);
         return actual_freq;
     }
 
     bool set_enabled(dboard_iface::unit_t unit, bool en) {
-        if (verbosity>0) printf("db_lms6002d::set_enabled(%d)\n", en);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_enabled(%d)\n", en);
         if (unit==dboard_iface::UNIT_RX) {
             if (en)
                 lms.rx_enable();
@@ -147,7 +221,7 @@ public:
     }
 
     double set_rx_gain(double gain, const std::string &name) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_gain(%f, %s)\n", gain, name.c_str());
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_gain(%f, %s)\n", gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
 		if(name == "VGA1"){
             lms.set_rx_vga1gain(gain);
@@ -158,14 +232,14 @@ public:
     }
 
     void set_rx_ant(const std::string &ant) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_ant(%s)\n", ant.c_str());
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_ant(%s)\n", ant.c_str());
         //validate input
         assert_has(lms_rx_antennas, ant, "LMS6002D rx antenna name");
 
         if (ant == "CAL") {
             // Enable RF loopback if disabled
             if (!rf_loopback_enabled) {
-                if (verbosity>0) printf("db_lms6002d::set_rx_ant(%s) enabling RF loopback for LNA%d\n", ant.c_str(), lms.get_rx_lna());
+                if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_ant(%s) enabling RF loopback for LNA%d\n", ant.c_str(), lms.get_rx_lna());
                 lms.rf_loopback_enable(lms.get_rx_lna());
                 rf_loopback_enabled = true;
             }
@@ -191,7 +265,7 @@ public:
     }
 
     double set_rx_bandwidth(double bandwidth) {
-        if (verbosity>0) printf("db_lms6002d::set_rx_bandwidth(%f)\n", bandwidth);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_bandwidth(%f)\n", bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
 
@@ -202,7 +276,7 @@ public:
     }
 
     double set_tx_gain(double gain, const std::string &name) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_gain(%f, %s)\n", gain, name.c_str());
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_gain(%f, %s)\n", gain, name.c_str());
         //validate input
         assert_has(lms_tx_gain_ranges.keys(), name, "LMS6002D tx gain name");
 
@@ -220,7 +294,7 @@ public:
             tx_vga1gain = int(gain) - tx_vga2gain;
 
             // Set the gains in hardware
-            if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA1=%d VGA2=%d\n", tx_vga1gain, tx_vga2gain);
+            if (verbosity>1) printf("lms6002d_ctrl_impl::set_tx_gain() VGA1=%d VGA2=%d\n", tx_vga1gain, tx_vga2gain);
             lms.set_tx_vga1gain(tx_vga1gain);
             lms.set_tx_vga2gain(tx_vga2gain);
         } else {
@@ -232,7 +306,7 @@ public:
     }
 
     void set_tx_ant(const std::string &ant) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_ant(%s)\n", ant.c_str());
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_ant(%s)\n", ant.c_str());
         //validate input
         assert_has(lms_tx_antennas, ant, "LMS6002D tx antenna ant");
 
@@ -251,7 +325,7 @@ public:
     }
 
     double set_tx_bandwidth(double bandwidth) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_bandwidth(%f)\n", bandwidth);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_bandwidth(%f)\n", bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
 
@@ -262,13 +336,13 @@ public:
     }
 
     uint8_t _set_tx_vga1dc_i_int(uint8_t offset) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_vga1dc_i_int(%d)\n", offset);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_i_int(%d)\n", offset);
         lms.set_tx_vga1dc_i_int(offset);
         return offset;
     }
 
     uint8_t _set_tx_vga1dc_q_int(uint8_t offset) {
-        if (verbosity>0) printf("db_lms6002d::set_tx_vga1dc_q_int(%d)\n", offset);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_q_int(%d)\n", offset);
         lms.set_tx_vga1dc_q_int(offset);
         return offset;
     }
@@ -280,12 +354,22 @@ private:
 
     // Tune ADF4350 on an UmSEL
     double tune_adf4350(double target_freq);
+
+    uhd::spi_iface::sptr _spiface;
+    const int _lms_spi_number;
+    const int _adf4350_spi_number;
+    const double _clock_rate;
 };
+
+lms6002d_ctrl::sptr lms6002d_ctrl::make(uhd::spi_iface::sptr spiface, const int lms_spi_number, const int adf4350_spi_number, const double clock_rate)
+{
+    return sptr(new lms6002d_ctrl_impl(spiface, lms_spi_number, adf4350_spi_number, clock_rate));
+}
 
 /***********************************************************************
  * Tuning
  **********************************************************************/
-double db_lms6002d::tune_adf4350(double target_freq) {
+double lms6002d_ctrl_impl::tune_adf4350(double target_freq) {
     UHD_LOGV(often) << boost::format(
         "UmSEL tune: target frequency %f Mhz"
     ) % (target_freq/1e6) << std::endl;
@@ -311,7 +395,7 @@ double db_lms6002d::tune_adf4350(double target_freq) {
 
     double actual_freq, pfd_freq;
     // TODO:: May be *2? Check
-    double ref_freq = get_iface()->get_clock_rate(dboard_iface::UNIT_LMS) * 2;
+    double ref_freq = _clock_rate * 2;
     int R=0, BS=0, N=0, FRAC=0, MOD=0;
     int RFdiv = 1;
     adf4350_regs_t::reference_divide_by_2_t T     = adf4350_regs_t::REFERENCE_DIVIDE_BY_2_DISABLED;
@@ -436,12 +520,12 @@ double db_lms6002d::tune_adf4350(double target_freq) {
         );
     }
 #else
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, 0x0580000|5, 32);
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, 0x0BFF4F8|4, 32);
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, 0x0040000|3, 32);
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, 0x1006E40|2, 32);
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, 0x8008208|1, 32);
-    this->get_iface()->write_spi(uhd::usrp::dboard_iface::UNIT_SYNT, spi_config_t::EDGE_RISE, (325<<15)|(1<<3)|0, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, 0x0580000|5, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, 0x0BFF4F8|4, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, 0x0040000|3, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, 0x1006E40|2, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, 0x8008208|1, 32);
+    _spiface->write_spi(_adf4350_spi_number, spi_config_t::EDGE_RISE, (325<<15)|(1<<3)|0, 32);
 #endif
 
     //return the actual frequency
@@ -452,23 +536,17 @@ double db_lms6002d::tune_adf4350(double target_freq) {
     return actual_freq;
 }
 
-// Register the LMS dboards
-
-static dboard_base::sptr make_lms6002d(dboard_base::ctor_args_t args) {
-    return dboard_base::sptr(new db_lms6002d(args));
-}
-
-UHD_STATIC_BLOCK(reg_lms_dboards){
-    dboard_manager::register_dboard(0xfa07, 0xfa09, &make_lms6002d, "LMS6002D");
-}
-
 // LMS RX dboard configuration
 
-db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
-                                             lms(get_iface()),
+lms6002d_ctrl_impl::lms6002d_ctrl_impl(uhd::spi_iface::sptr spiface, const int lms_spi_number, const int adf4350_spi_number, const double clock_rate) :
+                                             lms(umtrx_lms6002d_dev(spiface, lms_spi_number)),
                                              tx_vga1gain(lms.get_tx_vga1gain()),
                                              tx_vga2gain(lms.get_tx_vga2gain()),
-                                             rf_loopback_enabled(false)
+                                             rf_loopback_enabled(false),
+                                             _spiface(spiface),
+                                             _lms_spi_number(lms_spi_number),
+                                             _adf4350_spi_number(adf4350_spi_number),
+                                             _clock_rate(clock_rate)
 {
     ////////////////////////////////////////////////////////////////////
     // LMS6002D initialization
@@ -484,8 +562,9 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
     lms.set_tx_vga1gain(-10);
 
     // Perform autocalibration
-    lms.auto_calibration(get_iface()->get_clock_rate(dboard_iface::UNIT_LMS), 0xf);
+    lms.auto_calibration(_clock_rate, 0xf);
 
+    /*
     ////////////////////////////////////////////////////////////////////
     // Register RX properties
     ////////////////////////////////////////////////////////////////////
@@ -494,19 +573,19 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
 
     BOOST_FOREACH(const std::string &name, lms_rx_gain_ranges.keys()){
         this->get_rx_subtree()->create<double>("gains/"+name+"/value")
-            .coerce(boost::bind(&db_lms6002d::set_rx_gain, this, _1, name))
+            .coerce(boost::bind(&lms6002d_ctrl_impl::set_rx_gain, this, _1, name))
             .set((lms_rx_gain_ranges[name].start()+lms_rx_gain_ranges[name].stop())/2.0);
         this->get_rx_subtree()->create<meta_range_t>("gains/"+name+"/range")
             .set(lms_rx_gain_ranges[name]);
     }
 
     this->get_rx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&db_lms6002d::set_freq, this, dboard_iface::UNIT_RX, _1));
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_freq, this, dboard_iface::UNIT_RX, _1));
     this->get_rx_subtree()->create<meta_range_t>("freq/range")
         .set(lms_freq_range);
 
     this->get_rx_subtree()->create<std::string>("antenna/value")
-        .subscribe(boost::bind(&db_lms6002d::set_rx_ant, this, _1))
+        .subscribe(boost::bind(&lms6002d_ctrl_impl::set_rx_ant, this, _1))
         .set("RX1");
     this->get_rx_subtree()->create<std::vector<std::string> >("antenna/options")
         .set(lms_rx_antennas);
@@ -515,11 +594,11 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set(sensor_value_t("LO", true, "locked", "unlocked"));
     this->get_rx_subtree()->create<std::string>("connection").set("IQ");
     this->get_rx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&db_lms6002d::set_enabled, this, dboard_iface::UNIT_RX, _1));
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_enabled, this, dboard_iface::UNIT_RX, _1));
 
     this->get_rx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_rx_subtree()->create<double>("bandwidth/value")
-        .coerce(boost::bind(&db_lms6002d::set_rx_bandwidth, this, _1))
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_rx_bandwidth, this, _1))
         .set(double(2*0.75e6));
     this->get_rx_subtree()->create<meta_range_t>("bandwidth/range")
         .set(lms_bandwidth_range);
@@ -532,19 +611,19 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
 
     BOOST_FOREACH(const std::string &name, lms_tx_gain_ranges.keys()){
         this->get_tx_subtree()->create<double>("gains/"+name+"/value")
-            .coerce(boost::bind(&db_lms6002d::set_tx_gain, this, _1, name))
+            .coerce(boost::bind(&lms6002d_ctrl_impl::set_tx_gain, this, _1, name))
             .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].stop())/2.0);
         this->get_tx_subtree()->create<meta_range_t>("gains/"+name+"/range")
             .set(lms_tx_gain_ranges[name]);
     }
 
     this->get_tx_subtree()->create<double>("freq/value")
-        .coerce(boost::bind(&db_lms6002d::set_freq, this, dboard_iface::UNIT_TX, _1));
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_freq, this, dboard_iface::UNIT_TX, _1));
     this->get_tx_subtree()->create<meta_range_t>("freq/range")
         .set(lms_freq_range);
 
     this->get_tx_subtree()->create<std::string>("antenna/value")
-        .subscribe(boost::bind(&db_lms6002d::set_tx_ant, this, _1))
+        .subscribe(boost::bind(&lms6002d_ctrl_impl::set_tx_ant, this, _1))
         .set("TX2");
     this->get_tx_subtree()->create<std::vector<std::string> >("antenna/options")
         .set(lms_tx_antennas);
@@ -553,21 +632,22 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
         .set(sensor_value_t("LO", true, "locked", "unlocked"));
     this->get_tx_subtree()->create<std::string>("connection").set("IQ");
     this->get_tx_subtree()->create<bool>("enabled")
-        .coerce(boost::bind(&db_lms6002d::set_enabled, this, dboard_iface::UNIT_TX, _1));
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_enabled, this, dboard_iface::UNIT_TX, _1));
 
     this->get_tx_subtree()->create<bool>("use_lo_offset").set(false);
     this->get_tx_subtree()->create<double>("bandwidth/value")
-        .coerce(boost::bind(&db_lms6002d::set_tx_bandwidth, this, _1))
+        .coerce(boost::bind(&lms6002d_ctrl_impl::set_tx_bandwidth, this, _1))
         .set(double(2*0.75e6));
     this->get_tx_subtree()->create<meta_range_t>("bandwidth/range")
         .set(lms_bandwidth_range);
 
     // UmTRX specific calibration
     this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_i/value")
-        .subscribe(boost::bind(&db_lms6002d::_set_tx_vga1dc_i_int, this, _1))
+        .subscribe(boost::bind(&lms6002d_ctrl_impl::_set_tx_vga1dc_i_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_i_int, &lms));
     this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_q/value")
-        .subscribe(boost::bind(&db_lms6002d::_set_tx_vga1dc_q_int, this, _1))
+        .subscribe(boost::bind(&lms6002d_ctrl_impl::_set_tx_vga1dc_q_int, this, _1))
         .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_q_int, &lms));
+        */
 }
 
