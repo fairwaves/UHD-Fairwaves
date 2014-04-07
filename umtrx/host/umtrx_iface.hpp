@@ -44,12 +44,6 @@ public:
 
     //! The list of possible revision types
     enum rev_type {
-        USRP2_REV3 = 3,
-        USRP2_REV4 = 4,
-        USRP_N200 = 200,
-        USRP_N200_R4 = 201,
-        USRP_N210 = 210,
-        USRP_N210_R4 = 211,
         UMTRX_REV0 = 64000,
         USRP_NXXX = 0
     };

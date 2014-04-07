@@ -20,6 +20,7 @@
 #define INCLUDED_UMTRX_IMPL_HPP
 
 #include "fw_common.h"
+#include "umtrx_iface.hpp"
 /*
 #include "rx_frontend_core_200.hpp"
 #include "tx_frontend_core_200.hpp"
@@ -27,8 +28,6 @@
 #include "tx_dsp_core_200.hpp"
 #include "time64_core_200.hpp"
 */
-#include <uhd/utils/log.hpp>
-#include <uhd/utils/msg.hpp>
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/gps_ctrl.hpp>
@@ -73,13 +72,21 @@ public:
     ~umtrx_impl(void);
 
     //the io interface
-    uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args){}
-    uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args){}
-    bool recv_async_msg(uhd::async_metadata_t &, double){}
+    uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
+    uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
+    bool recv_async_msg(uhd::async_metadata_t &, double);
 
 private:
 
-    
+    //communication interfaces
+    umtrx_iface::sptr _iface;
+
+    //control for FPGA cores
+
+    //helper routines
+    void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
+    double get_master_clock_rate(void) const { return 26e6/2; }
+    void update_tick_rate(const double rate);
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */

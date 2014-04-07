@@ -120,4 +120,23 @@
 #define U2_REG_TIME64_SECS_RB_PPS READBACK_BASE + 4*14
 #define U2_REG_TIME64_TICKS_RB_PPS READBACK_BASE + 4*15
 
+/////////////////////////////////////////////////
+// LMS regs
+////////////////////////////////////////////////
+#define LMS_BITS(val, shift, mask) (((val)<<(shift))&(mask))
+
+#define LMS_DC_CAL_REG             0x33
+#define LMS_DC_START_CLBR_SHIFT    5
+#define LMS_DC_START_CLBR_MASK     (1<<LMS_DC_START_CLBR_SHIFT)
+#define LMS_DC_LOAD_SHIFT          4
+#define LMS_DC_LOAD_MASK           (1<<LMS_DC_LOAD_SHIFT)
+#define LMS_DC_SRESET_SHIFT        3
+#define LMS_DC_SRESET_MASK         (1<<LMS_DC_SRESET_SHIFT)
+#define LMS_DC_ADDR_SHIFT          0
+#define LMS_DC_ADDR_MASK           (7<<LMS_DC_ADDR_SHIFT)
+
+// Defined for the U2_REG_MISC_CTRL_CLOCK register
+#define LMS1_RESET  (1<<5)
+#define LMS2_RESET  (1<<6)
+
 #endif

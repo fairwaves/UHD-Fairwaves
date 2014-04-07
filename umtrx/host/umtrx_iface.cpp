@@ -339,13 +339,6 @@ public:
         std::string hw = mb_eeprom["hardware"];
         if (hw.empty()) return USRP_NXXX;
         switch (boost::lexical_cast<boost::uint16_t>(hw)){
-        case 0x0300:
-        case 0x0301: return USRP2_REV3;
-        case 0x0400: return USRP2_REV4;
-        case 0x0A00: return USRP_N200;
-        case 0x0A01: return USRP_N210;
-        case 0x0A10: return USRP_N200_R4;
-        case 0x0A11: return USRP_N210_R4;
         case 0xFA00: return UMTRX_REV0;
         }
         return USRP_NXXX; //unknown type
@@ -353,12 +346,6 @@ public:
 
     const std::string get_cname(void){
         switch(this->get_rev()){
-        case USRP2_REV3: return "USRP2-REV3";
-        case USRP2_REV4: return "USRP2-REV4";
-        case USRP_N200: return "USRP-N200";
-        case USRP_N210: return "USRP-N210";
-        case USRP_N200_R4: return "USRP-N200-REV4";
-        case USRP_N210_R4: return "USRP-N210-REV4";
         case UMTRX_REV0: return "UMTRX-REV0";
         case USRP_NXXX: return "USRP-N???";
         }

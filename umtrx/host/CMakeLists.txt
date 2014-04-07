@@ -26,6 +26,7 @@ project(UmTRX_UHD)
 ########################################################################
 list(APPEND UMTRX_SOURCES
     umtrx_impl.cpp
+    umtrx_io_impl.cpp
     umtrx_find.cpp
     umtrx_iface.cpp
     umtrx_eeprom.cpp
