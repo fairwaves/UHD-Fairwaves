@@ -131,3 +131,11 @@ install(
     TARGETS umtrx
     DESTINATION lib${LIB_SUFFIX}/uhd/modules
 )
+
+########################################################################
+# Install the UmTRX utils
+########################################################################
+INSTALL(PROGRAMS
+    umtrx_net_burner
+    DESTINATION bin
+)
