@@ -19,6 +19,7 @@
 #include "umtrx_regs.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>
+#include <uhd/types/sensors.hpp>
 #include <boost/bind.hpp>
 
 static int verbosity = 0;
@@ -90,7 +91,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////
     // create clock control objects
     ////////////////////////////////////////////////////////////////
-//        _mbc[mb].clock = umtrx_clock_ctrl::make(_mbc[mb].iface);
     _tree->create<double>(mb_path / "tick_rate")
         .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
         .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
@@ -102,6 +102,65 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         const boost::uint32_t clock_ctrl = _iface->peek32(U2_REG_MISC_CTRL_CLOCK);
         _iface->poke32(U2_REG_MISC_CTRL_CLOCK, clock_ctrl & ~(LMS1_RESET|LMS2_RESET));
         _iface->poke32(U2_REG_MISC_CTRL_CLOCK, clock_ctrl |  (LMS1_RESET|LMS2_RESET));
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // create codec control objects
+    ////////////////////////////////////////////////////////////////////
+    for (char name = 'A'; name <= 'B'; name++)
+    {
+        const fs_path rx_codec_path = mb_path / ("rx_codecs") / std::string(1, name);
+        _tree->create<std::string>(rx_codec_path / "name").set("RX LMS ADC");
+        _tree->create<int>(rx_codec_path / "gains"); //empty cuz gains are in frontend
+
+        const fs_path tx_codec_path = mb_path / ("tx_codecs") / std::string(1, name);
+        _tree->create<std::string>(tx_codec_path / "name").set("TX LMS DAC");
+        _tree->create<int>(tx_codec_path / "gains"); //empty cuz gains are in frontend
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // sensors on the mboard
+    ////////////////////////////////////////////////////////////////
+    _tree->create<sensor_value_t>(mb_path / "sensors"); //phony property so this dir exists
+
+    ////////////////////////////////////////////////////////////////
+    // create frontend control objects
+    ////////////////////////////////////////////////////////////////
+    _rx_fes.resize(2);
+    _tx_fes.resize(2);
+    _rx_fes[0] = rx_frontend_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_FRONT0));
+    _rx_fes[1] = rx_frontend_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_FRONT1));
+    _tx_fes[0] = tx_frontend_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_FRONT0));
+    _tx_fes[1] = tx_frontend_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_FRONT1));
+
+    _tree->create<subdev_spec_t>(mb_path / "rx_subdev_spec")
+        .subscribe(boost::bind(&umtrx_impl::update_rx_subdev_spec, this, _1));
+    _tree->create<subdev_spec_t>(mb_path / "tx_subdev_spec")
+        .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, _1));
+
+    for (char name = 'A'; name <= 'B'; name++)
+    {
+        const std::string fe_name = std::string(1, name);
+        const fs_path rx_fe_path = mb_path / "rx_frontends" / fe_name;
+        const fs_path tx_fe_path = mb_path / "tx_frontends" / fe_name;
+        const rx_frontend_core_200::sptr rx_fe = (fe_name=="A")?_rx_fes[0]:_rx_fes[1];
+        const tx_frontend_core_200::sptr tx_fe = (fe_name=="A")?_tx_fes[0]:_tx_fes[1];
+
+        _tree->create<std::complex<double> >(rx_fe_path / "dc_offset" / "value")
+            .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, _1))
+            .set(std::complex<double>(0.0, 0.0));
+        _tree->create<bool>(rx_fe_path / "dc_offset" / "enable")
+            .subscribe(boost::bind(&rx_frontend_core_200::set_dc_offset_auto, rx_fe, _1))
+            .set(true);
+        _tree->create<std::complex<double> >(rx_fe_path / "iq_balance" / "value")
+            .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
+            .set(std::polar<double>(1.0, 0.0));
+        _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
+            .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+            .set(std::complex<double>(0.0, 0.0));
+        _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
+            .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
+            .set(std::polar<double>(1.0, 0.0));
     }
 
 }

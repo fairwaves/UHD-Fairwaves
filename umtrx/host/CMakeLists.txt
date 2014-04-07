@@ -30,7 +30,9 @@ list(APPEND UMTRX_SOURCES
     umtrx_find.cpp
     umtrx_iface.cpp
     umtrx_eeprom.cpp
-    platform.cpp #not properly exported from uhd, so we had to copy it
+    missing/platform.cpp #not properly exported from uhd, so we had to copy it
+    cores/rx_frontend_core_200.cpp
+    cores/tx_frontend_core_200.cpp
 )
 
 ########################################################################

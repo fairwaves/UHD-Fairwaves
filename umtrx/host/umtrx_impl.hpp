@@ -21,16 +21,16 @@
 
 #include "fw_common.h"
 #include "umtrx_iface.hpp"
+#include "cores/rx_frontend_core_200.hpp"
+#include "cores/tx_frontend_core_200.hpp"
+
 /*
-#include "rx_frontend_core_200.hpp"
-#include "tx_frontend_core_200.hpp"
 #include "rx_dsp_core_200.hpp"
 #include "tx_dsp_core_200.hpp"
 #include "time64_core_200.hpp"
 */
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
-#include <uhd/usrp/gps_ctrl.hpp>
 #include <uhd/device.hpp>
 #include <uhd/utils/pimpl.hpp>
 #include <uhd/utils/byteswap.hpp>
@@ -82,11 +82,16 @@ private:
     umtrx_iface::sptr _iface;
 
     //control for FPGA cores
+    std::vector<rx_frontend_core_200::sptr> _rx_fes;
+    std::vector<tx_frontend_core_200::sptr> _tx_fes;
 
     //helper routines
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
     double get_master_clock_rate(void) const { return 26e6/2; }
     void update_tick_rate(const double rate);
+    void update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &);
+    void update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &);
+    void update_clock_source(const std::string &);
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */
