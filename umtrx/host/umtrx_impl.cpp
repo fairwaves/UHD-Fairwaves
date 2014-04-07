@@ -163,6 +163,56 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .set(std::polar<double>(1.0, 0.0));
     }
 
+    ////////////////////////////////////////////////////////////////
+    // create rx dsp control objects
+    ////////////////////////////////////////////////////////////////
+    _rx_dsps.resize(2);
+    _rx_dsps[0] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP0), U2_REG_SR_ADDR(SR_RX_CTRL0), UMTRX_RX_SID_BASE + 0, true);
+    _rx_dsps[1] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_RX_SID_BASE + 1, true);
+
+    for (size_t dspno = 0; dspno < _rx_dsps.size(); dspno++){
+        _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
+        _tree->access<double>(mb_path / "tick_rate")
+            .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], _1));
+        fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
+        _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
+            .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _rx_dsps[dspno]));
+        _tree->create<double>(rx_dsp_path / "rate/value")
+            .set(this->get_master_clock_rate()/12) //some default
+            .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _rx_dsps[dspno], _1))
+            .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, dspno, _1));
+        _tree->create<double>(rx_dsp_path / "freq/value")
+            .coerce(boost::bind(&rx_dsp_core_200::set_freq, _rx_dsps[dspno], _1));
+        _tree->create<meta_range_t>(rx_dsp_path / "freq/range")
+            .publish(boost::bind(&rx_dsp_core_200::get_freq_range, _rx_dsps[dspno]));
+        _tree->create<stream_cmd_t>(rx_dsp_path / "stream_cmd")
+            .subscribe(boost::bind(&rx_dsp_core_200::issue_stream_command, _rx_dsps[dspno], _1));
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // create tx dsp control objects
+    ////////////////////////////////////////////////////////////////
+    _tx_dsps.resize(2);
+    _tx_dsps[0] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_TX_ASYNC_SID_BASE+0);
+    _tx_dsps[1] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_TX_ASYNC_SID_BASE+1);
+
+    for (size_t dspno = 0; dspno < _tx_dsps.size(); dspno++){
+        _tx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
+        _tree->access<double>(mb_path / "tick_rate")
+            .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _tx_dsps[dspno], _1));
+        fs_path tx_dsp_path = mb_path / str(boost::format("tx_dsps/%u") % dspno);
+        _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
+            .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _tx_dsps[dspno]));
+        _tree->create<double>(tx_dsp_path / "rate/value")
+            .set(this->get_master_clock_rate()/12) //some default
+            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _tx_dsps[dspno], _1))
+            .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, dspno, _1));
+        _tree->create<double>(tx_dsp_path / "freq/value")
+            .coerce(boost::bind(&tx_dsp_core_200::set_freq, _tx_dsps[dspno], _1));
+        _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
+            .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _tx_dsps[dspno]));
+    }
+
 }
 
 umtrx_impl::~umtrx_impl(void){

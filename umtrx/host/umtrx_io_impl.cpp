@@ -35,3 +35,6 @@ void umtrx_impl::update_tick_rate(const double rate){}
     void umtrx_impl::update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &){}
     void umtrx_impl::update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &){}
     void umtrx_impl::update_clock_source(const std::string &){}
+
+void umtrx_impl::update_rx_samp_rate(const size_t, const double rate){}
+    void umtrx_impl::update_tx_samp_rate(const size_t, const double rate){}

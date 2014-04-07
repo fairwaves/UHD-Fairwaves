@@ -23,10 +23,10 @@
 #include "umtrx_iface.hpp"
 #include "cores/rx_frontend_core_200.hpp"
 #include "cores/tx_frontend_core_200.hpp"
+#include "cores/rx_dsp_core_200.hpp"
+#include "cores/tx_dsp_core_200.hpp"
 
 /*
-#include "rx_dsp_core_200.hpp"
-#include "tx_dsp_core_200.hpp"
 #include "time64_core_200.hpp"
 */
 #include <uhd/usrp/mboard_eeprom.hpp>
@@ -56,6 +56,9 @@
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
 static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
+static const double UMTRX_LINK_RATE_BPS = 1000e6/8;
+static const boost::uint32_t UMTRX_TX_ASYNC_SID_BASE = 2;
+static const boost::uint32_t UMTRX_RX_SID_BASE = 4;
 
 //! load and store for umtrx mboard eeprom map
 void load_umtrx_eeprom(uhd::usrp::mboard_eeprom_t &mb_eeprom, uhd::i2c_iface &iface);
@@ -84,6 +87,8 @@ private:
     //control for FPGA cores
     std::vector<rx_frontend_core_200::sptr> _rx_fes;
     std::vector<tx_frontend_core_200::sptr> _tx_fes;
+    std::vector<rx_dsp_core_200::sptr> _rx_dsps;
+    std::vector<tx_dsp_core_200::sptr> _tx_dsps;
 
     //helper routines
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
@@ -92,6 +97,8 @@ private:
     void update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &);
     void update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &);
     void update_clock_source(const std::string &);
+    void update_rx_samp_rate(const size_t, const double rate);
+    void update_tx_samp_rate(const size_t, const double rate);
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */

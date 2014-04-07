@@ -33,6 +33,8 @@ list(APPEND UMTRX_SOURCES
     missing/platform.cpp #not properly exported from uhd, so we had to copy it
     cores/rx_frontend_core_200.cpp
     cores/tx_frontend_core_200.cpp
+    cores/rx_dsp_core_200.cpp
+    cores/tx_dsp_core_200.cpp
 )
 
 ########################################################################
