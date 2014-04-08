@@ -38,7 +38,7 @@
 // Setting register offsets
 ////////////////////////////////////////////////////////////////////////
 #define SR_MISC       0   // 7 regs
-#define SR_SIMTIMER   8   // 2
+#define SR_TESTSIG    8   // 2
 #define SR_TIME64    10   // 6
 #define SR_BUF_POOL  16   // 4
 
@@ -111,6 +111,8 @@
 /////////////////////////////////////////////////
 // Readback regs
 ////////////////////////////////////////////////
+#define U2_REG_ADC0 READBACK_BASE + 4*6
+#define U2_REG_ADC1 READBACK_BASE + 4*7
 #define U2_REG_STATUS READBACK_BASE + 4*8
 #define U2_REG_GPIO_RB READBACK_BASE + 4*9
 #define U2_REG_TIME64_HI_RB_IMM READBACK_BASE + 4*10

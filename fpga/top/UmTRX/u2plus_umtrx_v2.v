@@ -203,24 +203,21 @@ wire DivSw1, DivSw2;
 `endif // !`ifdef LVDS
 `else
    // Interface to ADC of LMS
-   reg [13:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
-
-   assign RX1_EN = 1'b1;
-   assign RX2_EN = 1'b1;
+   reg [11:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
 
    always @(posedge lms_clk)
      begin
          if (RX1IQSEL == 1'b1)
-            adc_a_0 = {RX1D, 2'b00}; //ADC_I signal
+            adc_a_0 = RX1D; //ADC_I signal
          else
-            adc_b_0 <= {RX1D, 2'b00}; // ADC_Q signal
+            adc_b_0 <= RX1D; // ADC_Q signal
      end
    always @(posedge lms_clk)
      begin
          if (RX2IQSEL == 1'b1)
-            adc_a_1 = {RX2D, 2'b00}; //ADC_I signal
+            adc_a_1 = RX2D; //ADC_I signal
          else
-            adc_b_1 <= {RX2D, 2'b00}; // ADC_Q signal
+            adc_b_1 <= RX2D; // ADC_Q signal
      end
 `endif // !`ifndef LMS602D_FRONTEND
    
@@ -543,28 +540,16 @@ wire DivSw1, DivSw2;
 		     .adc_on_b		(),
 		     .adc_oe_b		(),
 `else
-		     .adc_a_0		(adc_a_0[13:0]),
-		     .adc_ovf_a_0		(1'b0),
-		     .adc_on_a_0		(),
-		     .adc_oe_a_0		(),
-		     .adc_b_0		(adc_b_0[13:0]),
-		     .adc_ovf_b_0		(1'b0),
-		     .adc_on_b_0		(),
-		     .adc_oe_b_0		(),
-		     .adc_a_1		(adc_a_1[13:0]),
-		     .adc_ovf_a_1		(1'b0),
-		     .adc_on_a_1		(),
-		     .adc_oe_a_1		(),
-		     .adc_b_1		(adc_b_1[13:0]),
-		     .adc_ovf_b_1		(1'b0),
-		     .adc_on_b_1		(),
-		     .adc_oe_b_1		(),
+		     .adc_a_0		(adc_a_0),
+		     .adc_b_0		(adc_b_0),
+		     .adc_a_1		(adc_a_1),
+		     .adc_b_1		(adc_b_1),
            .lms_res ({LMS2nRST,LMS1nRST}),
 		     .dac1_a		(dac_a_int2),
 		     .dac1_b		(dac_b_int2),
 `endif // !`ifndef LMS602D_FRONTEND
-		     .dac_a		(dac_a_int1),
-		     .dac_b		(dac_b_int1),
+		     .dac0_a		(dac_a_int1),
+		     .dac0_b		(dac_b_int1),
 		     .scl_pad_i		(scl_pad_i),
 		     .scl_pad_o		(scl_pad_o),
 		     .scl_pad_oen_o	(scl_pad_oen_o),
