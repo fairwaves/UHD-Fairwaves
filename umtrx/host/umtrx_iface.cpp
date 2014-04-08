@@ -137,7 +137,7 @@ public:
     }
 
     boost::uint32_t get_curr_time(void){
-        return this->peek32(U2_REG_TIME64_SECS_RB_IMM) | 1; //bit 1 says locked
+        return this->peek32(U2_REG_TIME64_LO_RB_IMM) | 1; //bit 1 says locked
     }
 
 /***********************************************************************

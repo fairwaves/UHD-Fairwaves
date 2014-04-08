@@ -21,6 +21,7 @@
 #include <uhd/utils/msg.hpp>
 #include <uhd/types/sensors.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp> //sleep
 #include <boost/assign/list_of.hpp>
 
 static int verbosity = 0;
@@ -244,8 +245,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external");
     _tree->create<std::vector<std::string> >(mb_path / "clock_source"/ "options").set(clock_sources);
 
-    //TODO time64 self test once FPGA core is updated
-
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing
     ////////////////////////////////////////////////////////////////////
@@ -342,6 +341,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     }
 
+
+    ////////////////////////////////////////////////////////////////////
+    // post config tasks
+    ////////////////////////////////////////////////////////////////////
+    _tree->access<double>(mb_path / "tick_rate")
+        .set(this->get_master_clock_rate());
+    this->time64_self_test();
 }
 
 umtrx_impl::~umtrx_impl(void){
@@ -351,4 +357,20 @@ umtrx_impl::~umtrx_impl(void){
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
 {
     store_umtrx_eeprom(eeprom, *iface);
+}
+
+
+void umtrx_impl::time64_self_test(void)
+{
+    //check the the ticks elapsed across a sleep is within an expected range
+    //this proves that the clock is the correct rate and not off by a factor
+
+    UHD_MSG(status) << "Time register self-test... " << std::flush;
+    const time_spec_t t0 = _time64->get_time_now();
+    const double sleepTime = 0.50;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(long(sleepTime*1000)));
+    const time_spec_t t1 = _time64->get_time_now();
+    const double secs_elapsed = (t1 - t0).get_real_secs();
+    const bool within_range = (secs_elapsed < (1.5)*sleepTime and secs_elapsed > (0.5)*sleepTime);
+    UHD_MSG(status) << (within_range? "pass" : "fail") << std::endl;
 }

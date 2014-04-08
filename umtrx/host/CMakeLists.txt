@@ -136,6 +136,6 @@ install(
 # Install the UmTRX utils
 ########################################################################
 INSTALL(PROGRAMS
-    umtrx_net_burner
+    utils/umtrx_net_burner
     DESTINATION bin
 )

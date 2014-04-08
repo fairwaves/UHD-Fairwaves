@@ -101,6 +101,7 @@ private:
     void update_clock_source(const std::string &);
     void update_rx_samp_rate(const size_t, const double rate);
     void update_tx_samp_rate(const size_t, const double rate);
+    void time64_self_test(void);
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */
