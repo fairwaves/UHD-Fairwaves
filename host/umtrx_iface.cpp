@@ -16,7 +16,7 @@
 //
 
 #include "umtrx_regs.hpp"
-#include "fw_common.h"
+#include "usrp2/fw_common.h"
 #include "umtrx_impl.hpp"
 #include "umtrx_iface.hpp"
 #include <uhd/exception.hpp>

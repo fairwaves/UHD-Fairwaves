@@ -19,7 +19,7 @@
 #ifndef INCLUDED_UMTRX_IMPL_HPP
 #define INCLUDED_UMTRX_IMPL_HPP
 
-#include "fw_common.h"
+#include "usrp2/fw_common.h"
 #include "umtrx_iface.hpp"
 #include "lms6002d_ctrl.hpp"
 #include "cores/rx_frontend_core_200.hpp"

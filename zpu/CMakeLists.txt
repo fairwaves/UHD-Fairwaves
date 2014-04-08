@@ -69,7 +69,7 @@ ADD_DEFINITIONS(-DHAL_IO_USES_UART)
 # common cflags and ldflags
 ########################################################################
 INCLUDE_DIRECTORIES(
-    ${CMAKE_SOURCE_DIR}/../../host/lib/usrp
+    ${CMAKE_SOURCE_DIR}/../host
     ${CMAKE_SOURCE_DIR}/lib
 )
 

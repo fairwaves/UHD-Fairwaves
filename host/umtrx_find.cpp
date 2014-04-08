@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "fw_common.h"
+#include "usrp2/fw_common.h"
 #include "umtrx_iface.hpp"
 #include <uhd/utils/msg.hpp>
 #include <uhd/utils/log.hpp>
