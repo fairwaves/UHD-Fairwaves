@@ -1,7 +1,7 @@
 import sys
 import os
 
-CAREABOUT = ['NO_SERDES', 'UMTRX', 'LMS602D_FRONTEND']
+CAREABOUT = ['NO_SERDES', 'UMTRX', 'LMS602D_FRONTEND', 'LMS_DSP']
 
 if __name__ == '__main__':
     filePath = sys.argv[1]
