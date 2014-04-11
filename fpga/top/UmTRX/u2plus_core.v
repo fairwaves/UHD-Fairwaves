@@ -58,25 +58,6 @@ module u2plus_core
    input PHY_INTn,   // open drain
    output PHY_RESETn,
 
-   // SERDES
-   output ser_enable,
-   output ser_prbsen,
-   output ser_loopen,
-   output ser_rx_en,
-   
-   output ser_tx_clk,
-   output [15:0] ser_t,
-   output ser_tklsb,
-   output ser_tkmsb,
-
-   input ser_rx_clk,
-   input [15:0] ser_r,
-   input ser_rklsb,
-   input ser_rkmsb,
-   
-   input por,
-   output config_success,
-   
    // ADC
    input adc0_strobe,
    input [11:0] adc0_a,
@@ -193,8 +174,6 @@ module u2plus_core
    localparam DSP_RX_FIFOSIZE = 10;
    localparam ETH_TX_FIFOSIZE = 9;
    localparam ETH_RX_FIFOSIZE = 11;
-   localparam SERDES_TX_FIFOSIZE = 9;
-   localparam SERDES_RX_FIFOSIZE = 9;  // RX currently doesn't use a fifo?
    
    wire [7:0] 	set_addr, set_addr_dsp;
    wire [31:0] 	set_data, set_data_dsp;
@@ -212,14 +191,12 @@ module u2plus_core
    wire [31:0] 	debug_gpio_0, debug_gpio_1;
 
    wire [31:0] 	debug_rx, debug_mac, debug_mac0, debug_mac1, debug_tx_dsp, debug_txc,
-		debug_serdes0, debug_serdes1, debug_serdes2, debug_rx_dsp, debug_udp, debug_extfifo, debug_extfifo2;
+		debug_rx_dsp, debug_udp, debug_extfifo, debug_extfifo2;
 
-   wire [15:0] 	ser_rx_occ, ser_tx_occ, dsp_rx_occ, dsp_tx_occ, eth_rx_occ, eth_tx_occ, eth_rx_occ2;
-   wire 	ser_rx_full, ser_tx_full, dsp_rx_full, dsp_tx_full, eth_rx_full, eth_tx_full, eth_rx_full2;
-   wire 	ser_rx_empty, ser_tx_empty, dsp_rx_empty, dsp_tx_empty, eth_rx_empty, eth_tx_empty, eth_rx_empty2;
+   wire [15:0] 	dsp_rx_occ, dsp_tx_occ, eth_rx_occ, eth_tx_occ, eth_rx_occ2;
+   wire 	dsp_rx_full, dsp_tx_full, eth_rx_full, eth_tx_full, eth_rx_full2;
+   wire 	dsp_rx_empty, dsp_tx_empty, eth_rx_empty, eth_tx_empty, eth_rx_empty2;
 	
-   wire 	serdes_link_up, good_sync;
-   wire 	epoch;
    wire [31:0] 	irq;
    wire [63:0] 	vita_time, vita_time_pps;
    
@@ -481,7 +458,7 @@ module u2plus_core
       .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06({adc0_a, 4'b0, adc0_b, 4'b0}),.word07({adc1_a, 4'b0, adc1_b, 4'b0}),
       .word08(status),.word09(gpio_readback),.word10(vita_time[63:32]),
-      .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, serdes_link_up, 10'b0}),
+      .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, 1'b0, 10'b0}),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
       );
 
@@ -523,10 +500,9 @@ module u2plus_core
       .clk_o(lms_clk), .rst_o(), .set_stb_o(set_stb_dsp_low), .set_addr_o(set_addr_dsp_low), .set_data_o(set_data_dsp_low));
    
    // Output control lines
-   wire [7:0] 	 clock_outs, serdes_outs, adc_outs;
+   wire [7:0] 	 clock_outs, adc_outs;
    assign 	 {clock_ready, clk_en[1:0], clk_sel[1:0]} = clock_outs[4:0];
    assign lms_res = clock_outs[6:5];
-   assign 	 {ser_enable, ser_prbsen, ser_loopen, ser_rx_en} = serdes_outs[3:0];
    assign 	 {adc_oe_a, adc_on_a, adc_oe_b, adc_on_b } = adc_outs[3:0];
 
    wire 	 phy_reset;
@@ -534,9 +510,6 @@ module u2plus_core
    
    setting_reg #(.my_addr(SR_MISC+0),.width(8)) sr_clk
      (.clk(wb_clk),.rst(wb_rst),.strobe(s7_ack),.addr(set_addr),.in(set_data),.out(clock_outs),.changed());
-
-   setting_reg #(.my_addr(SR_MISC+1),.width(8)) sr_ser
-     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(serdes_outs),.changed());
 
    setting_reg #(.my_addr(SR_MISC+2),.width(8)) sr_adc
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(adc_outs),.changed());
@@ -870,15 +843,8 @@ module u2plus_core
    // ///////////////////////////////////////////////////////////////////////////////////
    // SERDES
 
-   serdes #(.TXFIFOSIZE(SERDES_TX_FIFOSIZE),.RXFIFOSIZE(SERDES_RX_FIFOSIZE)) serdes
-     (.clk(dsp_clk),.rst(dsp_rst),
-      .ser_tx_clk(ser_tx_clk),.ser_t(ser_t),.ser_tklsb(ser_tklsb),.ser_tkmsb(ser_tkmsb),
-      .rd_dat_i(rd0_dat[31:0]),.rd_flags_i(rd0_dat[35:32]),.rd_ready_o(rd0_ready_i),.rd_ready_i(rd0_ready_o),
-      .ser_rx_clk(ser_rx_clk),.ser_r(ser_r),.ser_rklsb(ser_rklsb),.ser_rkmsb(ser_rkmsb),
-      .wr_dat_o(wr0_dat[31:0]),.wr_flags_o(wr0_dat[35:32]),.wr_ready_o(wr0_ready_i),.wr_ready_i(wr0_ready_o),
-      .tx_occupied(ser_tx_occ),.tx_full(ser_tx_full),.tx_empty(ser_tx_empty),
-      .rx_occupied(ser_rx_occ),.rx_full(ser_rx_full),.rx_empty(ser_rx_empty),
-      .serdes_link_up(serdes_link_up),.debug0(debug_serdes0), .debug1(debug_serdes1) );
+    assign rd0_ready_i = 1; //null sink
+    assign wr0_ready_i = 0;
 
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing
