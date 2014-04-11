@@ -22,9 +22,7 @@
 module u2plus_core
   (// Clocks
    input dsp_clk,
-`ifdef LMS602D_FRONTEND
    input lms_clk,
-`endif // !`ifdef LMS602D_FRONTEND
    input wb_clk,
    input clk_icap, //ICAP timing fixes for UmTRX Spartan-6 FPGA.
    output clock_ready,
@@ -118,17 +116,6 @@ module u2plus_core
    output sclk,
    output mosi,
    input miso,
-`ifndef UMTRX
-   output sen_clk,
-   output sen_dac,
-   output sen_adc,
-   output sen_tx_db,
-   output sen_tx_adc,
-   output sen_tx_dac,
-   output sen_rx_db,
-   output sen_rx_adc,
-   output sen_rx_dac,
-`else
    output sen_dac,
    output sen_lms1,
    output sen_lms2,
@@ -148,7 +135,6 @@ module u2plus_core
    output aux_sen2,
    input aux_ld1,
    input aux_ld2, 
-`endif // !`ifndef UMTRX
    
    // GPIO to DBoards
    inout [15:0] io_tx,
@@ -183,22 +169,13 @@ module u2plus_core
    localparam SR_TIME64   =  10;   // 6
    localparam SR_BUF_POOL =  16;   // 4
 
-`ifndef LMS602D_FRONTEND
-   localparam SR_RX_FRONT =  24;   // 5
-`else
    localparam SR_RX_FRONT0 =  20;   // 5
    localparam SR_RX_FRONT1 =  25;   // 5
-`endif // !`ifndef LMS602D_FRONTEND
    localparam SR_RX_CTRL0 =  32;   // 9
    localparam SR_RX_DSP0  =  48;   // 7
    localparam SR_RX_CTRL1 =  80;   // 9
    localparam SR_RX_DSP1  =  96;   // 7
 
-`ifndef LMS602D_FRONTEND
-   localparam SR_TX_FRONT = 128;   // ?
-   localparam SR_TX_CTRL  = 144;   // 6
-   localparam SR_TX_DSP   = 160;   // 5
-`else
    localparam SR_TX_FRONT = 110;   // ?
    localparam SR_TX_CTRL  = 126;   // 6
    localparam SR_TX_DSP   = 135;   // 5
@@ -207,7 +184,6 @@ module u2plus_core
    localparam SR_TX1_DSP   = 170;   // 5
    localparam SR_RX_FRONT_SW = 176;
    localparam SR_TX_FRONT_SW = 177;
-`endif // !`ifndef LMS602D_FRONTEND
 
    localparam SR_DIVSW    = 180;   // 2
    localparam SR_GPIO     = 184;   // 5   
@@ -232,9 +208,7 @@ module u2plus_core
    wire [31:0] 	status;
    wire 	bus_error, spi_int, i2c_int, aux_i2c_int, pps_int, onetime_int, periodic_int, buffer_int;
    wire 	proc_int, overrun0, overrun1, underrun;
-`ifdef LMS602D_FRONTEND
    wire 	 underrun1;
-`endif // !`ifdef LMS602D_FRONTEND
    wire [3:0] 	uart_tx_int, uart_rx_int;
 
    wire [31:0] 	debug_gpio_0, debug_gpio_1;
@@ -252,10 +226,8 @@ module u2plus_core
    wire [63:0] 	vita_time, vita_time_pps;
    
    wire 	 run_rx0, run_rx1, run_tx;
-`ifdef LMS602D_FRONTEND
    wire 	 run_tx1;
    wire   run_tx0_mux, run_tx1_mux;
-`endif // !`ifdef LMS602D_FRONTEND
    reg 		 run_rx0_d1, run_rx1_d1;
    
    // ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -403,11 +375,7 @@ module u2plus_core
 //defparam bootram.RAM0.INIT_00=256'hbc32fff0_aa43502b_b00000fe_30630001_80000000_10600000_a48500ff_10a00000;
 //defparam bootram.RAM0.INIT_01=256'ha48500ff_b810ffd0_f880200c_30a50001_10830000_308000ff_be23000c_a4640001;
 
-`ifndef UMTRX
-`include "bootloader.rmi"
-`else
 `include "bootloader_umtrx.rmi"
-`endif // !`ifndef UMTRX
 
    ram_harvard2 #(.AWIDTH(14),.RAM_SIZE(16384))
    sys_ram(.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),	     
@@ -419,9 +387,7 @@ module u2plus_core
    // Buffer Pool, slave #1
    wire 	 rd0_ready_i, rd0_ready_o;
    wire 	 rd1_ready_i, rd1_ready_o;
-`ifdef LMS602D_FRONTEND
    wire 	 rd1_ready_i_1, rd1_ready_o_1;
-`endif // !`ifdef LMS602D_FRONTEND
    wire 	 rd2_ready_i, rd2_ready_o;
    wire 	 rd3_ready_i, rd3_ready_o;
    wire [35:0] 	 rd0_dat, rd1_dat, rd2_dat, rd3_dat;
@@ -434,10 +400,8 @@ module u2plus_core
 
    wire [35:0] 	 tx_err_data;
    wire 	 tx_err_src_rdy, tx_err_dst_rdy;
-`ifdef LMS602D_FRONTEND
    wire [35:0] 	 tx1_err_data;
    wire 	 tx1_err_src_rdy, tx1_err_dst_rdy;
-`endif // !`ifdef LMS602D_FRONTEND
 
    wire [31:0] router_debug;
 
@@ -460,10 +424,8 @@ module u2plus_core
 
       .ser_out_data(rd0_dat), .ser_out_valid(rd0_ready_o), .ser_out_ready(rd0_ready_i),
       .dsp_out_data(rd1_dat), .dsp_out_valid(rd1_ready_o), .dsp_out_ready(rd1_ready_i),
-`ifdef LMS602D_FRONTEND
       .dsp1_out_valid(rd1_ready_o_1), .dsp1_out_ready(rd1_ready_i_1),
       .err_inp1_data(tx1_err_data), .err_inp1_ready(tx1_err_dst_rdy), .err_inp1_valid(tx1_err_src_rdy),
-`endif // !`ifdef LMS602D_FRONTEND
       .eth_out_data(rd2_dat), .eth_out_valid(rd2_ready_o), .eth_out_ready(rd2_ready_i)
       );
 
@@ -473,11 +435,7 @@ module u2plus_core
      (.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),.wb_adr_i(s2_adr[4:0]),.wb_dat_i(s2_dat_o),
       .wb_dat_o(s2_dat_i),.wb_sel_i(s2_sel),.wb_we_i(s2_we),.wb_stb_i(s2_stb),
       .wb_cyc_i(s2_cyc),.wb_ack_o(s2_ack),.wb_err_o(),.wb_int_o(spi_int),
-`ifndef UMTRX
-      .ss_pad_o({sen_adc, sen_tx_db,sen_tx_adc,sen_tx_dac,sen_rx_db,sen_rx_adc,sen_rx_dac,sen_dac,sen_clk}),
-`else
       .ss_pad_o({aux_sen2,aux_sen1,sen_dac,sen_lms2,sen_lms1}),
-`endif // !`ifndef UMTRX
       .sclk_pad_o(sclk),.mosi_pad_o(mosi),.miso_pad_i(miso) );
 
    // /////////////////////////////////////////////////////////////////////////
@@ -509,11 +467,7 @@ module u2plus_core
    gpio_atr #(.BASE(SR_GPIO), .WIDTH(32)) 
    gpio_atr(.clk(dsp_clk),.reset(dsp_rst),
 	    .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef LMS602D_FRONTEND
-	    .rx(run_rx0_d1 | run_rx1_d1), .tx(run_tx),
-`else
 	    .rx(run_rx0_d1 | run_rx1_d1), .tx(run_tx | run_tx1),
-`endif // !`ifndef LMS602D_FRONTEND
 	    .gpio({io_tx,io_rx}), .gpio_readback(gpio_readback) );
 
    // /////////////////////////////////////////////////////////////////////////
@@ -575,9 +529,7 @@ module u2plus_core
    // Output control lines
    wire [7:0] 	 clock_outs, serdes_outs, adc_outs;
    assign 	 {clock_ready, clk_en[1:0], clk_sel[1:0]} = clock_outs[4:0];
-`ifdef LMS602D_FRONTEND
    assign lms_res = clock_outs[6:5];
-`endif // !`ifdef LMS602D_FRONTEND
    assign 	 {ser_enable, ser_prbsen, ser_loopen, ser_rx_en} = serdes_outs[3:0];
    assign 	 {adc_oe_a, adc_on_a, adc_oe_b, adc_on_b } = adc_outs[3:0];
 
@@ -621,11 +573,7 @@ module u2plus_core
    //    In Rev3 there are only 6 leds, and the highest one is on the ETH connector
    
    wire [7:0] 	 led_src, led_sw;
-`ifndef LMS602D_FRONTEND
-   wire [7:0] 	 led_hw = {run_tx, (run_rx0_d1 | run_rx1_d1), clk_status, serdes_link_up & good_sync, 1'b0};
-`else
    wire [7:0] 	 led_hw = {run_tx0_mux, run_rx0_mux, run_tx1_mux, run_rx1_mux, 1'b0};
-`endif // !`ifndef LMS602D_FRONTEND
    
    setting_reg #(.my_addr(SR_MISC+3),.width(8)) sr_led
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(led_sw),.changed());
@@ -680,15 +628,9 @@ module u2plus_core
    // /////////////////////////////////////////////////////////////////////////
    // ICAP for reprogramming the FPGA, Slave #13 (D)
 
-`ifndef UMTRX
-   s3a_icap_wb s3a_icap_wb
-     (.clk(wb_clk), .reset(wb_rst), .cyc_i(sd_cyc), .stb_i(sd_stb),
-      .we_i(sd_we), .ack_o(sd_ack), .dat_i(sd_dat_o), .dat_o(sd_dat_i));
-`else
    s6_icap_wb s6_icap_wb
      (.clk(wb_clk), .clk_icap(clk_icap),.reset(wb_rst), .cyc_i(sd_cyc), .stb_i(sd_stb),
       .we_i(sd_we), .ack_o(sd_ack), .dat_i(sd_dat_o), .dat_o(sd_dat_i));
-`endif
    
    // /////////////////////////////////////////////////////////////////////////
    // SPI for Flash -- Slave #14 (E)
@@ -701,17 +643,6 @@ module u2plus_core
 
    // /////////////////////////////////////////////////////////////////////////
    // ADC Frontend
-`ifndef LMS602D_FRONTEND
-   wire [23:0] 	 adc_i, adc_q;
-   
-   rx_frontend #(.BASE(SR_RX_FRONT)) rx_frontend
-     (.clk(dsp_clk),.rst(dsp_rst),
-     .adc_clk(dsp_clk),
-      .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-      .adc_a({adc_a,2'b00}),.adc_ovf_a(adc_ovf_a),
-      .adc_b({adc_b,2'b00}),.adc_ovf_b(adc_ovf_b),
-      .i_out(adc_i), .q_out(adc_q), .run(run_rx0_d1 | run_rx1_d1), .debug());
-`else
    wire [23:0] 	 adc_i_0, adc_q_0, adc_i_1, adc_q_1;
    wire [23:0] 	 i_0_mux, q_0_mux, i_1_mux, q_1_mux;
    wire run_rx0_mux, run_rx1_mux;
@@ -747,7 +678,6 @@ module u2plus_core
       .run_0_mux(run_rx0_mux), .run_1_mux(run_rx1_mux), 
       .adc_ovf_i_0_mux(adc_ovf_i_0_mux), .adc_ovf_q_0_mux(adc_ovf_q_0_mux), 
       .adc_ovf_i_1_mux(adc_ovf_i_1_mux), .adc_ovf_q_1_mux(adc_ovf_q_1_mux));      
-`endif // !`ifndef LMS602D_FRONTEND
    
    // /////////////////////////////////////////////////////////////////////////
    // DSP RX 0
@@ -765,11 +695,7 @@ module u2plus_core
      .adc_clk(lms_clk),
 `endif // !`ifndef LMS_DSP
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef LMS602D_FRONTEND
-      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
-`else
       .adc_i(i_0_mux),.adc_ovf_i(adc_ovf_i_0_mux),.adc_q(q_0_mux),.adc_ovf_q(adc_ovf_q_0_mux),
-`endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx0), .run(run_rx0_d1), .strobe(strobe_rx0),
       .debug() );
 
@@ -802,11 +728,7 @@ module u2plus_core
      .adc_clk(lms_clk),
 `endif // !`ifndef LMS_DSP
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-`ifndef LMS602D_FRONTEND
-      .adc_i(adc_i),.adc_ovf_i(adc_ovf_a),.adc_q(adc_q),.adc_ovf_q(adc_ovf_b),
-`else
       .adc_i(i_1_mux),.adc_ovf_i(adc_ovf_i_1_mux),.adc_q(q_1_mux),.adc_ovf_q(adc_ovf_q_1_mux),
-`endif // !`ifndef LMS602D_FRONTEND
       .sample(sample_rx1), .run(run_rx1_d1), .strobe(strobe_rx1),
       .debug() );
 
@@ -828,10 +750,8 @@ module u2plus_core
 
    wire [35:0] 	 tx_data;
    wire 	 tx_src_rdy, tx_dst_rdy;
-`ifdef LMS602D_FRONTEND
    wire [35:0] 	 tx_data_1;
    wire 	 tx_src_rdy_1, tx_dst_rdy_1;
-`endif // !`ifdef LMS602D_FRONTEND
    wire [31:0] 	 debug_vt;
    wire 	 clear_tx;
 
@@ -880,13 +800,11 @@ module u2plus_core
 	.dataout(tx_data),
 	.src_rdy_o(tx_src_rdy),
 	.dst_rdy_i(tx_dst_rdy),
-`ifdef LMS602D_FRONTEND
 	.src1_rdy_i(rd1_ready_o_1),
 	.dst1_rdy_o(rd1_ready_i_1),
 	.src1_rdy_o(tx_src_rdy_1),
 	.dst1_rdy_i(tx_dst_rdy_1),
 	.dataout_1(tx_data_1),
-`endif // !`ifdef LMS602D_FRONTEND
 	.debug(debug_extfifo),
 	.debug2(debug_extfifo2) );
 
@@ -917,7 +835,6 @@ module u2plus_core
       .underrun(underrun), .run(run_tx),
       .debug(debug_vt));
 
-`ifdef LMS602D_FRONTEND     
    frontend_sw #(.BASE(SR_TX_FRONT_SW)) tx_frontend_sw
      (
       .clk(lms_clk), .rst(dsp_rst),
@@ -932,7 +849,6 @@ module u2plus_core
       .adc_ovf_i_1_in(), .adc_ovf_q_1_in(),  
       .adc_ovf_i_0_mux(), .adc_ovf_q_0_mux(), 
       .adc_ovf_i_1_mux(), .adc_ovf_q_1_mux());  
-`endif // !`ifndef LMS602D_FRONTEND
 
    tx_frontend #(.BASE(SR_TX_FRONT)) tx_frontend
      (
