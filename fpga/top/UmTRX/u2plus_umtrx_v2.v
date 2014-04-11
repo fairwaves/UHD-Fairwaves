@@ -138,36 +138,30 @@ wire DivSw1, DivSw2;
    OBUF DIVSW2_P_pin (.I(DivSw2),.O(DivSw2_P));
    OBUF DIVSW2_N_pin (.I(~DivSw2),.O(DivSw2_N));
 
-   
-   wire 	exp_time_in;
-   
-   wire 	exp_time_out;
-
-   wire 	exp_user_in;
-   
-   wire 	exp_user_out;
-
    reg [5:0] 	clock_ready_d;
    always @(posedge clk_fpga)
      clock_ready_d[5:0] <= {clock_ready_d[4:0],clock_ready};
    wire 	dcm_rst = ~&clock_ready_d & |clock_ready_d;
 
    // Interface to ADC of LMS
-   reg [11:0] 	adc_a_0, adc_b_0, adc_a_1, adc_b_1;
+   reg [11:0] 	adc0_a, adc0_b, adc1_a, adc1_b;
+   reg adc0_strobe, adc1_strobe;
 
    always @(posedge lms_clk)
      begin
          if (RX1IQSEL == 1'b1)
-            adc_a_0 = RX1D; //ADC_I signal
+            adc0_a = RX1D; //ADC_I signal
          else
-            adc_b_0 <= RX1D; // ADC_Q signal
+            adc0_b <= RX1D; // ADC_Q signal
+         adc0_strobe <= ~RX1IQSEL;
      end
    always @(posedge lms_clk)
      begin
          if (RX2IQSEL == 1'b1)
-            adc_a_1 = RX2D; //ADC_I signal
+            adc1_a = RX2D; //ADC_I signal
          else
-            adc_b_1 <= RX2D; // ADC_Q signal
+            adc1_b <= RX2D; // ADC_Q signal
+         adc1_strobe <= ~RX2IQSEL;
      end
    
    // Handle Clocks
@@ -279,6 +273,7 @@ wire DivSw1, DivSw2;
    
    
    wire [11:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
+   reg [11:0] dac_b_reg1, dac_b_reg2;
    // Interface to DAC of LMS
 
    assign TX1EN = 1'b1;
@@ -291,15 +286,17 @@ wire DivSw1, DivSw2;
       if (dsp_clk_div2_tx)
          begin
             TX1D <= dac_a_int1[11:0]; //DAC_I signal
+            dac_b_reg1 <= dac_b_int1[11:0]; //DAC_Q signal
             TX1IQSEL = 1'b0;
             TX2D <= dac_a_int2[11:0]; //DAC_I signal
+            dac_b_reg2 <= dac_b_int2[11:0]; //DAC_Q signal
             TX2IQSEL = 1'b0;
          end
       else
          begin
-            TX1D <= dac_b_int1[11:0]; //DAC_Q signal
+            TX1D <= dac_b_reg1; //DAC_Q signal
             TX1IQSEL = 1'b1;
-            TX2D <= dac_b_int2[11:0]; //DAC_Q signal
+            TX2D <= dac_b_reg2; //DAC_Q signal
             TX2IQSEL = 1'b1;
          end
       end
@@ -309,9 +306,9 @@ wire DivSw1, DivSw2;
    assign pps = PPS_IN;
 
    
-   u2plus_core u2p_c(.dsp_clk           (dsp_clk),
+   u2plus_core u2p_c(.sys_clk           (dsp_clk),
+		     .dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
-		     .lms_clk  (clk_icap),
 		     .clk_icap		(clk_icap),
 		     .clock_ready       (clock_ready),
 		     .clk_to_mac	(CLK_TO_MAC_int2),
@@ -319,8 +316,6 @@ wire DivSw1, DivSw2;
 		     .leds		(leds_int),
 		     .debug		(debug[31:0]),
 		     .debug_clk		({debug_clk_p, debug_clk_n}),
-		     .exp_time_in	(exp_time_in),
-		     .exp_time_out	(exp_time_out),
 		     .GMII_COL		(GMII_COL),
 		     .GMII_CRS		(GMII_CRS),
 		     .GMII_TXD		(GMII_TXD_unreg[7:0]),
@@ -348,15 +343,19 @@ wire DivSw1, DivSw2;
 		     .ser_r       (),
 		     .ser_rklsb   (),
 		     .ser_rkmsb   (),
-		     .adc_a_0		(adc_a_0),
-		     .adc_b_0		(adc_b_0),
-		     .adc_a_1		(adc_a_1),
-		     .adc_b_1		(adc_b_1),
-           .lms_res ({LMS2nRST,LMS1nRST}),
-		     .dac1_a		(dac_a_int2),
-		     .dac1_b		(dac_b_int2),
+		     .adc0_strobe(adc0_strobe),
+		     .adc0_a		(adc0_a),
+		     .adc0_b		(adc0_b),
+		     .adc1_strobe(adc1_strobe),
+		     .adc1_a		(adc1_a),
+		     .adc1_b		(adc1_b),
+		     .lms_res ({LMS2nRST,LMS1nRST}),
+		     .dac0_strobe(dsp_clk_div2_tx),
 		     .dac0_a		(dac_a_int1),
 		     .dac0_b		(dac_b_int1),
+		     .dac1_strobe(dsp_clk_div2_tx),
+		     .dac1_a		(dac_a_int2),
+		     .dac1_b		(dac_b_int2),
 		     .scl_pad_i		(scl_pad_i),
 		     .scl_pad_o		(scl_pad_o),
 		     .scl_pad_oen_o	(scl_pad_oen_o),

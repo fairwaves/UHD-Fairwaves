@@ -21,8 +21,8 @@
 
 module u2plus_core
   (// Clocks
+   input sys_clk,
    input dsp_clk,
-   input lms_clk,
    input wb_clk,
    input clk_icap, //ICAP timing fixes for UmTRX Spartan-6 FPGA.
    output clock_ready,
@@ -34,10 +34,6 @@ module u2plus_core
    output [31:0] debug,
    output [1:0] debug_clk,
 
-   // Expansion
-   input exp_time_in,
-   output exp_time_out,
-   
    // GMII
    //   GMII-CTRL
    input GMII_COL,
@@ -81,22 +77,22 @@ module u2plus_core
    input por,
    output config_success,
    
-   // ADC 0
-   input [11:0] adc_a_0,
-   input [11:0] adc_b_0,
-
-   // ADC 1
-   input [11:0] adc_a_1,
-   input [11:0] adc_b_1,
+   // ADC
+   input adc0_strobe,
+   input [11:0] adc0_a,
+   input [11:0] adc0_b,
+   input adc1_strobe,
+   input [11:0] adc1_a,
+   input [11:0] adc1_b,
    output [1:0] lms_res,
 
    // DAC
+   input dac0_strobe,
    output [11:0] dac0_a,
    output [11:0] dac0_b,
-
+   input dac1_strobe,
    output [11:0] dac1_a,
    output [11:0] dac1_b,
-
 
    // I2C
    input scl_pad_i,
@@ -163,6 +159,8 @@ module u2plus_core
    
    output spiflash_cs, output spiflash_clk, input spiflash_miso, output spiflash_mosi
    );
+
+    wire lms_clk = dsp_clk; //TODO remove lms_clk eventually
 
    localparam SR_MISC     =   0;   // 7 regs
    localparam SR_TESTSIG  =   8;   // 2 regs for each DAC
@@ -481,7 +479,7 @@ module u2plus_core
       .wb_adr_i(s5_adr), .wb_dat_o(s5_dat_i), .wb_ack_o(s5_ack),
 
       .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
-      .word04(32'b0),.word05(32'b0),.word06({adc_a_0, 4'b0, adc_b_0, 4'b0}),.word07({adc_a_1, 4'b0, adc_b_1, 4'b0}),
+      .word04(32'b0),.word05(32'b0),.word06({adc0_a, 4'b0, adc0_b, 4'b0}),.word07({adc1_a, 4'b0, adc1_b, 4'b0}),
       .word08(status),.word09(gpio_readback),.word10(vita_time[63:32]),
       .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, serdes_link_up, 10'b0}),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
@@ -650,16 +648,16 @@ module u2plus_core
      (.clk(dsp_clk),.rst(dsp_rst),
      .adc_clk(lms_clk),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-      .adc_a({adc_a_0,4'b00}),.adc_ovf_a(adc_ovf_i_0_mux),
-      .adc_b({adc_b_0,4'b00}),.adc_ovf_b(adc_ovf_q_0_mux),
+      .adc_a({adc0_a,4'b00}),.adc_ovf_a(adc_ovf_i_0_mux),
+      .adc_b({adc0_b,4'b00}),.adc_ovf_b(adc_ovf_q_0_mux),
       .i_out(adc_i_0), .q_out(adc_q_0), .run(run_rx0_d1), .debug());
 
    rx_frontend #(.BASE(SR_RX_FRONT1)) rx_frontend1
      (.clk(dsp_clk),.rst(dsp_rst),
      .adc_clk(lms_clk),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-      .adc_a({adc_a_1,4'b00}),.adc_ovf_a(adc_ovf_i_1_mux),
-      .adc_b({adc_b_1,4'b00}),.adc_ovf_b(adc_ovf_q_1_mux),
+      .adc_a({adc1_a,4'b00}),.adc_ovf_a(adc_ovf_i_1_mux),
+      .adc_b({adc1_b,4'b00}),.adc_ovf_b(adc_ovf_q_1_mux),
       .i_out(adc_i_1), .q_out(adc_q_1), .run(run_rx1_d1), .debug());
 
    frontend_sw #(.BASE(SR_RX_FRONT_SW)) rx_frontend_sw
@@ -889,8 +887,7 @@ module u2plus_core
 
    time_64bit #(.BASE(SR_TIME64)) time_64bit
      (.clk(lms_clk), .rst(dsp_rst), .set_stb(set_stb_dsp_low), .set_addr(set_addr_dsp_low), .set_data(set_data_dsp_low),
-      .pps(pps_in), .vita_time(vita_time), .vita_time_pps(vita_time_pps), .pps_int(pps_int),
-      .exp_time_in(exp_time_in), .exp_time_out(exp_time_out), .good_sync(good_sync), .debug(debug_sync));
+      .pps(pps_in), .vita_time(vita_time), .vita_time_pps(vita_time_pps), .pps_int(pps_int));
 
    // /////////////////////////////////////////////////////////////////////////////////////////
    // Debug Pins
