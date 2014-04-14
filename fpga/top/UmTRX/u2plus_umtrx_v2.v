@@ -143,27 +143,62 @@ wire DivSw1, DivSw2;
      clock_ready_d[5:0] <= {clock_ready_d[4:0],clock_ready};
    wire 	dcm_rst = ~&clock_ready_d & |clock_ready_d;
 
-   // Interface to ADC of LMS
-   reg [11:0] 	adc0_a, adc0_b, adc1_a, adc1_b;
-   reg adc0_strobe, adc1_strobe;
+    //register iogress for all adc/dac signals to force IOB
+    reg RX1IQSEL_reg, RX2IQSEL_reg,TX1IQSEL_reg, TX2IQSEL_reg;
+    reg [11:0] RX1D_reg, RX2D_reg, TX1D_reg, TX2D_reg;
+    always @(posedge lms_clk) begin
+        {RX1IQSEL_reg, RX2IQSEL_reg, RX1D_reg, RX2D_reg} <= {RX1IQSEL, RX2IQSEL, RX1D, RX2D};
+        {TX1IQSEL, TX2IQSEL, TX1D, TX2D} <= {TX1IQSEL_reg, TX2IQSEL_reg, TX1D_reg, TX2D_reg};
+    end
 
-   always @(posedge lms_clk)
-     begin
-         if (RX1IQSEL == 1'b1)
-            adc0_a = RX1D; //ADC_I signal
-         else
-            adc0_b <= RX1D; // ADC_Q signal
-         adc0_strobe <= ~RX1IQSEL;
-     end
-   always @(posedge lms_clk)
-     begin
-         if (RX2IQSEL == 1'b1)
-            adc1_a = RX2D; //ADC_I signal
-         else
-            adc1_b <= RX2D; // ADC_Q signal
-         adc1_strobe <= ~RX2IQSEL;
-     end
-   
+   /////////////////////////////////////////////////////////////////////
+   // Interface to ADC of LMS
+   reg [11:0] 	adc1_a, adc1_b, adc2_a, adc2_b;
+   reg adc1_strobe, adc2_strobe;
+
+    always @(posedge lms_clk) begin
+        if (RX1IQSEL_reg == 1'b1)
+            adc1_a <= RX1D_reg; //ADC_I signal
+        else
+            adc1_b <= RX1D_reg; // ADC_Q signal
+
+        if (RX2IQSEL_reg == 1'b1)
+            adc2_a <= RX2D_reg; //ADC_I signal
+        else
+            adc2_b <= RX2D_reg; // ADC_Q signal
+
+        adc1_strobe <= ~RX1IQSEL_reg;
+        adc2_strobe <= ~RX2IQSEL_reg;
+    end
+
+   /////////////////////////////////////////////////////////////////////
+   // Interface to DAC of LMS
+   wire [11:0] dac1_a, dac1_b, dac2_a, dac2_b;
+   wire dac1_strobe, dac2_strobe;
+
+   assign TX1EN = 1'b1;
+   assign TX2EN = 1'b1;
+
+    always @(negedge lms_clk) begin
+        if (dac1_strobe == 1'b1)
+            TX1D_reg <= dac1_a; //DAC_I signal
+        else
+            TX1D_reg <= dac1_b; //DAC_Q signal
+
+        if (dac2_strobe == 1'b1)
+            TX2D_reg <= dac2_a; //DAC_I signal
+        else
+            TX2D_reg <= dac2_b; //DAC_Q signal
+
+        TX1IQSEL_reg <= ~dac1_strobe;
+        TX2IQSEL_reg <= ~dac0_strobe;
+    end
+
+    reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
+    always @(negedge lms_clk) dsp_clk_div2_tx = ~dsp_clk_div2_tx;
+    assign dac1_strobe = dsp_clk_div2_tx;
+    assign dac0_strobe = dsp_clk_div2_tx;
+
    // Handle Clocks
 
    pll_clk pll_clk_instance
@@ -270,37 +305,6 @@ wire DivSw1, DivSw2;
 	end // block: gen_RAM_D_IO
    endgenerate
 
-   
-   
-   wire [11:0] dac_a_int1, dac_b_int1, dac_a_int2, dac_b_int2;
-   reg [11:0] dac_b_reg1, dac_b_reg2;
-   // Interface to DAC of LMS
-
-   assign TX1EN = 1'b1;
-   assign TX2EN = 1'b1;
-
-   reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
-   always @(negedge lms_clk)
-   begin
-      dsp_clk_div2_tx = ~dsp_clk_div2_tx;
-      if (dsp_clk_div2_tx)
-         begin
-            TX1D <= dac_a_int1[11:0]; //DAC_I signal
-            dac_b_reg1 <= dac_b_int1[11:0]; //DAC_Q signal
-            TX1IQSEL = 1'b0;
-            TX2D <= dac_a_int2[11:0]; //DAC_I signal
-            dac_b_reg2 <= dac_b_int2[11:0]; //DAC_Q signal
-            TX2IQSEL = 1'b0;
-         end
-      else
-         begin
-            TX1D <= dac_b_reg1; //DAC_Q signal
-            TX1IQSEL = 1'b1;
-            TX2D <= dac_b_reg2; //DAC_Q signal
-            TX2IQSEL = 1'b1;
-         end
-      end
-
    wire 	pps;
    assign GPS_ON = 1'b1;
    assign pps = PPS_IN;
@@ -331,19 +335,19 @@ wire DivSw1, DivSw2;
 		     .MDC		(MDC),
 		     .PHY_INTn		(PHY_INTn),
 		     .PHY_RESETn	(PHY_RESETn),
-		     .adc0_strobe(adc0_strobe),
-		     .adc0_a		(adc0_a),
-		     .adc0_b		(adc0_b),
-		     .adc1_strobe(adc1_strobe),
-		     .adc1_a		(adc1_a),
-		     .adc1_b		(adc1_b),
+		     .adc0_strobe(adc1_strobe),
+		     .adc0_a		(adc1_a),
+		     .adc0_b		(adc1_b),
+		     .adc1_strobe(adc2_strobe),
+		     .adc1_a		(adc2_a),
+		     .adc1_b		(adc2_b),
 		     .lms_res ({LMS2nRST,LMS1nRST}),
-		     .dac0_strobe(dsp_clk_div2_tx),
-		     .dac0_a		(dac_a_int1),
-		     .dac0_b		(dac_b_int1),
-		     .dac1_strobe(dsp_clk_div2_tx),
-		     .dac1_a		(dac_a_int2),
-		     .dac1_b		(dac_b_int2),
+		     .dac0_strobe(dac1_strobe),
+		     .dac0_a		(dac1_a),
+		     .dac0_b		(dac1_b),
+		     .dac1_strobe(dac2_strobe),
+		     .dac1_a		(dac2_a),
+		     .dac1_b		(dac2_b),
 		     .scl_pad_i		(scl_pad_i),
 		     .scl_pad_o		(scl_pad_o),
 		     .scl_pad_oen_o	(scl_pad_oen_o),

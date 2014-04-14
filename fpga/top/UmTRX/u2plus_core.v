@@ -881,8 +881,6 @@ module u2plus_core
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing
 
-   wire [31:0] 	 debug_sync;
-
    time_64bit #(.BASE(SR_TIME64)) time_64bit
      (.clk(dsp_clk), .rst(dsp_rst), .set_stb(set_stb_dsp), .set_addr(set_addr_dsp), .set_data(set_data_dsp),
       .pps(pps_in), .vita_time(vita_time), .vita_time_pps(vita_time_pps), .pps_int(pps_int));
