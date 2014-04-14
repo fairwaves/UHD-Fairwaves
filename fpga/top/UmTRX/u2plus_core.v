@@ -141,6 +141,7 @@ module u2plus_core
    output spiflash_cs, output spiflash_clk, input spiflash_miso, output spiflash_mosi
    );
 
+    wire sys_rst = 1'b0;
     wire lms_clk = dsp_clk; //TODO remove lms_clk eventually
 
    localparam SR_MISC     =   0;   // 7 regs
@@ -653,6 +654,9 @@ module u2plus_core
    wire [31:0] 	 sample_rx0;
    wire 	 clear_rx0, strobe_rx0;
 
+    wire [35:0] rx0_vita_data;
+    wire rx0_vita1_valid, rx0_vita1_ready;
+
    always @(posedge dsp_clk)
      run_rx0_d1 <= run_rx0;
    
@@ -674,13 +678,23 @@ module u2plus_core
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .vita_time(vita_time), .overrun(overrun0),
       .sample(sample_rx0), .run(run_rx0), .strobe(strobe_rx0),
-      .rx_data_o(wr1_dat), .rx_src_rdy_o(wr1_ready_i), .rx_dst_rdy_i(wr1_ready_o),
+      .rx_data_o(rx0_vita_data), .rx_src_rdy_o(rx0_vita1_valid), .rx_dst_rdy_i(rx0_vita1_ready),
       .debug() );
+
+    fifo_2clock #(.WIDTH(36)) fifo_2clock_rx0
+    (
+        .wclk(dsp_clk), .datain(rx0_vita_data), .src_rdy_i(rx0_vita1_valid), .dst_rdy_o(rx0_vita1_ready),
+        .rclk(sys_clk), .dataout(wr1_dat), .src_rdy_o(wr1_ready_i), .dst_rdy_i(wr1_ready_o),
+        .arst(dsp_rst | sys_rst)
+    );
 
    // /////////////////////////////////////////////////////////////////////////
    // DSP RX 1
    wire [31:0] 	 sample_rx1;
    wire 	 clear_rx1, strobe_rx1;
+
+    wire [35:0] rx1_vita_data;
+    wire rx1_vita1_valid, rx1_vita1_ready;
 
    always @(posedge dsp_clk)
      run_rx1_d1 <= run_rx1;
@@ -697,14 +711,20 @@ module u2plus_core
      (.clk(dsp_clk),.rst(dsp_rst),
       .strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
       .out(),.changed(clear_rx1));
-
    vita_rx_chain #(.BASE(SR_RX_CTRL1),.UNIT(2),.FIFOSIZE(DSP_RX_FIFOSIZE)) vita_rx_chain1
      (.clk(dsp_clk), .reset(dsp_rst), .clear(clear_rx1),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .vita_time(vita_time), .overrun(overrun1),
       .sample(sample_rx1), .run(run_rx1), .strobe(strobe_rx1),
-      .rx_data_o(wr3_dat), .rx_src_rdy_o(wr3_ready_i), .rx_dst_rdy_i(wr3_ready_o),
+      .rx_data_o(rx1_vita_data), .rx_src_rdy_o(rx1_vita1_valid), .rx_dst_rdy_i(rx1_vita1_ready),
       .debug() );
+
+    fifo_2clock #(.WIDTH(36)) fifo_2clock_rx1
+    (
+        .wclk(dsp_clk), .datain(rx1_vita_data), .src_rdy_i(rx1_vita1_valid), .dst_rdy_o(rx1_vita1_ready),
+        .rclk(sys_clk), .dataout(wr3_dat), .src_rdy_o(wr3_ready_i), .dst_rdy_i(wr3_ready_o),
+        .arst(dsp_rst | sys_rst)
+    );
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
@@ -771,7 +791,17 @@ module u2plus_core
    wire [23:0] 	 tx1_i, tx1_q;
    wire [23:0] 	 front_i_0, front_q_0;
    wire [23:0] 	 front_i_1, front_q_1;
-   
+
+    wire [35:0] tx0_vita_data;
+    wire tx0_vita1_valid, tx0_vita1_ready;
+
+    fifo_2clock #(.WIDTH(36)) fifo_2clock_tx0
+    (
+        .wclk(sys_clk), .datain(tx_data), .src_rdy_i(tx_src_rdy), .dst_rdy_o(tx_dst_rdy),
+        .rclk(dsp_clk), .dataout(tx0_vita_data), .src_rdy_o(tx1_vita0_valid), .dst_rdy_i(tx0_vita1_ready),
+        .arst(dsp_rst | sys_rst)
+    );
+
    vita_tx_chain #(.BASE_CTRL(SR_TX_CTRL), .BASE_DSP(SR_TX_DSP), 
 		   .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
 		   .PROT_ENG_FLAGS(1), .USE_TRANS_HEADER(1),
@@ -781,7 +811,7 @@ module u2plus_core
      .dac_clk(lms_clk),
       .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
       .vita_time(vita_time),
-      .tx_data_i(tx_data), .tx_src_rdy_i(tx_src_rdy), .tx_dst_rdy_o(tx_dst_rdy),
+      .tx_data_i(tx0_vita_data), .tx_src_rdy_i(tx1_vita0_valid), .tx_dst_rdy_o(tx0_vita1_ready),
       .err_data_o(tx_err_data), .err_src_rdy_o(tx_err_src_rdy), .err_dst_rdy_i(tx_err_dst_rdy),
       .tx_i(tx_i),.tx_q(tx_q),
       .underrun(underrun), .run(run_tx),
@@ -814,7 +844,17 @@ module u2plus_core
 
    // /////////////////////////////////////////////////////////////////////////
    // DSP TX 1
-   
+
+    wire [35:0] tx1_vita_data;
+    wire tx1_vita1_valid, tx1_vita1_ready;
+
+    fifo_2clock #(.WIDTH(36)) fifo_2clock_tx1
+    (
+        .wclk(sys_clk), .datain(tx_data_1), .src_rdy_i(tx_src_rdy_1), .dst_rdy_o(tx_dst_rdy_1),
+        .rclk(dsp_clk), .dataout(tx1_vita_data), .src_rdy_o(tx1_vita1_valid), .dst_rdy_i(tx1_vita1_ready),
+        .arst(dsp_rst | sys_rst)
+    );
+
    vita_tx_chain #(.BASE_CTRL(SR_TX1_CTRL), .BASE_DSP(SR_TX1_DSP), 
 		   .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
 		   .PROT_ENG_FLAGS(1), .USE_TRANS_HEADER(1),
@@ -824,7 +864,7 @@ module u2plus_core
      .dac_clk(lms_clk),
       .set_stb(set_stb_dsp_low),.set_addr(set_addr_dsp_low),.set_data(set_data_dsp_low),
       .vita_time(vita_time),
-      .tx_data_i(tx_data_1), .tx_src_rdy_i(tx_src_rdy_1), .tx_dst_rdy_o(tx_dst_rdy_1),
+      .tx_data_i(tx1_vita_data), .tx_src_rdy_i(tx1_vita_data), .tx_dst_rdy_o(tx1_vita1_ready),
       .err_data_o(tx1_err_data), .err_src_rdy_o(tx1_err_src_rdy), .err_dst_rdy_i(tx1_err_dst_rdy),
       .tx_i(tx1_i),.tx_q(tx1_q),
       .underrun(underrun1), .run(run_tx1),
