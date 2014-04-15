@@ -191,13 +191,13 @@ wire DivSw1, DivSw2;
             TX2D_reg <= dac2_b; //DAC_Q signal
 
         TX1IQSEL_reg <= ~dac1_strobe;
-        TX2IQSEL_reg <= ~dac0_strobe;
+        TX2IQSEL_reg <= ~dac2_strobe;
     end
 
     reg dsp_clk_div2_tx=0; // DSP clock signal devided by 2
     always @(negedge lms_clk) dsp_clk_div2_tx = ~dsp_clk_div2_tx;
     assign dac1_strobe = dsp_clk_div2_tx;
-    assign dac0_strobe = dsp_clk_div2_tx;
+    assign dac2_strobe = dsp_clk_div2_tx;
 
    // Handle Clocks
 

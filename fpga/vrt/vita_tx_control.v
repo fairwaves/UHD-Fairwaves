@@ -20,7 +20,6 @@ module vita_tx_control
   #(parameter BASE=0,
     parameter WIDTH=32)
    (input clk, input reset, input clear,
-    input dac_clk,
     input set_stb, input [7:0] set_addr, input [31:0] set_data,
     
     input [63:0] vita_time,
@@ -51,21 +50,19 @@ module vita_tx_control
    
    wire        now, early, late, too_early;
 
-   // FIXME ignore too_early for now for timing reasons
-   assign too_early = 0;
    time_compare 
      time_compare (.time_now(vita_time), .trigger_time(send_time), 
-		   .now(now), .early(early), .late(late), .too_early());
+		   .now(now), .early(early), .late(late), .too_early(too_early));
 
    reg 	       late_qual, late_del;
 
-   always @(posedge dac_clk)
+   always @(posedge clk)
      if(reset | clear)
        late_del <= 0;
      else
        late_del <= late;
    
-   always @(posedge dac_clk)
+   always @(posedge clk)
      if(reset | clear)
        late_qual <= 0;
      else
@@ -89,7 +86,7 @@ module vita_tx_control
 
    wire [31:0] error_policy;
    setting_reg #(.my_addr(BASE+3)) sr_error_policy
-     (.clk(dac_clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
+     (.clk(clk),.rst(reset),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(error_policy),.changed());
 
    wire        policy_wait = error_policy[0];
@@ -97,7 +94,7 @@ module vita_tx_control
    wire        policy_next_burst = error_policy[2];
    reg 	       send_error, send_ack;
    
-   always @(posedge dac_clk)
+   always @(posedge clk)
      if(reset | clear)
        begin
 	  ibs_state <= IBS_IDLE;
@@ -188,21 +185,25 @@ module vita_tx_control
    
    assign sample_fifo_dst_rdy_o = (ibs_state == IBS_ERROR) | (strobe & (ibs_state == IBS_RUN));  // FIXME also cleanout
 
-   assign sample = (ibs_state == IBS_RUN) ? sample_fifo_i[5+64+16+WIDTH-1:5+64+16] : {WIDTH{1'b0}};
-   //assign run = (ibs_state == IBS_RUN) | (ibs_state == IBS_CONT_BURST);
+   //register the output sample
+   reg [31:0] sample_held;
+   assign sample = sample_held;
+   always @(posedge clk)
+     if(reset | clear)
+        sample_held <= 0;
+     else if (~run)
+       sample_held <= 0;
+     else if (strobe)
+       sample_held <= sample_fifo_i[5+64+16+WIDTH-1:5+64+16];
+
    assign error = send_error;
    assign ack = send_ack;
 
-`ifndef LMS602D_FRONTEND
    localparam MAX_IDLE = 1000000; 
    // approx 10 ms timeout with a 100 MHz clock, but burning samples will slow that down
-`else
-   localparam MAX_IDLE = 130000; 
-   // approx 10 ms timeout with a 13 MHz clock, but burning samples will slow that down
-`endif // !`ifndef LMS602D_FRONTEND
    reg [19:0] countdown;
    
-   always @(posedge dac_clk)
+   always @(posedge clk)
      if(reset | clear)
        begin
 	  run <= 0;
