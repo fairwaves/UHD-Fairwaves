@@ -80,6 +80,7 @@ public:
 private:
 
     //communication interfaces
+    std::string _device_ip_addr;
     umtrx_iface::sptr _iface;
 
     //controls for perifs
@@ -102,6 +103,11 @@ private:
     void update_rx_samp_rate(const size_t, const double rate);
     void update_tx_samp_rate(const size_t, const double rate);
     void time64_self_test(void);
+    void update_rates(void);
+
+    //streaming
+    std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
+    std::vector<boost::weak_ptr<uhd::tx_streamer> > _tx_streamers;
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */

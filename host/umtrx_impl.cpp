@@ -49,7 +49,8 @@ UHD_STATIC_BLOCK(register_umtrx_device){
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 {
-    UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
+    _device_ip_addr = device_addr["addr"];
+    UHD_MSG(status) << "Opening a UmTRX device... " << _device_ip_addr << std::endl;
 
     ////////////////////////////////////////////////////////////////////
     // create controller objects and initialize the properties tree
@@ -62,7 +63,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     // create the iface that controls i2c, spi, uart, and wb
     ////////////////////////////////////////////////////////////////
     _iface = umtrx_iface::make(udp_simple::make_connected(
-        device_addr["addr"], BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
+        _device_ip_addr, BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
     ));
     _tree->create<std::string>(mb_path / "name").set(_iface->get_cname());
     _tree->create<std::string>(mb_path / "fw_version").set(_iface->get_fw_version_string());
@@ -239,8 +240,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->create<std::vector<std::string> >(mb_path / "time_source" / "options")
         .publish(boost::bind(&time64_core_200::get_time_sources, _time64));
     //setup reference source props
-   _tree->create<std::string>(mb_path / "clock_source" / "value");
-        //??            .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, mb, _1));
+    _tree->create<std::string>(mb_path / "clock_source" / "value")
+        .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, _1));
 
     static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external");
     _tree->create<std::vector<std::string> >(mb_path / "clock_source"/ "options").set(clock_sources);
@@ -348,6 +349,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<double>(mb_path / "tick_rate")
         .set(this->get_master_clock_rate());
     this->time64_self_test();
+    _rx_streamers.resize(_rx_dsps.size());
+    _tx_streamers.resize(_tx_dsps.size());
 }
 
 umtrx_impl::~umtrx_impl(void){
@@ -374,3 +377,5 @@ void umtrx_impl::time64_self_test(void)
     const bool within_range = (secs_elapsed < (1.5)*sleepTime and secs_elapsed > (0.5)*sleepTime);
     UHD_MSG(status) << (within_range? "pass" : "fail") << std::endl;
 }
+
+void umtrx_impl::update_clock_source(const std::string &){}
