@@ -148,6 +148,8 @@ wire DivSw1, DivSw2;
     reg [11:0] RX1D_reg, RX2D_reg, TX1D_reg, TX2D_reg;
     always @(posedge lms_clk) begin
         {RX1IQSEL_reg, RX2IQSEL_reg, RX1D_reg, RX2D_reg} <= {RX1IQSEL, RX2IQSEL, RX1D, RX2D};
+    end
+    always @(negedge lms_clk) begin
         {TX1IQSEL, TX2IQSEL, TX1D, TX2D} <= {TX1IQSEL_reg, TX2IQSEL_reg, TX1D_reg, TX2D_reg};
     end
 
@@ -179,7 +181,7 @@ wire DivSw1, DivSw2;
    assign TX1EN = 1'b1;
    assign TX2EN = 1'b1;
 
-    always @(negedge lms_clk) begin
+    always @(posedge lms_clk) begin
         if (dac1_strobe == 1'b1)
             TX1D_reg <= dac1_a; //DAC_I signal
         else
@@ -310,8 +312,10 @@ wire DivSw1, DivSw2;
    assign pps = PPS_IN;
 
    
-   u2plus_core u2p_c(.sys_clk           (dsp_clk),
-		     .dsp_clk           (dsp_clk),
+   u2plus_core u2p_c(
+		     .sys_clk           (dsp_clk),
+		     .dsp_clk           (lms_clk),
+		     .fe_clk            (clk_icap), //1/2 dsp rate
 		     .wb_clk            (wb_clk),
 		     .clk_icap		(clk_icap),
 		     .clock_ready       (clock_ready),

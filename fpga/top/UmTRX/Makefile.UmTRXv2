@@ -48,6 +48,8 @@ simulator "ISE Simulator (VHDL/Verilog)" \
 TOP_SRCS = \
 capture_ddrlvds.v \
 u2plus_core.v \
+umtrx_tx_chain.v \
+umtrx_rx_chain.v \
 u2plus_umtrx_v2.v \
 u2plus_umtrx_v2.ucf
 
