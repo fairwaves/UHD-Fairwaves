@@ -174,6 +174,16 @@ public:
         return lms_tx_gain_ranges[name];
     }
 
+    uint8_t get_tx_vga1dc_i_int(void)
+    {
+        return lms.get_tx_vga1dc_i_int();
+    }
+
+    uint8_t get_tx_vga1dc_q_int(void)
+    {
+        return lms.get_tx_vga1dc_i_int();
+    }
+
     double set_freq(dboard_iface::unit_t unit, double f) {
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq(%f)\n", f);
         unsigned ref_freq = _clock_rate;
@@ -563,15 +573,5 @@ lms6002d_ctrl_impl::lms6002d_ctrl_impl(uhd::spi_iface::sptr spiface, const int l
 
     // Perform autocalibration
     lms.auto_calibration(_clock_rate, 0xf);
-
-    // UmTRX specific calibration
-/*
-    this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_i/value")
-        .subscribe(boost::bind(&lms6002d_ctrl_impl::_set_tx_vga1dc_i_int, this, _1))
-        .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_i_int, &lms));
-    this->get_tx_subtree()->create<uint8_t>("lms6002d/tx_dc_q/value")
-        .subscribe(boost::bind(&lms6002d_ctrl_impl::_set_tx_vga1dc_q_int, this, _1))
-        .publish(boost::bind(&umtrx_lms6002d_dev::get_tx_vga1dc_q_int, &lms));
-        */
 }
 

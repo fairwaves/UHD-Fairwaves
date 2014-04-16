@@ -104,6 +104,10 @@ private:
     void update_tx_samp_rate(const size_t, const double rate);
     void time64_self_test(void);
     void update_rates(void);
+    void set_rx_fe_corrections(const std::string &mb, const std::string &board, const double);
+    void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
+    void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
+    uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;

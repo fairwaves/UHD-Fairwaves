@@ -39,6 +39,7 @@ list(APPEND UMTRX_SOURCES
     cores/tx_dsp_core_200.cpp
     cores/time64_core_200.cpp
     cores/validate_subdev_spec.cpp
+    cores/apply_corrections.cpp
 )
 
 ########################################################################

@@ -17,6 +17,7 @@
 
 #include "umtrx_impl.hpp"
 #include "umtrx_regs.hpp"
+#include "cores/apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>
 #include <uhd/types/sensors.hpp>
@@ -249,8 +250,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing
     ////////////////////////////////////////////////////////////////////
-    _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate()/2.0);
-    _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate()/2.0);
+    _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate());
+    _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
@@ -338,10 +339,39 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _tree->create<meta_range_t>(tx_rf_fe_path / "bandwidth" / "range")
             .publish(boost::bind(&lms6002d_ctrl::get_tx_bw_range, ctrl));
 
-        //TODO // UmTRX specific calibration
+        //bind frontend corrections to the dboard freq props
+        _tree->access<double>(tx_rf_fe_path / "freq" / "value")
+            .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, "0", fe_name, _1));
+        _tree->access<double>(rx_rf_fe_path / "freq" / "value")
+            .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, "0", fe_name, _1));
+
+        //tx cal props
+        _tree->create<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
+            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_i_int, ctrl, _1))
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_vga1dc_i_int, ctrl));
+        _tree->create<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
+            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_q_int, ctrl, _1))
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_vga1dc_q_int, ctrl));
+
+        //set Tx DC calibration values, which are read from mboard EEPROM
+        std::string tx_name = (fe_name=="A")?"tx1":"tx2";
+        if (_iface->mb_eeprom.has_key(tx_name+"-vga1-dc-i") and not _iface->mb_eeprom[tx_name+"-vga1-dc-i"].empty()) {
+            _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
+                .set(boost::lexical_cast<int>(_iface->mb_eeprom[tx_name+"-vga1-dc-i"]));
+        }
+        if (_iface->mb_eeprom.has_key(tx_name+"-vga1-dc-q") and not _iface->mb_eeprom[tx_name+"-vga1-dc-q"].empty()) {
+            _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
+                .set(boost::lexical_cast<int>(_iface->mb_eeprom[tx_name+"-vga1-dc-q"]));
+        }
 
     }
 
+    //set TCXO DAC calibration value, which is read from mboard EEPROM
+    if (_iface->mb_eeprom.has_key("tcxo-dac") and not _iface->mb_eeprom["tcxo-dac"].empty()) {
+        _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
+            .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1))
+            .set(boost::lexical_cast<uint16_t>(_iface->mb_eeprom["tcxo-dac"]));
+    }
 
     ////////////////////////////////////////////////////////////////////
     // post config tasks
@@ -384,3 +414,22 @@ void umtrx_impl::time64_self_test(void)
 }
 
 void umtrx_impl::update_clock_source(const std::string &){}
+
+void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
+    apply_rx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
+}
+
+void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
+    apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
+}
+
+void umtrx_impl::set_tcxo_dac(const umtrx_iface::sptr &iface, const uint16_t val){
+    if (verbosity>0) printf("umtrx_impl::set_tcxo_dac(%d)\n", val);
+    iface->send_zpu_action(UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC, val);
+}
+
+uint16_t umtrx_impl::get_tcxo_dac(const umtrx_iface::sptr &iface){
+    uint16_t val = iface->send_zpu_action(UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC, 0);
+    if (verbosity>0) printf("umtrx_impl::get_tcxo_dac(): %d\n", val);
+    return (uint16_t)val;
+}

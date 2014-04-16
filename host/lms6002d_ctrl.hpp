@@ -45,6 +45,12 @@ public:
 
     virtual uhd::gain_range_t get_rx_gain_range(const std::string &name) = 0;
     virtual uhd::gain_range_t get_tx_gain_range(const std::string &name) = 0;
+
+    virtual uint8_t _set_tx_vga1dc_i_int(uint8_t offset) = 0;
+    virtual uint8_t _set_tx_vga1dc_q_int(uint8_t offset) = 0;
+
+    virtual uint8_t get_tx_vga1dc_i_int(void) = 0;
+    virtual uint8_t get_tx_vga1dc_q_int(void) = 0;
 };
 
 #endif /* INCLUDED_LMS6002D_CTRL_HPP */
