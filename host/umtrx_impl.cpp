@@ -263,9 +263,11 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _tree->create<std::string>(rx_rf_fe_path / "name").set("LMS-RX-FE");
         _tree->create<std::string>(tx_rf_fe_path / "name").set("LMS-TX-FE");
 
-        //sensors -- TODO needs lo locked
-        _tree->create<int>(rx_rf_fe_path / "sensors"); //empty TODO
-        _tree->create<int>(tx_rf_fe_path / "sensors"); //empty TODO
+        //sensors -- always say locked
+        _tree->create<sensor_value_t>(rx_rf_fe_path / "sensors" / "lo_locked")
+            .set(sensor_value_t("LO", true, "locked", "unlocked"));
+        _tree->create<sensor_value_t>(tx_rf_fe_path / "sensors" / "lo_locked")
+            .set(sensor_value_t("LO", true, "locked", "unlocked"));
 
         //rx gains
         BOOST_FOREACH(const std::string &name, ctrl->get_rx_gains())
@@ -355,23 +357,19 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //set Tx DC calibration values, which are read from mboard EEPROM
         std::string tx_name = (fe_name=="A")?"tx1":"tx2";
-        if (_iface->mb_eeprom.has_key(tx_name+"-vga1-dc-i") and not _iface->mb_eeprom[tx_name+"-vga1-dc-i"].empty()) {
-            _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
-                .set(boost::lexical_cast<int>(_iface->mb_eeprom[tx_name+"-vga1-dc-i"]));
-        }
-        if (_iface->mb_eeprom.has_key(tx_name+"-vga1-dc-q") and not _iface->mb_eeprom[tx_name+"-vga1-dc-q"].empty()) {
-            _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
-                .set(boost::lexical_cast<int>(_iface->mb_eeprom[tx_name+"-vga1-dc-q"]));
-        }
-
+        const std::string dc_i = _iface->mb_eeprom.get(tx_name+"-vga1-dc-i", "");
+        const std::string dc_q = _iface->mb_eeprom.get(tx_name+"-vga1-dc-q", "");
+        if (not dc_i.empty()) _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
+            .set(boost::lexical_cast<int>(dc_i));
+        if (not dc_q.empty()) _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
+            .set(boost::lexical_cast<int>(dc_q));
     }
 
     //set TCXO DAC calibration value, which is read from mboard EEPROM
-    if (_iface->mb_eeprom.has_key("tcxo-dac") and not _iface->mb_eeprom["tcxo-dac"].empty()) {
-        _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
-            .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1))
-            .set(boost::lexical_cast<uint16_t>(_iface->mb_eeprom["tcxo-dac"]));
-    }
+    const std::string tcxo_dac = _iface->mb_eeprom.get("tcxo-dac", "");
+    if (not tcxo_dac.empty()) _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
+        .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1))
+        .set(boost::lexical_cast<uint16_t>(tcxo_dac));
 
     ////////////////////////////////////////////////////////////////////
     // post config tasks
