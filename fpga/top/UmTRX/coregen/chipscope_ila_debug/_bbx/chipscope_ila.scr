@@ -1,0 +1,16 @@
+set -xsthdpdir "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_chipscope_ila_v1_05_a_xst"
+run
+-ifn "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila.prj"
+-top chipscope_ila
+-p xc6slx75-fgg484-2
+-work_lib work
+-bus_delimiter <>
+-lso "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/_default.lso"
+-bufg 0
+-ifmt MIXED
+-iobuf NO
+-loop_iteration_limit 8192
+-checkcmdline no
+-arch spartan6
+-ofmt NGC
+-ofn /home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/chipscope_ila.ngc

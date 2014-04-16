@@ -9,7 +9,8 @@ module umtrx_rx_chain
     parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
-    parameter FIFOSIZE = 10
+    parameter FIFOSIZE = 10,
+    parameter DEBUG = 0
 )
 (
     input sys_clk,
@@ -136,5 +137,59 @@ module umtrx_rx_chain
         .rclk(sys_clk), .dataout(vita_data_sys), .src_rdy_o(vita_valid_sys), .dst_rdy_i(vita_ready_sys),
         .arst(dsp_rst | sys_rst)
     );
+
+    /*******************************************************************
+     * Debug
+     ******************************************************************/
+    generate
+    if (DEBUG == 1) begin
+        wire [35:0] CONTROL0;
+        chipscope_icon chipscope_icon
+        (
+            .CONTROL0(CONTROL0)
+        );
+        wire [255:0] DATA;
+        wire [7:0] TRIG0;
+        chipscope_ila chipscope_ila
+        (
+            .CONTROL(CONTROL0),
+            .CLK(sys_clk),
+            .DATA(DATA),
+            .TRIG0(TRIG0)
+        );
+        assign TRIG0 =
+        {
+            set_stb_dsp, set_stb_fe,
+            ddc_run, vita_run,
+            vita_valid_dsp, vita_ready_dsp,
+            vita_valid_sys, vita_ready_sys
+        };
+        assign DATA[31:0] = vita_data_sys;
+        assign DATA[63:32] = vita_data_dsp;
+        assign DATA[95:64] = vita_sample;
+        assign DATA[127:96] = ddc_sample;
+        assign DATA[159:128] = {adc_a_16, adc_b_16};
+        assign DATA[191:160] = set_data_dsp;
+        assign DATA[223:192] = set_data_fe;
+        assign DATA[255] = adc_stb;
+        assign DATA[254] = ddc_strobe;
+        assign DATA[253] = ddc_run;
+        assign DATA[252] = ddc_clear;
+        assign DATA[251] = vita_strobe;
+        assign DATA[250] = vita_run;
+        assign DATA[249] = vita_clear;
+        assign DATA[248] = vita_valid_dsp;
+        assign DATA[247] = vita_ready_dsp;
+        assign DATA[246] = vita_valid_sys;
+        assign DATA[245] = vita_ready_sys;
+        assign DATA[244] = dsp_rst;
+        assign DATA[243] = sys_rst;
+        assign DATA[242] = fe_rst;
+        assign DATA[241] = set_stb_dsp;
+        assign DATA[240] = set_stb_fe;
+        assign DATA[239:232] = set_addr_dsp;
+        assign DATA[231:224] = set_addr_fe;
+    end
+    endgenerate
 
 endmodule //umtrx_rx_chain

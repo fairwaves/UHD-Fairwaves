@@ -1,0 +1,38 @@
+SET_PARAMETER user_scan_chain USER1
+SET_PARAMETER example_design false
+SET_PARAMETER use_softbscan false
+SET_PARAMETER use_ext_bscan false
+SET_PARAMETER number_control_ports 1
+SET_PARAMETER constraint_type external
+SET_PARAMETER use_unused_bscan false
+SET_PARAMETER enable_jtag_bufg true
+SET_PARAMETER component_name chipscope_icon
+SET_SIM_PARAMETER c_user_scan_chain 1
+SET_SIM_PARAMETER c_use_control0 1
+SET_SIM_PARAMETER c_use_control1 0
+SET_SIM_PARAMETER c_use_control2 0
+SET_SIM_PARAMETER c_use_control3 0
+SET_SIM_PARAMETER c_use_control4 0
+SET_SIM_PARAMETER c_use_control5 0
+SET_SIM_PARAMETER c_use_control6 0
+SET_SIM_PARAMETER c_use_control7 0
+SET_SIM_PARAMETER c_use_control8 0
+SET_SIM_PARAMETER c_use_control9 0
+SET_SIM_PARAMETER c_num_control_ports 1
+SET_SIM_PARAMETER c_use_jtag_bufg 1
+SET_SIM_PARAMETER c_use_unused_bscan 0
+SET_SIM_PARAMETER c_constraint_type external
+SET_SIM_PARAMETER c_example_design false
+SET_SIM_PARAMETER c_use_softbscan 0
+SET_SIM_PARAMETER c_use_ext_bscan 0
+SET_SIM_PARAMETER c_use_control10 0
+SET_SIM_PARAMETER c_use_control11 0
+SET_SIM_PARAMETER c_use_control12 0
+SET_SIM_PARAMETER c_use_control13 0
+SET_SIM_PARAMETER c_use_control14 0
+SET_SIM_PARAMETER c_use_new_parser 0
+SET_SIM_PARAMETER component_name chipscope_icon
+SET_SIM_PARAMETER c_xco_list Number_Control_Ports=1;Use_Ext_Bscan=false;User_Scan_Chain=USER1;Enable_Jtag_Bufg=true;Use_Unused_Bscan=false;Use_Softbscan=false
+SET_ERROR_CODE 0
+SET_ERROR_MSG  
+SET_ERROR_TEXT Finished initializing IP model.	

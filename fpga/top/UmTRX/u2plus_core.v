@@ -630,7 +630,8 @@ module u2plus_core
         .FRONT_BASE(SR_RX_FRONT0),
         .DSP_BASE(SR_RX_DSP0),
         .CTRL_BASE(SR_RX_CTRL0),
-        .FIFOSIZE(DSP_RX_FIFOSIZE)
+        .FIFOSIZE(DSP_RX_FIFOSIZE),
+        .DEBUG(1)
     )
     umtrx_rx_chain0
     (

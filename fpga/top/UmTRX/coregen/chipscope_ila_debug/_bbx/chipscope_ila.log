@@ -1,0 +1,2083 @@
+Release 14.4 - xst P.49d (lin64)
+Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.
+--> 
+Parameter xsthdpdir set to /home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_chipscope_ila_v1_05_a_xst
+
+
+Total REAL time to Xst completion: 1.00 secs
+Total CPU time to Xst completion: 0.14 secs
+ 
+--> 
+WARNING:Xst:1583 - You are using an internal switch '-checkcmdline'.
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Parsing
+  3) HDL Elaboration
+  4) HDL Synthesis
+       4.1) HDL Synthesis Report
+  5) Advanced HDL Synthesis
+       5.1) Advanced HDL Synthesis Report
+  6) Low Level Synthesis
+  7) Partition Report
+  8) Design Summary
+       8.1) Primitive and Black Box Usage
+       8.2) Device utilization summary
+       8.3) Partition Resource Summary
+       8.4) Timing Report
+            8.4.1) Clock Information
+            8.4.2) Asynchronous Control Signals Information
+            8.4.3) Timing Summary
+            8.4.4) Timing Details
+            8.4.5) Cross Clock Domains Report
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila.prj"
+Input Format                       : MIXED
+
+---- Target Parameters
+Target Device                      : xc6slx75-fgg484-2
+Output Format                      : NGC
+Output File Name                   : "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/chipscope_ila.ngc"
+
+---- Source Options
+Top Module Name                    : chipscope_ila
+Work Library                       : work
+Architecture Name                  : spartan6
+
+---- Target Options
+Add Generic Clock Buffer(BUFG)     : 0
+Add IO Buffers                     : NO
+
+---- General Options
+Bus Delimiter                      : <>
+Library Search Order               : "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/_default.lso"
+
+---- Other Options
+loop_iteration_limit               : 8192
+checkcmdline                       : no
+
+=========================================================================
+
+WARNING:Xst:29 - Optimization Effort not specified
+The following parameters have been added:
+Optimization Goal                  : SPEED
+
+=========================================================================
+
+=========================================================================
+*                          HDL Parsing                                  *
+=========================================================================
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/xbip_utils_v1_00_a/bip_utils_pkg.vhd" into library xbip_utils_v1_00_a
+Parsing package <bip_utils_pkg>.
+Parsing package body <bip_utils_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_pro_package.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_pro_package>.
+Parsing package body <cs_pro_package>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_controlbus_xstworkaround.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_controlbus_xstworkaround>.
+Parsing architecture <syn> of entity <cs_controlbus_xstworkaround>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_decoder.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <async_decoder>.
+Parsing architecture <virtex> of entity <async_decoder>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/counter.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <counter>.
+Parsing architecture <virtex> of entity <counter>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux1024.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux1024>.
+Parsing architecture <syn> of entity <cs_mux1024>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux128.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux128>.
+Parsing architecture <syn> of entity <cs_mux128>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux16.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux16>.
+Parsing architecture <syn> of entity <cs_mux16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux2.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux2>.
+Parsing architecture <syn> of entity <cs_mux2>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux2048.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux2048>.
+Parsing architecture <syn> of entity <cs_mux2048>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux256.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux256>.
+Parsing architecture <syn> of entity <cs_mux256>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux32.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux32>.
+Parsing architecture <syn> of entity <cs_mux32>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux4.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux4>.
+Parsing architecture <syn> of entity <cs_mux4>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux4096.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux4096>.
+Parsing architecture <syn> of entity <cs_mux4096>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux512.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux512>.
+Parsing architecture <syn> of entity <cs_mux512>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux64.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux64>.
+Parsing architecture <syn> of entity <cs_mux64>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux8.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux8>.
+Parsing architecture <syn> of entity <cs_mux8>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux8192.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux8192>.
+Parsing architecture <syn> of entity <cs_mux8192>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_mux>.
+Parsing architecture <syn> of entity <cs_mux>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/xsrlc16e.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <XSRLC16E>.
+Parsing architecture <syn> of entity <xsrlc16e>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut4.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_cfglut4>.
+Parsing architecture <virtex> of entity <cs_cfglut4>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/gor.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <gor>.
+Parsing architecture <virtex> of entity <gor>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_cfglut5>.
+Parsing architecture <virtex> of entity <cs_cfglut5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_cfglut6>.
+Parsing architecture <virtex> of entity <cs_cfglut6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_gand_srl_pkg>.
+Parsing package body <cs_gand_srl_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_s6_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_s6_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_s6_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_s6_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice_no_rpm.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_s6_slice_no_rpm>.
+Parsing architecture <structural> of entity <cs_gand_srl_s6_slice_no_rpm>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_s6_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_s6_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_s6>.
+Parsing architecture <structural> of entity <cs_gand_srl_s6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v5_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v5_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_v5_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v5_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v5_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_v5_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v5>.
+Parsing architecture <structural> of entity <cs_gand_srl_v5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v6_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v6_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_v6_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v6_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v6_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_v6_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v6>.
+Parsing architecture <structural> of entity <cs_gand_srl_v6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v7_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v7_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_v7_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v7_slice_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v7_slice_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_v7_slice_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v7_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v7_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_v7_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v7_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v7_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_v7_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_v7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_v7>.
+Parsing architecture <structural> of entity <cs_gand_srl_v7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_k7_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_k7_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_k7_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_k7_slice_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_k7_slice_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_k7_slice_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_zq_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_zq_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_zq_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_zq_slice_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_zq_slice_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_zq_slice_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_a7_slice.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_a7_slice>.
+Parsing architecture <structural> of entity <cs_gand_srl_a7_slice>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_a7_slice_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_a7_slice_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_a7_slice_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_k7_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_k7_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_k7_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_k7_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_k7_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_k7_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_zq_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_zq_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_zq_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_zq_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_zq_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_zq_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_a7_rpm_set.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_a7_rpm_set>.
+Parsing architecture <structural> of entity <cs_gand_srl_a7_rpm_set>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_a7_rpm_unset.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_a7_rpm_unset>.
+Parsing architecture <structural> of entity <cs_gand_srl_a7_rpm_unset>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_k7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_k7>.
+Parsing architecture <structural> of entity <cs_gand_srl_k7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_zq.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_zq>.
+Parsing architecture <structural> of entity <cs_gand_srl_zq>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_a7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl_a7>.
+Parsing architecture <structural> of entity <cs_gand_srl_a7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gand_srl>.
+Parsing architecture <structural> of entity <cs_gand_srl>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/lcounter.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <lcounter>.
+Parsing architecture <virtex> of entity <lcounter>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/lzpcounter.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <lzpcounter>.
+Parsing architecture <virtex> of entity <lzpcounter>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/xsrl16e.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <XSRL16E>.
+Parsing architecture <virtex> of entity <xsrl16e>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/zpcounter.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <zpcounter>.
+Parsing architecture <virtex> of entity <zpcounter>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_cfglut7>.
+Parsing architecture <virtex> of entity <cs_cfglut7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_mux.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <async_mux>.
+Parsing architecture <syn> of entity <async_mux>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_math_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_math_pkg>.
+Parsing package body <cs_math_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bitvec_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bitvec_pkg>.
+Parsing package body <cs_bitvec_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_depth_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_depth_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_s6_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_s6_pkg>.
+Parsing package body <cs_bram_s6_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_s6_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_s6_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_s6_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_s6_ramb9.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_s6_ramb9>.
+Parsing architecture <syn> of entity <cs_bram_simple_s6_ramb9>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_s6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_s6>.
+Parsing architecture <virtex> of entity <cs_bram_simple_s6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bus_mux2.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bus_mux2>.
+Parsing architecture <syn> of entity <cs_bus_mux2>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bus_mux4.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bus_mux4>.
+Parsing architecture <syn> of entity <cs_bus_mux4>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bus_mux8.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bus_mux8>.
+Parsing architecture <syn> of entity <cs_bus_mux8>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bus_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bus_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_register.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_register>.
+Parsing architecture <virtex> of entity <cs_register>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_s6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_s6>.
+Parsing architecture <syn> of entity <cs_bram_cascade_s6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_v5_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_v5_pkg>.
+Parsing package body <cs_bram_v5_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v5_ramb16.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v5_ramb16>.
+Parsing architecture <virtex> of entity <cs_bram_simple_v5_ramb16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v5_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v5_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_v5_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v5>.
+Parsing architecture <virtex> of entity <cs_bram_simple_v5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_v5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_v5>.
+Parsing architecture <syn> of entity <cs_bram_cascade_v5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_v6_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_v6_pkg>.
+Parsing package body <cs_bram_v6_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v6_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v6_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_v6_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v6_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v6_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_v6_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v6>.
+Parsing architecture <syn> of entity <cs_bram_simple_v6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_v6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_v6>.
+Parsing architecture <syn> of entity <cs_bram_cascade_v6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_v7_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_v7_pkg>.
+Parsing package body <cs_bram_v7_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v7_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v7_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_v7_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v7_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v7_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_v7_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_v7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_v7>.
+Parsing architecture <syn> of entity <cs_bram_simple_v7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_v7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_v7>.
+Parsing architecture <syn> of entity <cs_bram_cascade_v7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_k7_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_k7_pkg>.
+Parsing package body <cs_bram_k7_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_zq_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_zq_pkg>.
+Parsing package body <cs_bram_zq_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_a7_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_a7_pkg>.
+Parsing package body <cs_bram_a7_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_k7_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_k7_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_k7_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_zq_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_zq_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_zq_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_a7_ramb18.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_a7_ramb18>.
+Parsing architecture <syn> of entity <cs_bram_simple_a7_ramb18>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_k7_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_k7_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_k7_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_zq_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_zq_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_zq_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_a7_ramb36.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_a7_ramb36>.
+Parsing architecture <virtex> of entity <cs_bram_simple_a7_ramb36>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_k7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_k7>.
+Parsing architecture <syn> of entity <cs_bram_simple_k7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_zq.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_zq>.
+Parsing architecture <syn> of entity <cs_bram_simple_zq>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_a7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_simple_a7>.
+Parsing architecture <syn> of entity <cs_bram_simple_a7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_k7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_k7>.
+Parsing architecture <syn> of entity <cs_bram_cascade_k7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_zq.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_zq>.
+Parsing architecture <syn> of entity <cs_bram_cascade_zq>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_a7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade_a7>.
+Parsing architecture <syn> of entity <cs_bram_cascade_a7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_pkg.vhd" into library chipscope_lib_v1_03_a
+Parsing package <cs_bram_pkg>.
+Parsing package body <cs_bram_pkg>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_bram_cascade>.
+Parsing architecture <struct> of entity <cs_bram_cascade>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_lut5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_lut5>.
+Parsing architecture <virtex> of entity <cs_lut5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_lut6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_lut6>.
+Parsing architecture <virtex> of entity <cs_lut6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_counter_modk.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_counter_modk>.
+Parsing architecture <virtex> of entity <cs_counter_modk>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_transfer.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <async_transfer>.
+Parsing architecture <virtex> of entity <async_transfer>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/edge_detector.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <edge_detector>.
+Parsing architecture <virtex> of entity <edge_detector>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_s6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_s6>.
+Parsing architecture <structural> of entity <cs_gandx_srl_s6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_v5.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_v5>.
+Parsing architecture <structural> of entity <cs_gandx_srl_v5>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_v6.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_v6>.
+Parsing architecture <structural> of entity <cs_gandx_srl_v6>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_v7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_v7>.
+Parsing architecture <structural> of entity <cs_gandx_srl_v7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_k7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_k7>.
+Parsing architecture <structural> of entity <cs_gandx_srl_k7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_zq.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_zq>.
+Parsing architecture <structural> of entity <cs_gandx_srl_zq>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_a7.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl_a7>.
+Parsing architecture <structural> of entity <cs_gandx_srl_a7>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_gandx_srl>.
+Parsing architecture <structural> of entity <cs_gandx_srl>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut8.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <cs_cfglut8>.
+Parsing architecture <virtex> of entity <cs_cfglut8>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/zcounter.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <zcounter>.
+Parsing architecture <virtex> of entity <zcounter>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/fdpr.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <fdpr>.
+Parsing architecture <virtex> of entity <fdpr>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/xsrl16.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <XSRL16>.
+Parsing architecture <virtex> of entity <xsrl16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/programmable_delay.vhd" into library chipscope_lib_v1_03_a
+Parsing entity <programmable_delay>.
+Parsing architecture <virtex> of entity <programmable_delay>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_package.vhd" into library chipscope_ila_v1_05_a
+Parsing package <ila_package>.
+Parsing package body <ila_package>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gand_srl16.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gand_srl16>.
+Parsing architecture <virtex> of entity <ila_match_gand_srl16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gand.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gand>.
+Parsing architecture <virtex> of entity <ila_match_gand>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_addrgen.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_cap_addrgen>.
+Parsing architecture <virtex> of entity <ila_cap_addrgen>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_ctrl.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_cap_ctrl>.
+Parsing architecture <virtex> of entity <ila_cap_ctrl>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_ctrl_g2.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_cap_ctrl_g2>.
+Parsing architecture <virtex> of entity <ila_cap_ctrl_g2>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_ctrl_g2_sq.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_cap_ctrl_g2_sq>.
+Parsing architecture <virtex> of entity <ila_cap_ctrl_g2_sq>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_bram_single.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_bram_single>.
+Parsing architecture <virtex> of entity <ila_bram_single>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_bram_flat.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_bram_flat>.
+Parsing architecture <virtex> of entity <ila_bram_flat>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_ram_readaddr.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_ram_readaddr>.
+Parsing architecture <virtex> of entity <ila_ram_readaddr>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trace_buffer.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trace_buffer>.
+Parsing architecture <syn> of entity <ila_trace_buffer>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_storage.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_cap_storage>.
+Parsing architecture <virtex> of entity <ila_cap_storage>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_reset_ctrl.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_reset_ctrl>.
+Parsing architecture <virtex> of entity <ila_reset_ctrl>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_status.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_status>.
+Parsing architecture <virtex> of entity <ila_status>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_count.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_count>.
+Parsing architecture <virtex> of entity <ila_match_count>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gandx_srl16.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gandx_srl16>.
+Parsing architecture <virtex> of entity <ila_match_gandx_srl16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gandx.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gandx>.
+Parsing architecture <virtex> of entity <ila_match_gandx>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gor.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gor>.
+Parsing architecture <virtex> of entity <ila_match_gor>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gorx.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_gorx>.
+Parsing architecture <virtex> of entity <ila_match_gorx>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_var_srl16.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_var_srl16>.
+Parsing architecture <virtex> of entity <ila_match_var_srl16>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_var_srl32.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_var_srl32>.
+Parsing architecture <virtex> of entity <ila_match_var_srl32>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_var.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_var>.
+Parsing architecture <virtex> of entity <ila_match_var>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_varx_srl32.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_varx_srl32>.
+Parsing architecture <virtex> of entity <ila_match_varx_srl32>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_varx.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_varx>.
+Parsing architecture <virtex> of entity <ila_match_varx>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_range.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_range>.
+Parsing architecture <virtex> of entity <ila_match_range>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match>.
+Parsing architecture <virtex> of entity <ila_match>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_combo.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_combo>.
+Parsing architecture <virtex> of entity <ila_match_combo>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trig_match.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trig_match>.
+Parsing architecture <virtex> of entity <ila_trig_match>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond_lut.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trigcond_lut>.
+Parsing architecture <virtex> of entity <ila_trigcond_lut>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_combine.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_match_combine>.
+Parsing architecture <virtex> of entity <ila_match_combine>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigseq_complex.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trigseq_complex>.
+Parsing architecture <virtex> of entity <ila_trigseq_complex>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigseq_simple.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trigseq_simple>.
+Parsing architecture <virtex> of entity <ila_trigseq_simple>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trigcond>.
+Parsing architecture <virtex> of entity <ila_trigcond>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigger.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_trigger>.
+Parsing architecture <virtex> of entity <ila_trigger>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <ila_core>.
+Parsing architecture <virtex> of entity <ila_core>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd" into library chipscope_ila_v1_05_a
+Parsing entity <chipscope_ila>.
+Parsing architecture <virtex> of entity <chipscope_ila>.
+Parsing VHDL file "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila.vhd" into library work
+Parsing entity <chipscope_ila>.
+Parsing architecture <spartan6> of entity <chipscope_ila>.
+
+=========================================================================
+*                            HDL Elaboration                            *
+=========================================================================
+
+Elaborating entity <chipscope_ila> (architecture <spartan6>) from library <work>.
+
+Elaborating entity <chipscope_ila> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd" Line 292: Assignment to logic_1 ignored, since the identifier is never used
+
+Elaborating entity <cs_controlbus_xstworkaround> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <ila_core> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <programmable_delay> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <ila_reset_ctrl> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_reset_ctrl.vhd" Line 88: Assignment to logic_1 ignored, since the identifier is never used
+
+Elaborating entity <async_transfer> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <async_transfer> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <ila_trigger> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <ila_trig_match> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <ila_match_combo> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <ila_match> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match.vhd" Line 93: Assignment to logic_0 ignored, since the identifier is never used
+
+Elaborating entity <ila_match_gandx> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gandx.vhd" Line 104: Assignment to logic_1 ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gandx.vhd" Line 105: Assignment to logic_0 ignored, since the identifier is never used
+
+Elaborating entity <cs_gandx_srl> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_gandx_srl_s6> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:871 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_s6.vhd" Line 102: Using initial value '1' for logic_1 since it is never assigned
+
+Elaborating entity <cs_gand_srl_s6> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:871 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6.vhd" Line 64: Using initial value '1' for logic_1 since it is never assigned
+
+Elaborating entity <cs_gand_srl_s6_set> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_gand_srl_s6_slice_no_rpm> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:871 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice_no_rpm.vhd" Line 62: Using initial value '1' for logic_1 since it is never assigned
+WARNING:HDLCompiler:871 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice_no_rpm.vhd" Line 63: Using initial value '0' for logic_0 since it is never assigned
+
+Elaborating entity <ila_trigcond> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond.vhd" Line 120: Assignment to logic_1 ignored, since the identifier is never used
+
+Elaborating entity <ila_match_combine> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <ila_trigcond_lut> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <cs_cfglut4> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond.vhd" Line 110: Net <iCFG_EN_VEC[15]> does not have a driver.
+
+Elaborating entity <ila_status> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <counter> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <async_transfer> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <edge_detector> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <async_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux8> (architecture <syn>) from library <chipscope_lib_v1_03_a>.
+INFO:HDLCompiler:679 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux8.vhd" Line 62. Case statement is complete. others clause is never selected
+
+Elaborating entity <async_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux64> (architecture <syn>) from library <chipscope_lib_v1_03_a>.
+INFO:HDLCompiler:679 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux64.vhd" Line 120. Case statement is complete. others clause is never selected
+
+Elaborating entity <async_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux2> (architecture <syn>) from library <chipscope_lib_v1_03_a>.
+INFO:HDLCompiler:679 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux2.vhd" Line 56. Case statement is complete. others clause is never selected
+
+Elaborating entity <ila_cap_ctrl_g2_sq> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <ila_cap_addrgen> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <counter> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <ila_match_gand> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gand.vhd" Line 83: Assignment to logic_1 ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gand.vhd" Line 84: Assignment to logic_0 ignored, since the identifier is never used
+
+Elaborating entity <cs_gand_srl> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_gand_srl_s6> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_gand_srl_s6_set> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:871 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_set.vhd" Line 148: Using initial value "11111111" for srl_remainder since it is never assigned
+
+Elaborating entity <cs_gand_srl_s6_slice_no_rpm> (architecture <structural>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_cfglut7> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_cfglut6> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_cfglut6> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_cfglut5> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <ila_cap_storage> (architecture <virtex>) with generics from library <chipscope_ila_v1_05_a>.
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_storage.vhd" Line 183: Assignment to logic_1 ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_storage.vhd" Line 184: Assignment to logic_0 ignored, since the identifier is never used
+
+Elaborating entity <ila_trace_buffer> (architecture <syn>) with generics from library <chipscope_ila_v1_05_a>.
+
+Elaborating entity <cs_bram_cascade> (architecture <struct>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_bram_cascade_s6> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_bram_simple_s6> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_bram_simple_s6_ramb18> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_counter_modk> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <counter> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_lut6> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_register> (architecture <virtex>) with generics from library <chipscope_lib_v1_03_a>.
+WARNING:HDLCompiler:746 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trace_buffer.vhd" Line 201: Range is empty (null range)
+
+Elaborating entity <cs_mux> (architecture <syn>) with generics from library <chipscope_lib_v1_03_a>.
+
+Elaborating entity <cs_mux512> (architecture <syn>) from library <chipscope_lib_v1_03_a>.
+INFO:HDLCompiler:679 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux512.vhd" Line 612. Case statement is complete. others clause is never selected
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" Line 383: Net <iCFG_EN_VEC[15]> does not have a driver.
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" Line 384: Net <iCFG_EN_16_0> does not have a driver.
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" Line 385: Net <iCFG_EN_16_1> does not have a driver.
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd" Line 279: Net <iCONTROL_IN[17]> does not have a driver.
+WARNING:HDLCompiler:634 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd" Line 283: Net <iATC_CLKIN> does not have a driver.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Synthesizing Unit <chipscope_ila>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila.vhd".
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila.vhd" line 44: Output port <TRIG_OUT> of the instance <U0> is unconnected or connected to loadless signal.
+        C_XCO_LIST =
+"Component_Name=chipscope_ila;Number_Of_Trigger_Ports=1;Max_Sequence_Levels=1;Use_RPMs=false;Enable_Trigger_Output_Port=false;Sample_On=Rising;Sample_Data_Depth=2048;Enable_Storage_Qualification=true;Data_Same_As_Trigger=false;Data_Port_Width=256;Trigger_Port_Width_1=8;Match_Units_1=1;Counter_Width_1=Disabled;Match_Type_1=basic_with_edges;Exclude_From_Data_Storage_1=true;Trigger_Port_Width_2=8;Match_Units_2=1;Counter_Width_2=Disabled;Match_Type_2=basic_with_edges;Exclude_From_Data_Storage_2=true;Trigger_Port_Width_3=8;Match_Units_3=1;Counter_Width_3=Disabled;Match_Type_3=basic_with_edges;Exclude_From_Data_Storage_3=true;Trigger_Port_Width_4=8;Match_Units_4=1;Counter_Width_4=Disabled;Match_Type_4=basic_with_edges;Exclude_From_Data_Storage_4=true;Trigger_Port_Width_5=8;Match_Units_5=1;Counter_Width_5=Disabled;Match_Type_5=basic_with_edges;Exclude_From_Data_Storage_5=true;Trigger_Port_Width_6=8;Match_Units_6=1;Counter_Width_6=Disabled;Match_Type_6=basic_with_edges;Exclude_From_Data_Storage_6=true;Trigger_Port_Wi
+dth_7=8;Match_Units_7=1;Counter_Width_7=Disabled;Match_Type_7=basic_with_edges;Exclude_From_Data_Storage_7=true;Trigger_Port_Width_8=8;Match_Units_8=1;Counter_Width_8=Disabled;Match_Type_8=basic_with_edges;Exclude_From_Data_Storage_8=true;Trigger_Port_Width_9=8;Match_Units_9=1;Counter_Width_9=Disabled;Match_Type_9=basic_with_edges;Exclude_From_Data_Storage_9=true;Trigger_Port_Width_10=8;Match_Units_10=1;Counter_Width_10=Disabled;Match_Type_10=basic_with_edges;Exclude_From_Data_Storage_10=true;Trigger_Port_Width_11=8;Match_Units_11=1;Counter_Width_11=Disabled;Match_Type_11=basic_with_edges;Exclude_From_Data_Storage_11=true;Trigger_Port_Width_12=8;Match_Units_12=1;Counter_Width_12=Disabled;Match_Type_12=basic_with_edges;Exclude_From_Data_Storage_12=true;Trigger_Port_Width_13=8;Match_Units_13=1;Counter_Width_13=Disabled;Match_Type_13=basic_with_edges;Exclude_From_Data_Storage_13=true;Trigger_Port_Width_14=8;Match_Units_14=1;Counter_Width_14=Disabled;Match_Type_14=basic_with_edges;Exclude_From_Data_Storage_14=tru
+e;Trigger_Port_Width_15=8;Match_Units_15=1;Counter_Width_15=Disabled;Match_Type_15=basic_with_edges;Exclude_From_Data_Storage_15=true;Trigger_Port_Width_16=8;Match_Units_16=1;Counter_Width_16=Disabled;Match_Type_16=basic_with_edges;Exclude_From_Data_Storage_16=true"
+        C_XDEVICEFAMILY = "spartan6"
+        C_CORE_TYPE = 2
+        C_MFG_ID = 1
+        C_MAJOR_VERSION = 14
+        C_MINOR_VERSION = 4
+        C_BUILD_REVISION = 0
+        C_CORE_MAJOR_VER = 1
+        C_CORE_MINOR_VER = 4
+        C_CORE_MINOR_ALPHA_VER = 97
+        C_RAM_TYPE = 1
+        C_SRL16_TYPE = 2
+        C_USE_INV_CLK = 0
+        C_USE_RPM = 0
+        C_USE_TRIG_OUT = 0
+        C_USE_ATC_CLKIN = 0
+        C_USE_DATA = 1
+        C_USE_TRIG0 = 1
+        C_USE_TRIG1 = 0
+        C_USE_TRIG2 = 0
+        C_USE_TRIG3 = 0
+        C_USE_TRIG4 = 0
+        C_USE_TRIG5 = 0
+        C_USE_TRIG6 = 0
+        C_USE_TRIG7 = 0
+        C_USE_TRIG8 = 0
+        C_USE_TRIG9 = 0
+        C_USE_TRIG10 = 0
+        C_USE_TRIG11 = 0
+        C_USE_TRIG12 = 0
+        C_USE_TRIG13 = 0
+        C_USE_TRIG14 = 0
+        C_USE_TRIG15 = 0
+        C_USE_TRIGDATA0 = 0
+        C_USE_TRIGDATA1 = 0
+        C_USE_TRIGDATA2 = 0
+        C_USE_TRIGDATA3 = 0
+        C_USE_TRIGDATA4 = 0
+        C_USE_TRIGDATA5 = 0
+        C_USE_TRIGDATA6 = 0
+        C_USE_TRIGDATA7 = 0
+        C_USE_TRIGDATA8 = 0
+        C_USE_TRIGDATA9 = 0
+        C_USE_TRIGDATA10 = 0
+        C_USE_TRIGDATA11 = 0
+        C_USE_TRIGDATA12 = 0
+        C_USE_TRIGDATA13 = 0
+        C_USE_TRIGDATA14 = 0
+        C_USE_TRIGDATA15 = 0
+        C_DATA_WIDTH = 256
+        C_DATA_DEPTH = 2048
+        C_USE_GAP = 0
+        C_TIMESTAMP_TYPE = 0
+        C_TIMESTAMP_WIDTH = 32
+        C_TIMESTAMP_DEPTH = 512
+        C_USE_STORAGE_QUAL = 1
+        C_TSEQ_TYPE = 0
+        C_NUM_TSEQ_CNT = 0
+        C_TSEQ_CNT1_WIDTH = 1
+        C_TSEQ_CNT0_WIDTH = 1
+        C_NUM_TSEQ_STATES = 1
+        C_USE_TC_MCNT = 0
+        C_TC_MCNT_WIDTH = 1
+        C_EXT_CAP_RATE_MODE = 0
+        C_EXT_CAP_PIN_MODE = 0
+        C_NUM_EXT_CAP_PINS = 8
+        C_EXT_CAP_USE_REG = 1
+        C_NUM_MATCH_UNITS = 1
+        C_TRIG0_WIDTH = 8
+        C_TRIG1_WIDTH = 1
+        C_TRIG2_WIDTH = 1
+        C_TRIG3_WIDTH = 1
+        C_TRIG4_WIDTH = 1
+        C_TRIG5_WIDTH = 1
+        C_TRIG6_WIDTH = 1
+        C_TRIG7_WIDTH = 1
+        C_TRIG8_WIDTH = 1
+        C_TRIG9_WIDTH = 1
+        C_TRIG10_WIDTH = 1
+        C_TRIG11_WIDTH = 1
+        C_TRIG12_WIDTH = 1
+        C_TRIG13_WIDTH = 1
+        C_TRIG14_WIDTH = 1
+        C_TRIG15_WIDTH = 1
+        C_M0_TPID = 0
+        C_M1_TPID = 1
+        C_M2_TPID = 2
+        C_M3_TPID = 3
+        C_M4_TPID = 4
+        C_M5_TPID = 5
+        C_M6_TPID = 6
+        C_M7_TPID = 7
+        C_M8_TPID = 8
+        C_M9_TPID = 9
+        C_M10_TPID = 10
+        C_M11_TPID = 11
+        C_M12_TPID = 12
+        C_M13_TPID = 13
+        C_M14_TPID = 14
+        C_M15_TPID = 15
+        C_M0_TYPE = 1
+        C_M1_TYPE = 0
+        C_M2_TYPE = 0
+        C_M3_TYPE = 0
+        C_M4_TYPE = 0
+        C_M5_TYPE = 0
+        C_M6_TYPE = 0
+        C_M7_TYPE = 0
+        C_M8_TYPE = 0
+        C_M9_TYPE = 0
+        C_M10_TYPE = 0
+        C_M11_TYPE = 0
+        C_M12_TYPE = 0
+        C_M13_TYPE = 0
+        C_M14_TYPE = 0
+        C_M15_TYPE = 0
+        C_USE_MCNT0 = 0
+        C_USE_MCNT1 = 0
+        C_USE_MCNT2 = 0
+        C_USE_MCNT3 = 0
+        C_USE_MCNT4 = 0
+        C_USE_MCNT5 = 0
+        C_USE_MCNT6 = 0
+        C_USE_MCNT7 = 0
+        C_USE_MCNT8 = 0
+        C_USE_MCNT9 = 0
+        C_USE_MCNT10 = 0
+        C_USE_MCNT11 = 0
+        C_USE_MCNT12 = 0
+        C_USE_MCNT13 = 0
+        C_USE_MCNT14 = 0
+        C_USE_MCNT15 = 0
+        C_MCNT0_WIDTH = 1
+        C_MCNT1_WIDTH = 1
+        C_MCNT2_WIDTH = 1
+        C_MCNT3_WIDTH = 1
+        C_MCNT4_WIDTH = 1
+        C_MCNT5_WIDTH = 1
+        C_MCNT6_WIDTH = 1
+        C_MCNT7_WIDTH = 1
+        C_MCNT8_WIDTH = 1
+        C_MCNT9_WIDTH = 1
+        C_MCNT10_WIDTH = 1
+        C_MCNT11_WIDTH = 1
+        C_MCNT12_WIDTH = 1
+        C_MCNT13_WIDTH = 1
+        C_MCNT14_WIDTH = 1
+        C_MCNT15_WIDTH = 1
+        C_CONSTRAINT_TYPE = "external"
+        C_EXAMPLE_DESIGN = false
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <TRIG1> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG2> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG3> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG4> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG5> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG6> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG7> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG8> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG9> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG10> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG11> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG12> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG13> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG14> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG15> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd" line 1028: Output port <TRIG_OUT> of the instance <I_YES_D.U_ILA> is unconnected or connected to loadless signal.
+WARNING:Xst:653 - Signal <iCONTROL_IN<17:15>> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+WARNING:Xst:653 - Signal <TRIG_OUT> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+WARNING:Xst:653 - Signal <iATC_CLKIN> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+    Summary:
+	no macro.
+Unit <chipscope_ila> synthesized.
+
+Synthesizing Unit <chipscope_ila>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/chipscope_ila.vhd".
+    Summary:
+	no macro.
+Unit <chipscope_ila> synthesized.
+
+Synthesizing Unit <cs_controlbus_xstworkaround>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_controlbus_xstworkaround.vhd".
+        C_ENABLE_WORKAROUND = 0
+        C_CFG_DOUT_BIT = 3
+        C_CONTROL_WIDTH = 36
+WARNING:Xst:647 - Input <CONTROL_I> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_controlbus_xstworkaround> synthesized.
+
+Synthesizing Unit <ila_core>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd".
+        C_XDEVICEFAMILY = "spartan6"
+        C_CORE_TYPE = 2
+        C_MFG_ID = 1
+        C_MAJOR_VERSION = 14
+        C_MINOR_VERSION = 4
+        C_BUILD_REVISION = 0
+        C_CORE_MAJOR_VER = 1
+        C_CORE_MINOR_VER = 4
+        C_CORE_MINOR_ALPHA_VER = 97
+        C_RAM_TYPE = 1
+        C_SRL16_TYPE = 2
+        C_USE_INV_CLK = 0
+        C_USE_RPM = 0
+        C_USE_TRIG_OUT = 0
+        C_DATA_WIDTH = 256
+        C_DATA_DEPTH = 2048
+        C_USE_GAP = 0
+        C_TIMESTAMP_TYPE = 0
+        C_TIMESTAMP_WIDTH = 32
+        C_TIMESTAMP_DEPTH = 512
+        C_USE_STORAGE_QUAL = 1
+        C_TSEQ_TYPE = 0
+        C_NUM_TSEQ_CNT = 0
+        C_TSEQ_CNT1_WIDTH = 1
+        C_TSEQ_CNT0_WIDTH = 1
+        C_NUM_TSEQ_STATES = 1
+        C_USE_TC_MCNT = 0
+        C_TC_MCNT_WIDTH = 1
+        C_EXT_CAP_RATE_MODE = 0
+        C_EXT_CAP_PIN_MODE = 0
+        C_NUM_EXT_CAP_PINS = 8
+        C_EXT_CAP_USE_REG = 1
+        C_NUM_MATCH_UNITS = 1
+        C_TRIG_WIDTH = 8
+        C_TRIG0_WIDTH = 8
+        C_TRIG1_WIDTH = 1
+        C_TRIG2_WIDTH = 1
+        C_TRIG3_WIDTH = 1
+        C_TRIG4_WIDTH = 1
+        C_TRIG5_WIDTH = 1
+        C_TRIG6_WIDTH = 1
+        C_TRIG7_WIDTH = 1
+        C_TRIG8_WIDTH = 1
+        C_TRIG9_WIDTH = 1
+        C_TRIG10_WIDTH = 1
+        C_TRIG11_WIDTH = 1
+        C_TRIG12_WIDTH = 1
+        C_TRIG13_WIDTH = 1
+        C_TRIG14_WIDTH = 1
+        C_TRIG15_WIDTH = 1
+        C_M0_TPID = 0
+        C_M1_TPID = 1
+        C_M2_TPID = 2
+        C_M3_TPID = 3
+        C_M4_TPID = 4
+        C_M5_TPID = 5
+        C_M6_TPID = 6
+        C_M7_TPID = 7
+        C_M8_TPID = 8
+        C_M9_TPID = 9
+        C_M10_TPID = 10
+        C_M11_TPID = 11
+        C_M12_TPID = 12
+        C_M13_TPID = 13
+        C_M14_TPID = 14
+        C_M15_TPID = 15
+        C_M0_TYPE = 1
+        C_M1_TYPE = 0
+        C_M2_TYPE = 0
+        C_M3_TYPE = 0
+        C_M4_TYPE = 0
+        C_M5_TYPE = 0
+        C_M6_TYPE = 0
+        C_M7_TYPE = 0
+        C_M8_TYPE = 0
+        C_M9_TYPE = 0
+        C_M10_TYPE = 0
+        C_M11_TYPE = 0
+        C_M12_TYPE = 0
+        C_M13_TYPE = 0
+        C_M14_TYPE = 0
+        C_M15_TYPE = 0
+        C_USE_MCNT0 = 0
+        C_USE_MCNT1 = 0
+        C_USE_MCNT2 = 0
+        C_USE_MCNT3 = 0
+        C_USE_MCNT4 = 0
+        C_USE_MCNT5 = 0
+        C_USE_MCNT6 = 0
+        C_USE_MCNT7 = 0
+        C_USE_MCNT8 = 0
+        C_USE_MCNT9 = 0
+        C_USE_MCNT10 = 0
+        C_USE_MCNT11 = 0
+        C_USE_MCNT12 = 0
+        C_USE_MCNT13 = 0
+        C_USE_MCNT14 = 0
+        C_USE_MCNT15 = 0
+        C_MCNT0_WIDTH = 1
+        C_MCNT1_WIDTH = 1
+        C_MCNT2_WIDTH = 1
+        C_MCNT3_WIDTH = 1
+        C_MCNT4_WIDTH = 1
+        C_MCNT5_WIDTH = 1
+        C_MCNT6_WIDTH = 1
+        C_MCNT7_WIDTH = 1
+        C_MCNT8_WIDTH = 1
+        C_MCNT9_WIDTH = 1
+        C_MCNT10_WIDTH = 1
+        C_MCNT11_WIDTH = 1
+        C_MCNT12_WIDTH = 1
+        C_MCNT13_WIDTH = 1
+        C_MCNT14_WIDTH = 1
+        C_MCNT15_WIDTH = 1
+        C_DATA_DELAY = 9
+        C_TRIGDATA_STATUS = "0000000000000000"
+        C_EXTRA_STATUS = "1111111111111111"
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CONTROL_IN<2:2>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CONTROL_IN<10:9>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CONTROL_IN<17:14>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CONTROL_IN<34:20>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <ATC_CLKIN> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" line 601: Output port <HALT> of the instance <U_RST> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" line 627: Output port <CFG_TSEQ_DOUT> of the instance <U_TRIG> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" line 790: Output port <CAP_EXT_TRIGOUT> of the instance <U_G2_SQ.U_CAPCTRL> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_core.vhd" line 874: Output port <WR_TSTAMP_OVERFLOW> of the instance <U_CAPSTOR> is unconnected or connected to loadless signal.
+WARNING:Xst:653 - Signal <iCFG_EN_VEC> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+WARNING:Xst:653 - Signal <iCFG_EN_16_0> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+WARNING:Xst:653 - Signal <iCFG_EN_16_1> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+    Summary:
+	no macro.
+Unit <ila_core> synthesized.
+
+Synthesizing Unit <programmable_delay>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/programmable_delay.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_DELAY_CYCLES = 9
+        C_WIDTH = 256
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <programmable_delay> synthesized.
+
+Synthesizing Unit <ila_reset_ctrl>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_reset_ctrl.vhd".
+        C_TSEQ_TYPE = 0
+        C_RESET_WIDTH = 8
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_reset_ctrl> synthesized.
+
+Synthesizing Unit <async_transfer_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_transfer.vhd".
+        C_PULSE_LENGTH = 2
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_transfer_1> synthesized.
+
+Synthesizing Unit <async_transfer_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_transfer.vhd".
+        C_PULSE_LENGTH = 4
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_transfer_2> synthesized.
+
+Synthesizing Unit <ila_trigger>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigger.vhd".
+        C_DEVICE_FAMILY = 16
+        C_RAM_TYPE = 1
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_TIMESTAMP_TYPE = 0
+        C_USE_STORAGE_QUAL = 1
+        C_TSEQ_TYPE = 0
+        C_NUM_TSEQ_CNT = 0
+        C_TSEQ_CNT1_WIDTH = 1
+        C_TSEQ_CNT0_WIDTH = 1
+        C_NUM_TSEQ_STATES = 1
+        C_USE_TC_MCNT = 0
+        C_TC_MCNT_WIDTH = 1
+        C_NUM_MATCH_UNITS = 1
+        C_TRIG_WIDTH = 8
+        C_TRIG_WIDTH_VEC = "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111"
+        C_MATCH_TPID_VEC = "1111111011011100101110101001100001110110010101000011001000010000"
+        C_MATCH_TYPE_VEC = "0000000000000000000000000000000000000000000000000000000000000001"
+        C_USE_MCNT_VEC = "0000000000000000"
+        C_MCNT_WIDTH_VEC = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    Set property "syn_noprune = true".
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigger.vhd" line 254: Output port <CFG_DOUT> of the instance <U_TC> is unconnected or connected to loadless signal.
+    Summary:
+	no macro.
+Unit <ila_trigger> synthesized.
+
+Synthesizing Unit <ila_trig_match>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trig_match.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_NUM_MATCH_UNITS = 1
+        C_TRIG_WIDTH = 8
+        C_TRIG_WIDTH_VEC = "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111"
+        C_MATCH_TPID_VEC = "1111111011011100101110101001100001110110010101000011001000010000"
+        C_MATCH_TYPE_VEC = "0000000000000000000000000000000000000000000000000000000000000001"
+        C_USE_MCNT_VEC = "0000000000000000"
+        C_MCNT_WIDTH_VEC = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_trig_match> synthesized.
+
+Synthesizing Unit <ila_match_combo>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_combo.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_DIN_WIDTH = 8
+        C_MATCH_UNIT_TYPE = 1
+        C_USE_MCNT = 0
+        C_MCNT_WIDTH = 1
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <TRIG_RESET> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CFG_EN_16_0> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CFG_EN_16_1> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_combo.vhd" line 160: Output port <CFG_DOUT> of the instance <U_MU> is unconnected or connected to loadless signal.
+    Summary:
+	no macro.
+Unit <ila_match_combo> synthesized.
+
+Synthesizing Unit <ila_match>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match.vhd".
+        C_DEVICE_FAMILY = 16
+        C_MATCH_UNIT_TYPE = 1
+        C_DIN_WIDTH = 8
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 1
+        C_USE_OUTPUT_REG = 1
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_match> synthesized.
+
+Synthesizing Unit <ila_match_gandx>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gandx.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 1
+        C_USE_OUTPUT_REG = 1
+        C_DIN_WIDTH = 8
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_match_gandx> synthesized.
+
+Synthesizing Unit <cs_gandx_srl>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl.vhd".
+        C_DEVICE_FAMILY = 16
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 1
+        C_USE_OUTPUT_REG = 1
+        C_GAND_IN_WIDTH = 8
+    Summary:
+	no macro.
+Unit <cs_gandx_srl> synthesized.
+
+Synthesizing Unit <cs_gandx_srl_s6>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gandx_srl_s6.vhd".
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 1
+        C_USE_OUTPUT_REG = 1
+        C_GAND_IN_WIDTH = 8
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gandx_srl_s6> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6.vhd".
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 0
+        C_USE_OUTPUT_REG = 1
+        C_GAND_IN_WIDTH = 19
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_1> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_set_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_set.vhd".
+        C_USE_OUTPUT_REG = 1
+        C_GAND_IN_WIDTH = 19
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_set_1> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_slice_no_rpm_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice_no_rpm.vhd".
+        C_RPM_IDX = 0
+        C_USE_OUTPUT_REG = 1
+        C_IS_TERMINATION_SLICE = true
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_slice_no_rpm_1> synthesized.
+
+Synthesizing Unit <ila_trigcond>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond.vhd".
+        C_DEVICE_FAMILY = 16
+        C_NUM_MATCH_UNITS = 1
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_TIMESTAMP_TYPE = 0
+        C_USE_STORAGE_QUAL = 1
+        C_TSEQ_TYPE = 0
+        C_NUM_TSEQ_CNT = 0
+        C_TSEQ_CNT1_WIDTH = 1
+        C_TSEQ_CNT0_WIDTH = 1
+        C_NUM_TSEQ_STATES = 1
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_TSEQ_EN> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:653 - Signal <iCFG_EN_VEC> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+    Summary:
+	no macro.
+Unit <ila_trigcond> synthesized.
+
+Synthesizing Unit <ila_match_combine>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_combine.vhd".
+        C_DEVICE_FAMILY = 16
+        C_NUM_MATCH_UNITS = 1
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_match_combine> synthesized.
+
+Synthesizing Unit <ila_trigcond_lut>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trigcond_lut.vhd".
+        C_NUM_MATCH_UNITS = 1
+        C_USE_OUTPUT_REG = 1
+        C_SRL16_TYPE = 2
+        C_DEVICE_FAMILY = 16
+        C_USE_RPM = 0
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <ila_trigcond_lut> synthesized.
+
+Synthesizing Unit <cs_cfglut4>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut4.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_cfglut4> synthesized.
+
+Synthesizing Unit <ila_status>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_status.vhd".
+        C_CORE_TYPE = 2
+        C_MFG_ID = 1
+        C_DEVICE_FAMILY = 16
+        C_MAJOR_VERSION = 14
+        C_MINOR_VERSION = 4
+        C_BUILD_REVISION = 0
+        C_CORE_MAJOR_VER = 1
+        C_CORE_MINOR_VER = 4
+        C_CORE_MINOR_ALPHA_VER = 97
+        C_RAM_TYPE = 1
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_TRIG_OUT = 0
+        C_DATA_WIDTH = 256
+        C_DATA_DEPTH = 2048
+        C_USE_GAP = 0
+        C_TIMESTAMP_TYPE = 0
+        C_TIMESTAMP_WIDTH = 32
+        C_TIMESTAMP_DEPTH = 512
+        C_USE_STORAGE_QUAL = 1
+        C_TSEQ_TYPE = 0
+        C_NUM_TSEQ_CNT = 0
+        C_TSEQ_CNT1_WIDTH = 1
+        C_TSEQ_CNT0_WIDTH = 1
+        C_NUM_TSEQ_STATES = 1
+        C_USE_TC_MCNT = 0
+        C_TC_MCNT_WIDTH = 1
+        C_EXT_CAP_RATE_MODE = 0
+        C_EXT_CAP_PIN_MODE = 0
+        C_NUM_EXT_CAP_PINS = 8
+        C_EXT_CAP_USE_REG = 1
+        C_NUM_MATCH_UNITS = 1
+        C_TRIG_WIDTH_VEC = "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111"
+        C_MATCH_TPID_VEC = "1111111011011100101110101001100001110110010101000011001000010000"
+        C_MATCH_TYPE_VEC = "0000000000000000000000000000000000000000000000000000000000000001"
+        C_USE_MCNT_VEC = "0000000000000000"
+        C_MCNT_WIDTH_VEC = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        C_TRIGDATA_STATUS = "0000000000000000"
+        C_EXTRA_STATUS = "1111111111111111"
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CAP_ENDSTATE> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	inferred   1 Multiplexer(s).
+Unit <ila_status> synthesized.
+
+Synthesizing Unit <counter_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/counter.vhd".
+        WIDTH = 10
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <counter_1> synthesized.
+
+Synthesizing Unit <async_transfer_3>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_transfer.vhd".
+        C_PULSE_LENGTH = 1
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_transfer_3> synthesized.
+
+Synthesizing Unit <edge_detector>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/edge_detector.vhd".
+        C_L2H = false
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <edge_detector> synthesized.
+
+Synthesizing Unit <async_mux_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_mux.vhd".
+        DEVICE_FAMILY = 16
+        S_WIDTH = 3
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_mux_1> synthesized.
+
+Synthesizing Unit <cs_mux_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux.vhd".
+        S_WIDTH = 3
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_mux_1> synthesized.
+
+Synthesizing Unit <cs_mux8>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux8.vhd".
+    Set property "syn_noprune = true".
+    Found 1-bit 8-to-1 multiplexer for signal <O> created at line 53.
+    Summary:
+	inferred   1 Multiplexer(s).
+Unit <cs_mux8> synthesized.
+
+Synthesizing Unit <async_mux_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_mux.vhd".
+        DEVICE_FAMILY = 16
+        S_WIDTH = 6
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_mux_2> synthesized.
+
+Synthesizing Unit <cs_mux_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux.vhd".
+        S_WIDTH = 6
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_mux_2> synthesized.
+
+Synthesizing Unit <cs_mux64>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux64.vhd".
+    Set property "syn_noprune = true".
+    Found 1-bit 64-to-1 multiplexer for signal <O> created at line 50.
+    Summary:
+	inferred   1 Multiplexer(s).
+Unit <cs_mux64> synthesized.
+
+Synthesizing Unit <async_mux_3>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/async_mux.vhd".
+        DEVICE_FAMILY = 16
+        S_WIDTH = 1
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <async_mux_3> synthesized.
+
+Synthesizing Unit <cs_mux_3>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux.vhd".
+        S_WIDTH = 1
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_mux_3> synthesized.
+
+Synthesizing Unit <cs_mux2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux2.vhd".
+    Set property "syn_noprune = true".
+    Summary:
+	inferred   1 Multiplexer(s).
+Unit <cs_mux2> synthesized.
+
+Synthesizing Unit <ila_cap_ctrl_g2_sq>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_ctrl_g2_sq.vhd".
+        C_CORE_TYPE = 2
+        C_SRL16_TYPE = 2
+        C_DEVICE_FAMILY = 16
+        C_USE_RPM = 0
+        C_USE_GAP = 0
+        C_TIMESTAMP_TYPE = 0
+        C_TSEQ_TYPE = 0
+        C_DATA_DEPTH = 2048
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <TSTAMP_IN> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CFG_EN_16_0> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CFG_EN_16_1> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+INFO:Xst:3210 - "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_ctrl_g2_sq.vhd" line 468: Output port <CFG_DOUT> of the instance <I_SRLT_NE_1.U_WHCMPCE> is unconnected or connected to loadless signal.
+    Summary:
+	no macro.
+Unit <ila_cap_ctrl_g2_sq> synthesized.
+
+Synthesizing Unit <ila_cap_addrgen>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_addrgen.vhd".
+        C_DEVICE_FAMILY = 16
+        C_CORE_TYPE = 2
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_TSEQ_TYPE = 0
+        C_DATA_DEPTH = 2048
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <TRIGGER> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <REWIND> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <ila_cap_addrgen> synthesized.
+
+Synthesizing Unit <counter_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/counter.vhd".
+        WIDTH = 11
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <counter_2> synthesized.
+
+Synthesizing Unit <ila_match_gand>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_match_gand.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 0
+        C_USE_OUTPUT_REG = 0
+        C_DIN_WIDTH = 11
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <ila_match_gand> synthesized.
+
+Synthesizing Unit <cs_gand_srl>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl.vhd".
+        C_DEVICE_FAMILY = 16
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 0
+        C_USE_OUTPUT_REG = 0
+        C_GAND_IN_WIDTH = 11
+    Summary:
+	no macro.
+Unit <cs_gand_srl> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6.vhd".
+        C_USE_RPM = 0
+        C_USE_INPUT_REG = 0
+        C_USE_OUTPUT_REG = 0
+        C_GAND_IN_WIDTH = 11
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_2> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_set_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_set.vhd".
+        C_USE_OUTPUT_REG = 0
+        C_GAND_IN_WIDTH = 11
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_set_2> synthesized.
+
+Synthesizing Unit <cs_gand_srl_s6_slice_no_rpm_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_gand_srl_s6_slice_no_rpm.vhd".
+        C_RPM_IDX = 0
+        C_USE_OUTPUT_REG = 0
+        C_IS_TERMINATION_SLICE = true
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CLK_I> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <RESET_I> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_gand_srl_s6_slice_no_rpm_2> synthesized.
+
+Synthesizing Unit <cs_cfglut7>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut7.vhd".
+        C_SRL16_TYPE = 2
+        C_DEVICE_FAMILY = 16
+        C_USE_RPM = 0
+        C_USE_OUTPUT_REG = 1
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_cfglut7> synthesized.
+
+Synthesizing Unit <cs_cfglut6_1>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut6.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_OUTPUT_REG = 0
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CLK> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <RESET> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_cfglut6_1> synthesized.
+
+Synthesizing Unit <cs_cfglut6_2>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut6.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_OUTPUT_REG = 1
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_cfglut6_2> synthesized.
+
+Synthesizing Unit <cs_cfglut5>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_cfglut5.vhd".
+        C_DEVICE_FAMILY = 16
+        C_SRL16_TYPE = 2
+        C_USE_RPM = 0
+        C_USE_OUTPUT_REG = 0
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <CFG_EN_VEC> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <CLK> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <RESET> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <cs_cfglut5> synthesized.
+
+Synthesizing Unit <ila_cap_storage>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_cap_storage.vhd".
+        C_DEVICE_FAMILY = 16
+        C_RAM_TYPE = 1
+        C_USE_GAP = 0
+        C_TIMESTAMP_TYPE = 0
+        C_TIMESTAMP_WIDTH = 32
+        C_TIMESTAMP_DEPTH = 512
+        C_DATA_DEPTH = 2048
+        C_DATA_WIDTH = 256
+    Set property "syn_noprune = true".
+WARNING:Xst:647 - Input <WR_TSTAMP> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <WR_GAP> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <WR_REWIND> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <RD_TSTAMP_EN> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <ila_cap_storage> synthesized.
+
+Synthesizing Unit <ila_trace_buffer>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_ila_v1_05_a/ila_trace_buffer.vhd".
+        C_DEVICE_FAMILY = 16
+        C_DEPTH = 2048
+        C_DATA_W = 257
+        C_ADDR_W = 11
+WARNING:Xst:647 - Input <WR_RESET_I> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <ila_trace_buffer> synthesized.
+
+Synthesizing Unit <cs_bram_cascade>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade.vhd".
+        C_DEVICE_FAMILY = 16
+        C_WR_DATA_W = 261
+        C_WR_ADDR_W = 11
+        C_RD_DATA_W = 261
+        C_RD_ADDR_W = 11
+        C_DEPTH = 2048
+    Summary:
+	no macro.
+Unit <cs_bram_cascade> synthesized.
+
+Synthesizing Unit <cs_bram_cascade_s6>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_cascade_s6.vhd".
+        C_WR_DATA_W = 261
+        C_WR_ADDR_W = 11
+        C_RD_DATA_W = 261
+        C_RD_ADDR_W = 11
+        C_DEPTH = 2048
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_bram_cascade_s6> synthesized.
+
+Synthesizing Unit <cs_bram_simple_s6>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_s6.vhd".
+        C_WR_DATA_W = 261
+        C_WR_ADDR_W = 11
+        C_RD_DATA_W = 261
+        C_RD_ADDR_W = 11
+        C_DEPTH = 2048
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_bram_simple_s6> synthesized.
+
+Synthesizing Unit <cs_bram_simple_s6_ramb18>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_bram_simple_s6_ramb18.vhd".
+        C_WR_DATA_W = 9
+        C_WR_ADDR_W = 11
+        C_RD_DATA_W = 9
+        C_RD_ADDR_W = 11
+        C_DEPTH = 2048
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_bram_simple_s6_ramb18> synthesized.
+
+Synthesizing Unit <cs_counter_modk>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_counter_modk.vhd".
+        DEVICE_FAMILY = 16
+        WIDTH = 9
+        MOD_K = 256
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_counter_modk> synthesized.
+
+Synthesizing Unit <counter_3>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/counter.vhd".
+        WIDTH = 9
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <counter_3> synthesized.
+
+Synthesizing Unit <cs_lut6>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_lut6.vhd".
+        C_DEVICE_FAMILY = 16
+        INIT = "0000000000000000000000000000000000000000000000000000000000000001"
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_lut6> synthesized.
+
+Synthesizing Unit <cs_register>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_register.vhd".
+        C_DEVICE_FAMILY = 16
+        C_WIDTH = 9
+    Summary:
+	no macro.
+Unit <cs_register> synthesized.
+
+Synthesizing Unit <cs_mux_4>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux.vhd".
+        S_WIDTH = 9
+    Set property "syn_noprune = true".
+    Summary:
+	no macro.
+Unit <cs_mux_4> synthesized.
+
+Synthesizing Unit <cs_mux512>.
+    Related source file is "/home/jblum/src/umtrx/UHD-Fairwaves/fpga/top/UmTRX/coregen/tmp/_cg/_bbx/chipscope_lib_v1_03_a/cs_mux512.vhd".
+    Set property "syn_noprune = true".
+    Found 1-bit 512-to-1 multiplexer for signal <O> created at line 50.
+    Summary:
+	inferred   1 Multiplexer(s).
+Unit <cs_mux512> synthesized.
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# Multiplexers                                         : 9
+ 1-bit 2-to-1 multiplexer                              : 2
+ 1-bit 512-to-1 multiplexer                            : 1
+ 1-bit 64-to-1 multiplexer                             : 1
+ 1-bit 8-to-1 multiplexer                              : 5
+
+=========================================================================
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# Registers                                            : 712
+ Flip-Flops                                            : 712
+# Multiplexers                                         : 8
+ 1-bit 2-to-1 multiplexer                              : 1
+ 1-bit 512-to-1 multiplexer                            : 1
+ 1-bit 64-to-1 multiplexer                             : 1
+ 1-bit 8-to-1 multiplexer                              : 5
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+
+Optimizing unit <chipscope_ila> ...
+
+Optimizing unit <programmable_delay> ...
+
+Optimizing unit <cs_gandx_srl_s6> ...
+
+Optimizing unit <cs_gand_srl_s6_slice_no_rpm_1> ...
+
+Optimizing unit <counter_1> ...
+
+Optimizing unit <ila_reset_ctrl> ...
+
+Optimizing unit <async_transfer_1> ...
+
+Optimizing unit <async_transfer_2> ...
+
+Optimizing unit <ila_cap_ctrl_g2_sq> ...
+
+Optimizing unit <ila_cap_addrgen> ...
+
+Optimizing unit <counter_2> ...
+
+Optimizing unit <cs_gand_srl_s6_slice_no_rpm_2> ...
+
+Optimizing unit <cs_bram_simple_s6> ...
+
+Optimizing unit <counter_3> ...
+
+Optimizing unit <cs_register> ...
+
+Optimizing unit <chipscope_ila> ...
+
+Optimizing unit <ila_status> ...
+
+Mapping all equations...
+Building and optimizing final netlist ...
+Found area constraint ratio of 100 (+ 0) on block chipscope_ila, actual ratio is 2.
+
+Final Macro Processing ...
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 712
+ Flip-Flops                                            : 712
+
+=========================================================================
+
+=========================================================================
+*                           Partition Report                            *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Design Summary                             *
+=========================================================================
+
+Top Level Output File Name         : chipscope_ila.ngc
+
+Primitive and Black Box Usage:
+------------------------------
+# BELS                             : 336
+#      GND                         : 1
+#      INV                         : 1
+#      LUT1                        : 53
+#      LUT2                        : 15
+#      LUT3                        : 18
+#      LUT4                        : 14
+#      LUT5                        : 5
+#      LUT6                        : 98
+#      MUXCY_L                     : 67
+#      MUXF7                       : 9
+#      MUXF8                       : 2
+#      VCC                         : 1
+#      XORCY                       : 52
+# FlipFlops/Latches                : 713
+#      FD                          : 521
+#      FDC                         : 8
+#      FDCE                        : 6
+#      FDE                         : 29
+#      FDP                         : 18
+#      FDR                         : 43
+#      FDRE                        : 77
+#      FDS                         : 10
+#      LDC                         : 1
+# RAMS                             : 29
+#      RAMB16BWER                  : 29
+# Shift Registers                  : 294
+#      SRL16                       : 256
+#      SRL16E                      : 1
+#      SRLC16E                     : 8
+#      SRLC32E                     : 29
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 6slx75fgg484-2 
+
+
+Slice Logic Utilization: 
+ Number of Slice Registers:             713  out of  93296     0%  
+ Number of Slice LUTs:                  498  out of  46648     1%  
+    Number used as Logic:               204  out of  46648     0%  
+    Number used as Memory:              294  out of  11072     2%  
+       Number used as SRL:              294
+
+Slice Logic Distribution: 
+ Number of LUT Flip Flop pairs used:    832
+   Number with an unused Flip Flop:     119  out of    832    14%  
+   Number with an unused LUT:           334  out of    832    40%  
+   Number of fully used LUT-FF pairs:   379  out of    832    45%  
+   Number of unique control sets:        44
+
+IO Utilization: 
+ Number of IOs:                         301
+ Number of bonded IOBs:                   0  out of    280     0%  
+
+Specific Feature Utilization:
+ Number of Block RAM/FIFO:               29  out of    172    16%  
+    Number using Block RAM only:         29
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+Timing Report
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)                                                                                                                | Load  |
+-----------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+-------+
+CONTROL<0>                         | NONE(U0/I_YES_D.U_ILA/U_TRIG/U_TC/I_STORAGE_QUAL.U_STORAGE_QUAL/I_SRLT_NE_1.I_NMU_1_TO_4.U_TCL/I_NMU_EQ1.U_iDOUT/I_YESLUT6.U_SRLC16E)| 131   |
+CLK                                | NONE(U0/I_YES_D.U_ILA/U_TRIG/U_TC/I_TSEQ_NEQ2.U_TC_EQUATION/I_SRLT_NE_1.I_NMU_1_TO_4.U_TCL/I_OUTREG.U_DOUT)                          | 933   |
+CONTROL<13>                        | NONE(U0/I_YES_D.U_ILA/U_STAT/U_DIRTY_LDC)                                                                                            | 1     |
+-----------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+-------+
+INFO:Xst:2169 - HDL ADVISOR - Some clock signals were not automatically buffered by XST with BUFG/BUFR resources. Please use the buffer_type constraint in order to insert these buffers to the clock signals to help prevent skew problems.
+
+Asynchronous Control Signals Information:
+----------------------------------------
+No asynchronous control signals found in this design
+
+Timing Summary:
+---------------
+Speed Grade: -2
+
+   Minimum period: 6.603ns (Maximum Frequency: 151.446MHz)
+   Minimum input arrival time before clock: 3.567ns
+   Maximum output required time after clock: 8.502ns
+   Maximum combinational path delay: 0.710ns
+
+Timing Details:
+---------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'CONTROL<0>'
+  Clock period: 6.603ns (frequency: 151.446MHz)
+  Total number of paths / destination ports: 794 / 408
+-------------------------------------------------------------------------
+Delay:               6.603ns (Levels of Logic = 3)
+  Source:            U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[0].U_FDRE (FF)
+  Destination:       U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[0].U_FDRE (FF)
+  Source Clock:      CONTROL<0> rising
+  Destination Clock: CONTROL<0> rising
+
+  Data Path: U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[0].U_FDRE to U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[0].U_FDRE
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDRE:C->Q             3   0.525   1.221  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[0].U_FDRE (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/rd_col_addr<0>)
+     LUT6:I0->O            1   0.254   0.790  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/I_WIDTH_9.u_tc_0/YES_LUT6.U_LUT6 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/tc_vec<0>)
+     LUT2:I0->O           12   0.601   1.177  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/I_WIDTH_9.u_tc (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/rd_row_en)
+     LUT2:I0->O            9   0.601   0.975  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_rst (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/rst)
+     FDRE:R                    0.459          U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/I_SINGLE_ROW.U_RD_COL_ADDR/u_cnt/G[8].U_FDRE
+    ----------------------------------------
+    Total                      6.603ns (2.440ns logic, 4.163ns route)
+                                       (37.0% logic, 63.0% route)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'CLK'
+  Clock period: 4.753ns (frequency: 210.393MHz)
+  Total number of paths / destination ports: 1714 / 1460
+-------------------------------------------------------------------------
+Delay:               4.753ns (Levels of Logic = 2)
+  Source:            U0/I_YES_D.U_ILA/U_RST/U_HALT_XFER/U_GEN_DELAY[1].U_FD (FF)
+  Destination:       U0/I_YES_D.U_ILA/U_RST/G_RST[7].U_RST (FF)
+  Source Clock:      CLK rising
+  Destination Clock: CLK rising
+
+  Data Path: U0/I_YES_D.U_ILA/U_RST/U_HALT_XFER/U_GEN_DELAY[1].U_FD to U0/I_YES_D.U_ILA/U_RST/G_RST[7].U_RST
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDE:C->Q              2   0.525   0.954  U0/I_YES_D.U_ILA/U_RST/U_HALT_XFER/U_GEN_DELAY[1].U_FD (U0/I_YES_D.U_ILA/U_RST/HALT_pulse)
+     LUT3:I0->O            1   0.481   0.682  U0/I_YES_D.U_ILA/U_RST/U_PRST1 (U0/I_YES_D.U_ILA/U_RST/PRE_RESET1)
+     LUT4:I3->O            8   0.709   0.943  U0/I_YES_D.U_ILA/U_RST/U_PRST0 (U0/I_YES_D.U_ILA/U_RST/PRE_RESET0)
+     FDS:S                     0.459          U0/I_YES_D.U_ILA/U_RST/G_RST[0].U_RST
+    ----------------------------------------
+    Total                      4.753ns (2.174ns logic, 2.579ns route)
+                                       (45.7% logic, 54.3% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'CONTROL<0>'
+  Total number of paths / destination ports: 168 / 157
+-------------------------------------------------------------------------
+Offset:              3.567ns (Levels of Logic = 2)
+  Source:            CONTROL<4> (PAD)
+  Destination:       U0/I_YES_D.U_ILA/U_STAT/U_STAT_CNT/G[0].U_FDRE (FF)
+  Destination Clock: CONTROL<0> rising
+
+  Data Path: CONTROL<4> to U0/I_YES_D.U_ILA/U_STAT/U_STAT_CNT/G[0].U_FDRE
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     LUT2:I0->O            1   0.601   0.681  U0/I_YES_D.U_ILA/U_STAT/U_STATCMD (U0/I_YES_D.U_ILA/U_STAT/iSTATCMD_CE)
+     INV:I->O             10   0.710   1.007  U0/I_YES_D.U_ILA/U_STAT/U_STATCMD_n (U0/I_YES_D.U_ILA/U_STAT/iSTATCMD_CE_n)
+     FDRE:R                    0.459          U0/I_YES_D.U_ILA/U_STAT/U_STAT_CNT/G[9].U_FDRE
+    ----------------------------------------
+    Total                      3.567ns (1.879ns logic, 1.688ns route)
+                                       (52.7% logic, 47.3% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'CLK'
+  Total number of paths / destination ports: 289 / 289
+-------------------------------------------------------------------------
+Offset:              1.972ns (Levels of Logic = 1)
+  Source:            CONTROL<5> (PAD)
+  Destination:       U0/I_YES_D.U_ILA/U_STAT/U_DSL1/U_RFDRE (FF)
+  Destination Clock: CLK rising
+
+  Data Path: CONTROL<5> to U0/I_YES_D.U_ILA/U_STAT/U_DSL1/U_RFDRE
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     LUT2:I1->O            4   0.709   0.803  U0/I_YES_D.U_ILA/U_STAT/U_DSL1/U_CLEAR (U0/I_YES_D.U_ILA/U_STAT/U_DSL1/iCLR)
+     FDCE:CLR                  0.459          U0/I_YES_D.U_ILA/U_STAT/U_DSL1/U_RFDRE
+    ----------------------------------------
+    Total                      1.972ns (1.169ns logic, 0.803ns route)
+                                       (59.3% logic, 40.7% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'CONTROL<0>'
+  Total number of paths / destination ports: 443 / 1
+-------------------------------------------------------------------------
+Offset:              8.502ns (Levels of Logic = 6)
+  Source:            U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[18].u_ramb18/U_RAMB18 (RAM)
+  Destination:       CONTROL<3> (PAD)
+  Source Clock:      CONTROL<0> rising
+
+  Data Path: U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[18].u_ramb18/U_RAMB18 to CONTROL<3>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     RAMB16BWER:CLKA->DOA7    1   2.100   0.958  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[18].u_ramb18/U_RAMB18 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/rd_data<169>)
+     LUT6:I2->O            1   0.254   0.958  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_1914 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_1914)
+     LUT6:I2->O            1   0.254   0.958  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_145 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_145)
+     LUT6:I2->O            1   0.254   0.958  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_91 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_91)
+     LUT6:I2->O            1   0.254   0.000  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_41 (U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_4)
+     MUXF7:I0->O           1   0.163   0.790  U0/I_YES_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RD_COL_MUX/I9.U_MUX512/Mmux_O_2_f7 (U0/I_YES_D.U_ILA/iDATA_DOUT)
+     LUT3:I1->O            0   0.601   0.000  U0/I_YES_D.U_ILA/U_DOUT (CONTROL<3>)
+    ----------------------------------------
+    Total                      8.502ns (3.880ns logic, 4.622ns route)
+                                       (45.6% logic, 54.4% route)
+
+=========================================================================
+Timing constraint: Default path analysis
+  Total number of paths / destination ports: 1 / 1
+-------------------------------------------------------------------------
+Delay:               0.710ns (Levels of Logic = 1)
+  Source:            CONTROL<6> (PAD)
+  Destination:       CONTROL<3> (PAD)
+
+  Data Path: CONTROL<6> to CONTROL<3>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     LUT3:I2->O            0   0.709   0.000  U0/I_YES_D.U_ILA/U_DOUT (CONTROL<3>)
+    ----------------------------------------
+    Total                      0.710ns (0.710ns logic, 0.000ns route)
+                                       (100.0% logic, 0.0% route)
+
+=========================================================================
+
+Cross Clock Domains Report:
+--------------------------
+
+Clock to Setup on destination clock CLK
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CLK            |    4.753|         |         |         |
+CONTROL<0>     |    3.116|         |         |         |
+---------------+---------+---------+---------+---------+
+
+Clock to Setup on destination clock CONTROL<0>
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CLK            |    4.168|         |         |         |
+CONTROL<0>     |    6.603|         |         |         |
+CONTROL<13>    |         |    4.308|         |         |
+---------------+---------+---------+---------+---------+
+
+Clock to Setup on destination clock CONTROL<13>
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CLK            |         |         |    2.269|         |
+---------------+---------+---------+---------+---------+
+
+=========================================================================
+
+
+Total REAL time to Xst completion: 119.00 secs
+Total CPU time to Xst completion: 117.09 secs
+ 
+--> 
+
+
+Total memory usage is 439516 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :   79 (   0 filtered)
+Number of infos    :   10 (   0 filtered)
+
