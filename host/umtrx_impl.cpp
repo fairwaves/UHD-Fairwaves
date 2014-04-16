@@ -351,6 +351,11 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     this->time64_self_test();
     _rx_streamers.resize(_rx_dsps.size());
     _tx_streamers.resize(_tx_dsps.size());
+
+    _tree->access<subdev_spec_t>(mb_path / "rx_subdev_spec").set(subdev_spec_t("A:0"));
+    _tree->access<subdev_spec_t>(mb_path / "tx_subdev_spec").set(subdev_spec_t("A:0"));
+    _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
+    _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
 }
 
 umtrx_impl::~umtrx_impl(void){

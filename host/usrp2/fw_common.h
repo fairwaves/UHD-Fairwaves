@@ -37,6 +37,13 @@ extern "C" {
 //used to differentiate control packets over data port
 #define USRP2_INVALID_VRT_HEADER 0
 
+typedef struct{
+    uint32_t sequence;
+    uint32_t vrt_hdr;
+    uint32_t ip_addr;
+    uint32_t udp_port;
+} usrp2_stream_ctrl_t;
+
 // udp ports for the usrp2 communication
 // Dynamic and/or private ports: 49152-65535
 #define USRP2_UDP_CTRL_PORT 49152
