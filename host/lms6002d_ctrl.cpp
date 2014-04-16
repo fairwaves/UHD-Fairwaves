@@ -121,7 +121,7 @@ public:
 
     bool set_tx_enabled(const bool enb)
     {
-        return this->set_enabled(dboard_iface::UNIT_RX, enb);
+        return this->set_enabled(dboard_iface::UNIT_TX, enb);
     }
 
     uhd::freq_range_t get_rx_bw_range(void)
