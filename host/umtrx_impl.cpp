@@ -248,8 +248,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing
     ////////////////////////////////////////////////////////////////////
-    _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate());
-    _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
+    _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate()/2.0);
+    _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate()/2.0);
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
