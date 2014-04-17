@@ -46,12 +46,89 @@ UHD_STATIC_BLOCK(register_umtrx_device){
 }
 
 /***********************************************************************
+ * MTU Discovery
+ **********************************************************************/
+struct mtu_result_t{
+    size_t recv_mtu, send_mtu;
+};
+
+static mtu_result_t determine_mtu(const std::string &addr, const mtu_result_t &user_mtu){
+    udp_simple::sptr udp_sock = udp_simple::make_connected(
+        addr, BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
+    );
+
+    //The FPGA offers 4K buffers, and the user may manually request this.
+    //However, multiple simultaneous receives (2DSP slave + 2DSP master),
+    //require that buffering to be used internally, and this is a safe setting.
+    std::vector<boost::uint8_t> buffer(std::max(user_mtu.recv_mtu, user_mtu.send_mtu));
+    usrp2_ctrl_data_t *ctrl_data = reinterpret_cast<usrp2_ctrl_data_t *>(&buffer.front());
+    static const double echo_timeout = 0.020; //20 ms
+
+    //test holler - check if its supported in this fw version
+    ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+    ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+    ctrl_data->data.echo_args.len = htonl(sizeof(usrp2_ctrl_data_t));
+    udp_sock->send(boost::asio::buffer(buffer, sizeof(usrp2_ctrl_data_t)));
+    udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+    if (ntohl(ctrl_data->id) != USRP2_CTRL_ID_HOLLER_BACK_DUDE)
+        throw uhd::not_implemented_error("holler protocol not implemented");
+
+    size_t min_recv_mtu = sizeof(usrp2_ctrl_data_t), max_recv_mtu = user_mtu.recv_mtu;
+    size_t min_send_mtu = sizeof(usrp2_ctrl_data_t), max_send_mtu = user_mtu.send_mtu;
+
+    while (min_recv_mtu < max_recv_mtu){
+
+        size_t test_mtu = (max_recv_mtu/2 + min_recv_mtu/2 + 3) & ~3;
+
+        ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+        ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+        ctrl_data->data.echo_args.len = htonl(test_mtu);
+        udp_sock->send(boost::asio::buffer(buffer, sizeof(usrp2_ctrl_data_t)));
+
+        size_t len = udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+
+        if (len >= test_mtu) min_recv_mtu = test_mtu;
+        else                 max_recv_mtu = test_mtu - 4;
+
+    }
+
+    while (min_send_mtu < max_send_mtu){
+
+        size_t test_mtu = (max_send_mtu/2 + min_send_mtu/2 + 3) & ~3;
+
+        ctrl_data->id = htonl(USRP2_CTRL_ID_HOLLER_AT_ME_BRO);
+        ctrl_data->proto_ver = htonl(USRP2_FW_COMPAT_NUM);
+        ctrl_data->data.echo_args.len = htonl(sizeof(usrp2_ctrl_data_t));
+        udp_sock->send(boost::asio::buffer(buffer, test_mtu));
+
+        size_t len = udp_sock->recv(boost::asio::buffer(buffer), echo_timeout);
+        if (len >= sizeof(usrp2_ctrl_data_t)) len = ntohl(ctrl_data->data.echo_args.len);
+
+        if (len >= test_mtu) min_send_mtu = test_mtu;
+        else                 max_send_mtu = test_mtu - 4;
+    }
+
+    mtu_result_t mtu;
+    mtu.recv_mtu = min_recv_mtu;
+    mtu.send_mtu = min_send_mtu;
+    return mtu;
+}
+
+/***********************************************************************
  * Structors
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 {
     _device_ip_addr = device_addr["addr"];
     UHD_MSG(status) << "Opening a UmTRX device... " << _device_ip_addr << std::endl;
+
+    //mtu self check -- not really doing anything with it
+    mtu_result_t user_mtu;
+    user_mtu.recv_mtu = size_t(device_addr.cast<double>("recv_frame_size", udp_simple::mtu));
+    user_mtu.send_mtu = size_t(device_addr.cast<double>("send_frame_size", udp_simple::mtu));
+    user_mtu = determine_mtu(_device_ip_addr, user_mtu);
+    UHD_VAR(user_mtu.recv_mtu);
+    UHD_VAR(user_mtu.send_mtu);
 
     ////////////////////////////////////////////////////////////////////
     // create controller objects and initialize the properties tree
@@ -253,6 +330,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _lms_ctrl["A"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate());
     _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
 
+    // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
+    dboard_eeprom_t rx_db_eeprom, tx_db_eeprom;
+    rx_db_eeprom.id = 0xfa07;
+    rx_db_eeprom.revision = _iface->mb_eeprom["revision"];
+    tx_db_eeprom.id = 0xfa09;
+    tx_db_eeprom.revision = _iface->mb_eeprom["revision"];
+
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
         lms6002d_ctrl::sptr ctrl = _lms_ctrl[fe_name];
@@ -262,6 +346,15 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         _tree->create<std::string>(rx_rf_fe_path / "name").set("LMS-RX-FE");
         _tree->create<std::string>(tx_rf_fe_path / "name").set("LMS-TX-FE");
+
+        // Different serial numbers for each LMS on a UmTRX.
+        // This is required to properly correlate calibration files to LMS chips.
+        rx_db_eeprom.serial = _iface->mb_eeprom["serial"] + "." + fe_name;
+        tx_db_eeprom.serial = _iface->mb_eeprom["serial"] + "." + fe_name;
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / fe_name / "rx_eeprom")
+            .set(rx_db_eeprom);
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / fe_name / "tx_eeprom")
+            .set(tx_db_eeprom);
 
         //sensors -- always say locked
         _tree->create<sensor_value_t>(rx_rf_fe_path / "sensors" / "lo_locked")
