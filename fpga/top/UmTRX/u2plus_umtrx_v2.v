@@ -31,11 +31,9 @@ module u2plus_umtrx_v2
    input RX2IQSEL,
    input [11:0] RX2D,
    // DAC 1
-   output TX1EN,
    output reg TX1IQSEL,
    output reg [11:0] TX1D,
    // DAC 2
-   output TX2EN,
    output reg TX2IQSEL,
    output reg [11:0] TX2D,
    //LMS 1 Control
@@ -177,9 +175,6 @@ wire DivSw1, DivSw2;
    // Interface to DAC of LMS
    wire [11:0] dac1_a, dac1_b, dac2_a, dac2_b;
    wire dac1_strobe, dac2_strobe;
-
-   assign TX1EN = 1'b1;
-   assign TX2EN = 1'b1;
 
     always @(posedge lms_clk) begin
         if (dac1_strobe == 1'b1)

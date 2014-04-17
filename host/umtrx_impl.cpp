@@ -387,7 +387,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 }
 
 umtrx_impl::~umtrx_impl(void){
-    
+    //TODO
 }
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
