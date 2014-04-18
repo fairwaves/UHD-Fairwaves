@@ -128,18 +128,13 @@ module u2plus_umtrx_v2
    wire  CLK_TO_MAC_int, CLK_TO_MAC_int2;
       
    // FPGA-specific pins connections
-   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, lms_clk, clock_ready;
+   wire 	clk_fpga, dsp_clk, clk_div, dcm_out, wb_clk, clk_icap, lms_clk;
 
 wire DivSw1, DivSw2;
    OBUF DIVSW1_P_pin (.I(DivSw1),.O(DivSw1_P));
    OBUF DIVSW1_N_pin (.I(~DivSw1),.O(DivSw1_N));
    OBUF DIVSW2_P_pin (.I(DivSw2),.O(DivSw2_P));
    OBUF DIVSW2_N_pin (.I(~DivSw2),.O(DivSw2_N));
-
-   reg [5:0] 	clock_ready_d;
-   always @(posedge clk_fpga)
-     clock_ready_d[5:0] <= {clock_ready_d[4:0],clock_ready};
-   wire 	dcm_rst = ~&clock_ready_d & |clock_ready_d;
 
     //register iogress for all adc/dac signals to force IOB
     reg RX1IQSEL_reg, RX2IQSEL_reg,TX1IQSEL_reg, TX2IQSEL_reg;
@@ -313,7 +308,6 @@ wire DivSw1, DivSw2;
 		     .fe_clk            (clk_icap), //1/2 dsp rate
 		     .wb_clk            (wb_clk),
 		     .clk_icap		(clk_icap),
-		     .clock_ready       (clock_ready),
 		     .clk_to_mac	(CLK_TO_MAC_int2),
 		     .pps_in		(pps),
 		     .leds		(leds_int),
@@ -353,10 +347,6 @@ wire DivSw1, DivSw2;
 		     .sda_pad_i		(sda_pad_i),
 		     .sda_pad_o		(sda_pad_o),
 		     .sda_pad_oen_o	(sda_pad_oen_o),
-		     .clk_en		(),
-		     .clk_sel		(),
-		     .clk_func		(),
-		     .clk_status	(),
 		     .aux_scl_pad_i		(aux_scl_pad_i),
 		     .aux_scl_pad_o		(aux_scl_pad_o),
 		     .aux_scl_pad_oen_o	(aux_scl_pad_oen_o),
@@ -373,8 +363,6 @@ wire DivSw1, DivSw2;
 		     .sen_dac	 (SEN_DAC),
 		     .sen_lms1   (SEN1),
 		     .sen_lms2 (SEN2),
-		     .io_tx		 (),
-		     .io_rx		 (),
 //Diversity switches
 		     .DivSw1(DivSw1),
 		     .DivSw2(DivSw2),

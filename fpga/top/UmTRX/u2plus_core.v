@@ -26,7 +26,6 @@ module u2plus_core
    input fe_clk,
    input wb_clk,
    input clk_icap, //ICAP timing fixes for UmTRX Spartan-6 FPGA.
-   output clock_ready,
    input clk_to_mac,
    input pps_in,
    
@@ -83,12 +82,6 @@ module u2plus_core
    input sda_pad_i,
    output sda_pad_o,
    output sda_pad_oen_o,
-   
-   // Clock Gen Control
-   output [1:0] clk_en,
-   output [1:0] clk_sel,
-   input clk_func,        // FIXME is an input to control the 9510
-   input clk_status,
 
    // Generic SPI
    output sclk,
@@ -112,11 +105,7 @@ module u2plus_core
    output aux_sen1,
    output aux_sen2,
    input aux_ld1,
-   input aux_ld2, 
-   
-   // GPIO to DBoards
-   inout [15:0] io_tx,
-   inout [15:0] io_rx,
+   input aux_ld2,
 
 `ifndef NO_EXT_FIFO
    // External RAM
@@ -436,17 +425,6 @@ module u2plus_core
 
    assign 	 s3_dat_i[31:8] = 24'd0;
    assign 	 s9_dat_i[31:8] = 24'd0;
-   
-   // /////////////////////////////////////////////////////////////////////////
-   // GPIOs
-
-   wire [31:0] gpio_readback;
-   
-   gpio_atr #(.BASE(SR_GPIO), .WIDTH(32)) 
-   gpio_atr(.clk(dsp_clk),.reset(dsp_rst),
-	    .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
-	    .rx(run_rx0 | run_rx1), .tx(run_tx0 | run_tx1),
-	    .gpio({io_tx,io_rx}), .gpio_readback(gpio_readback) );
 
    // /////////////////////////////////////////////////////////////////////////
    // Buffer Pool Status -- Slave #5   
@@ -460,7 +438,7 @@ module u2plus_core
 
       .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06({adc0_a, 4'b0, adc0_b, 4'b0}),.word07({adc1_a, 4'b0, adc1_b, 4'b0}),
-      .word08(status),.word09(gpio_readback),.word10(vita_time[63:32]),
+      .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
       .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, 1'b0, 10'b0}),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
       );
@@ -506,7 +484,6 @@ module u2plus_core
 
    // Output control lines
    wire [7:0] 	 clock_outs;
-   assign 	 {clock_ready, clk_en[1:0], clk_sel[1:0]} = clock_outs[4:0];
    assign lms_res = clock_outs[6:5];
 
    wire 	 phy_reset;
