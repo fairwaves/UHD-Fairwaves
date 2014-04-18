@@ -132,7 +132,6 @@ module u2plus_core
    );
 
    localparam SR_MISC     =   0;   // 7 regs
-   localparam SR_TESTSIG  =   8;   // 2 regs for each DAC
    localparam SR_TIME64   =  10;   // 6
    localparam SR_BUF_POOL =  16;   // 4
 
@@ -153,7 +152,6 @@ module u2plus_core
    localparam SR_TX_FRONT_SW = 177;
 
    localparam SR_DIVSW    = 180;   // 2
-   localparam SR_GPIO     = 184;   // 5   
    localparam SR_UDP_SM   = 192;   // 64
    
    // FIFO Sizes, 9 = 512 lines, 10 = 1024, 11 = 2048
@@ -171,7 +169,7 @@ module u2plus_core
    wire 	dsp_rst, sys_rst, fe_rst;
 
    wire [31:0] 	status;
-   wire 	bus_error, spi_int, i2c_int, aux_i2c_int, pps_int, onetime_int, periodic_int, buffer_int;
+   wire 	bus_error, spi_int, i2c_int, aux_i2c_int, pps_int, onetime_int, periodic_int;
    wire 	proc_int, overrun0, overrun1, underrun;
    wire 	 underrun1;
    wire [3:0] 	uart_tx_int, uart_rx_int;
@@ -352,27 +350,24 @@ module u2plus_core
    
    // /////////////////////////////////////////////////////////////////////////
    // Buffer Pool, slave #1
-   wire 	 rd0_ready_i, rd0_ready_o;
-   wire 	 rd1_ready_i, rd1_ready_o;
-   wire 	 rd1_ready_i_1, rd1_ready_o_1;
-   wire 	 rd2_ready_i, rd2_ready_o;
-   wire 	 rd3_ready_i, rd3_ready_o;
-   wire [35:0] 	 rd0_dat, rd1_dat, rd2_dat, rd3_dat;
+   wire 	 dsp_tx0_ready, dsp_tx0_valid;
+   wire 	 dsp_tx1_ready, dsp_tx1_valid;
+   wire 	 eth_tx_ready, eth_tx_valid;
+   wire [35:0] 	 dsp_tx_data, eth_tx_data;
 
-   wire 	 wr0_ready_i, wr0_ready_o;
-   wire 	 wr1_ready_i, wr1_ready_o;
-   wire 	 wr2_ready_i, wr2_ready_o;
-   wire 	 wr3_ready_i, wr3_ready_o;
-   wire [35:0] 	 wr0_dat, wr1_dat, wr2_dat, wr3_dat;
+   wire 	 dsp_rx0_valid, dsp_rx0_ready;
+   wire 	 eth_rx_valid, eth_rx_ready;
+   wire 	 dsp_rx1_valid, dsp_rx1_ready;
+   wire [35:0] 	 dsp_rx0_data, eth_rx_data, dsp_rx1_data;
 
-   wire [35:0] 	 tx_err_data;
-   wire 	 tx_err_src_rdy, tx_err_dst_rdy;
-   wire [35:0] 	 tx1_err_data;
-   wire 	 tx1_err_src_rdy, tx1_err_dst_rdy;
+   wire [35:0] 	 err_tx0_data;
+   wire 	 err_tx0_valid, err_tx0_ready;
+   wire [35:0] 	 err_tx1_data;
+   wire 	 err_tx1_valid, err_tx1_ready;
 
    wire [31:0] router_debug;
 
-   packet_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) packet_router
+   umtrx_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) router
      (.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),
       .wb_we_i(s1_we),.wb_stb_i(s1_stb),.wb_adr_i(s1_adr),.wb_dat_i(s1_dat_o),
       .wb_dat_o(s1_dat_i),.wb_ack_o(s1_ack),.wb_err_o(),.wb_rty_o(),
@@ -381,19 +376,17 @@ module u2plus_core
 
       .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(1'b0),
 
-      .status(status), .sys_int_o(buffer_int), .debug(router_debug),
+      .status(status), .debug(router_debug),
 
-      .ser_inp_data(wr0_dat), .ser_inp_valid(wr0_ready_i), .ser_inp_ready(wr0_ready_o),
-      .dsp0_inp_data(wr1_dat), .dsp0_inp_valid(wr1_ready_i), .dsp0_inp_ready(wr1_ready_o),
-      .dsp1_inp_data(wr3_dat), .dsp1_inp_valid(wr3_ready_i), .dsp1_inp_ready(wr3_ready_o),
-      .eth_inp_data(wr2_dat), .eth_inp_valid(wr2_ready_i), .eth_inp_ready(wr2_ready_o),
-      .err_inp_data(tx_err_data), .err_inp_ready(tx_err_dst_rdy), .err_inp_valid(tx_err_src_rdy),
+      .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
+      .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
+      .eth_inp_data(eth_rx_data), .eth_inp_valid(eth_rx_valid), .eth_inp_ready(eth_rx_ready),
+      .err_inp_data(err_tx0_data), .err_inp_ready(err_tx0_ready), .err_inp_valid(err_tx0_valid),
 
-      .ser_out_data(rd0_dat), .ser_out_valid(rd0_ready_o), .ser_out_ready(rd0_ready_i),
-      .dsp_out_data(rd1_dat), .dsp_out_valid(rd1_ready_o), .dsp_out_ready(rd1_ready_i),
-      .dsp1_out_valid(rd1_ready_o_1), .dsp1_out_ready(rd1_ready_i_1),
-      .err_inp1_data(tx1_err_data), .err_inp1_ready(tx1_err_dst_rdy), .err_inp1_valid(tx1_err_src_rdy),
-      .eth_out_data(rd2_dat), .eth_out_valid(rd2_ready_o), .eth_out_ready(rd2_ready_i)
+      .dsp_out_data(dsp_tx_data), .dsp_out_valid(dsp_tx0_valid), .dsp_out_ready(dsp_tx0_ready),
+      .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready),
+      .err_inp1_data(err_tx1_data), .err_inp1_ready(err_tx1_ready), .err_inp1_valid(err_tx1_valid),
+      .eth_out_data(eth_tx_data), .eth_out_valid(eth_tx_valid), .eth_out_ready(eth_tx_ready)
       );
 
    // /////////////////////////////////////////////////////////////////////////
@@ -430,14 +423,14 @@ module u2plus_core
    // Buffer Pool Status -- Slave #5   
    
    //compatibility number -> increment when the fpga has been sufficiently altered
-   localparam compat_num = {16'd8, 16'd2}; //major, minor
+   localparam compat_num = {16'd9, 16'd0}; //major, minor
 
    wb_readback_mux buff_pool_status
      (.wb_clk_i(wb_clk), .wb_rst_i(wb_rst), .wb_stb_i(s5_stb),
       .wb_adr_i(s5_adr), .wb_dat_o(s5_dat_i), .wb_ack_o(s5_ack),
 
       .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
-      .word04(32'b0),.word05(32'b0),.word06({adc0_a, 4'b0, adc0_b, 4'b0}),.word07({adc1_a, 4'b0, adc1_b, 4'b0}),
+      .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
       .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
       .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, 1'b0, 10'b0}),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
@@ -454,8 +447,8 @@ module u2plus_core
       .GMII_RX_CLK(GMII_RX_CLK), .GMII_RX_DV(GMII_RX_DV),  
       .GMII_RX_ER(GMII_RX_ER), .GMII_RXD(GMII_RXD),
       .sys_clk(sys_clk),
-      .rx_f36_data(wr2_dat), .rx_f36_src_rdy(wr2_ready_i), .rx_f36_dst_rdy(wr2_ready_o),
-      .tx_f36_data(rd2_dat), .tx_f36_src_rdy(rd2_ready_o), .tx_f36_dst_rdy(rd2_ready_i),
+      .rx_f36_data(eth_rx_data), .rx_f36_src_rdy(eth_rx_valid), .rx_f36_dst_rdy(eth_rx_ready),
+      .tx_f36_data(eth_tx_data), .tx_f36_src_rdy(eth_tx_valid), .tx_f36_dst_rdy(eth_tx_ready),
       .wb_clk(wb_clk), .wb_rst(wb_rst), .wb_stb(s6_stb), .wb_cyc(s6_cyc), .wb_ack(s6_ack),
       .wb_we(s6_we), .wb_adr(s6_adr), .wb_dat_i(s6_dat_o), .wb_dat_o(s6_dat_i),
       .mdio(MDIO), .mdc(MDC),
@@ -504,14 +497,6 @@ module u2plus_core
 
    setting_reg #(.my_addr(SR_DIVSW+1),.width(1), .at_reset(32'd1)) sr_divsw2
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(DivSw2),.changed());
-
-  wire [31:0] testsig0;
-  setting_reg #(.my_addr(SR_TESTSIG+0),.width(32)) sr_testsig0
-     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(testsig0),.changed());
-
-  wire [31:0] testsig1;
-  setting_reg #(.my_addr(SR_TESTSIG+1),.width(32)) sr_testsig1
-     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(testsig1),.changed());
 
    // /////////////////////////////////////////////////////////////////////////
    //  LEDS
@@ -613,7 +598,7 @@ module u2plus_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .adc_i(adc0_a), .adc_q(adc0_b), .adc_stb(adc0_strobe), .run(run_rx0),
-        .vita_data_sys(wr1_dat), .vita_valid_sys(wr1_ready_i), .vita_ready_sys(wr1_ready_o),
+        .vita_data_sys(dsp_rx0_data), .vita_valid_sys(dsp_rx0_valid), .vita_ready_sys(dsp_rx0_ready),
         .vita_time(vita_time)
     );
 
@@ -632,17 +617,16 @@ module u2plus_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .adc_i(adc1_a), .adc_q(adc1_b), .adc_stb(adc1_strobe), .run(run_rx1),
-        .vita_data_sys(wr3_dat), .vita_valid_sys(wr3_ready_i), .vita_ready_sys(wr3_ready_o),
+        .vita_data_sys(dsp_rx1_data), .vita_valid_sys(dsp_rx1_valid), .vita_ready_sys(dsp_rx1_ready),
         .vita_time(vita_time)
     );
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
 
-    wire [35:0]          tx_data;
-    wire         tx_src_rdy, tx_dst_rdy;
-    wire [35:0]          tx_data_1;
-    wire         tx_src_rdy_1, tx_dst_rdy_1;
+    wire [35:0] sram0_data, sram1_data;
+    wire sram0_valid, sram1_valid;
+    wire sram0_ready, sram1_ready;
 
     umtrx_tx_chain
     #(
@@ -659,8 +643,8 @@ module u2plus_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .dac_i(dac0_a), .dac_q(dac0_b), .dac_stb(dac0_strobe), .run(run_tx0),
-        .vita_data_sys(tx_data), .vita_valid_sys(tx_src_rdy), .vita_ready_sys(tx_dst_rdy),
-        .err_data_sys(tx_err_data), .err_valid_sys(tx_err_src_rdy), .err_ready_sys(tx_err_dst_rdy),
+        .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
+        .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
     );
 
@@ -679,8 +663,8 @@ module u2plus_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .dac_i(dac1_a), .dac_q(dac1_b), .dac_stb(dac1_strobe), .run(run_tx1),
-        .vita_data_sys(tx_data_1), .vita_valid_sys(tx_src_rdy_1), .vita_ready_sys(tx_dst_rdy_1),
-        .err_data_sys(tx1_err_data), .err_valid_sys(tx1_err_src_rdy), .err_ready_sys(tx1_err_dst_rdy),
+        .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
+        .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
     );
 
@@ -717,25 +701,19 @@ module u2plus_core
 	.RAM_OEn(),
 	.RAM_CE1n(),
 `endif // !`ifndef NO_EXT_FIFO
-	.datain(rd1_dat),
-	.src_rdy_i(rd1_ready_o),
-	.dst_rdy_o(rd1_ready_i),
-	.dataout(tx_data),
-	.src_rdy_o(tx_src_rdy),
-	.dst_rdy_i(tx_dst_rdy),
-	.src1_rdy_i(rd1_ready_o_1),
-	.dst1_rdy_o(rd1_ready_i_1),
-	.src1_rdy_o(tx_src_rdy_1),
-	.dst1_rdy_i(tx_dst_rdy_1),
-	.dataout_1(tx_data_1),
+	.datain(dsp_tx_data),
+	.src_rdy_i(dsp_tx0_valid),
+	.dst_rdy_o(dsp_tx0_ready),
+	.dataout(sram0_data),
+	.src_rdy_o(sram0_valid),
+	.dst_rdy_i(sram0_ready),
+	.src1_rdy_i(dsp_tx1_valid),
+	.dst1_rdy_o(dsp_tx1_ready),
+	.src1_rdy_o(sram1_valid),
+	.dst1_rdy_i(sram1_ready),
+	.dataout_1(sram1_data),
 	.debug(debug_extfifo),
 	.debug2(debug_extfifo2) );
-
-   // ///////////////////////////////////////////////////////////////////////////////////
-   // SERDES
-
-    assign rd0_ready_i = 1; //null sink
-    assign wr0_ready_i = 0;
 
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing
