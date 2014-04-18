@@ -124,13 +124,20 @@ module simple_gemac_wrapper
    // TX FIFO Chain
    wire 	  tx_ll_sof, tx_ll_eof, tx_ll_src_rdy, tx_ll_dst_rdy;
    wire [7:0] 	  tx_ll_data;
-   wire [35:0] 	  tx_f36_data_int1, tx_f36_data_int2;
-   wire 	  tx_f36_src_rdy_int1, tx_f36_dst_rdy_int1, tx_f36_src_rdy_int2, tx_f36_dst_rdy_int2;
+   wire [35:0] 	  tx_f36_data_int0, tx_f36_data_int1, tx_f36_data_int2;
+   wire 	  tx_f36_src_rdy_int0, tx_f36_dst_rdy_int0, tx_f36_src_rdy_int1, tx_f36_dst_rdy_int1, tx_f36_src_rdy_int2, tx_f36_dst_rdy_int2;
    
-   fifo_2clock_cascade #(.WIDTH(36), .SIZE(TXFIFOSIZE)) tx_2clk_fifo
-     (.wclk(sys_clk), .datain(tx_f36_data), .src_rdy_i(tx_f36_src_rdy), .dst_rdy_o(tx_f36_dst_rdy), .space(),
-      .rclk(tx_clk), .dataout(tx_f36_data_int1), .src_rdy_o(tx_f36_src_rdy_int1), .dst_rdy_i(tx_f36_dst_rdy_int1), .occupied(), 
-      .arst(reset));
+   axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) tx_2clk_fifo
+     (.i_aclk(sys_clk), .i_tdata(tx_f36_data), .i_tvalid(tx_f36_src_rdy), .i_tready(tx_f36_dst_rdy),
+      .o_aclk(tx_clk), .o_tdata(tx_f36_data_int0), .o_tvalid(tx_f36_src_rdy_int0), .o_tready(tx_f36_dst_rdy_int0),
+      .reset(reset));
+
+    axi_packet_gate #(.WIDTH(36), .SIZE(TXFIFOSIZE)) fully_buffer_outgoing_eth_pkts
+    (
+        .clk(tx_clk), .reset(reset), .clear(0),
+        .i_tdata(tx_f36_data_int0), .i_tvalid(tx_f36_src_rdy_int0), .i_tready(tx_f36_dst_rdy_int0), .i_tlast(tx_f36_data_int0[33]), .i_terror(0),
+        .o_tdata(tx_f36_data_int1), .o_tvalid(tx_f36_src_rdy_int1), .o_tready(tx_f36_dst_rdy_int2), .o_tlast()
+    );
 
    ethtx_realign ethtx_realign
      (.clk(tx_clk), .reset(tx_reset), .clear(clear),
