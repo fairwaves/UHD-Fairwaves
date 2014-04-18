@@ -37,4 +37,6 @@ packet_generator.v \
 packet_verifier32.v \
 packet_verifier.v \
 fifo19_pad.v \
+axi_fifo.v \
+axi_fifo_2clk.v \
 ))

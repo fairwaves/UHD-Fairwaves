@@ -54,6 +54,10 @@ coregen/chipscope_icon.v \
 coregen/chipscope_icon.xco \
 coregen/chipscope_ila.v \
 coregen/chipscope_ila.xco \
+coregen/fifo_short_2clk.v \
+coregen/fifo_short_2clk.xco \
+coregen/fifo_4k_2clk.v \
+coregen/fifo_4k_2clk.xco \
 u2plus_umtrx_v2.v \
 u2plus_umtrx_v2.ucf
 

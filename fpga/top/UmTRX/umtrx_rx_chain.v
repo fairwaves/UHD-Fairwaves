@@ -131,11 +131,11 @@ module umtrx_rx_chain
     /*******************************************************************
      * Cross clock fifo from sys to dsp clock domain
      ******************************************************************/
-    fifo_2clock #(.WIDTH(36)) fifo_2clock_vita
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_vita
     (
-        .wclk(dsp_clk), .datain(vita_data_dsp), .src_rdy_i(vita_valid_dsp), .dst_rdy_o(vita_ready_dsp),
-        .rclk(sys_clk), .dataout(vita_data_sys), .src_rdy_o(vita_valid_sys), .dst_rdy_i(vita_ready_sys),
-        .arst(dsp_rst | sys_rst)
+        .i_aclk(dsp_clk), .i_tdata(vita_data_dsp), .i_tvalid(vita_valid_dsp), .i_tready(vita_ready_dsp),
+        .o_aclk(sys_clk), .o_tdata(vita_data_sys), .o_tvalid(vita_valid_sys), .o_tready(vita_ready_sys),
+        .reset(dsp_rst | sys_rst)
     );
 
     /*******************************************************************

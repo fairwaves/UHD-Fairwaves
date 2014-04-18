@@ -141,17 +141,17 @@ module umtrx_tx_chain
     /*******************************************************************
      * Cross clock fifo from sys to dsp clock domain
      ******************************************************************/
-    fifo_2clock #(.WIDTH(36)) fifo_2clock_vita
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_vita
     (
-        .wclk(sys_clk), .datain(vita_data_sys), .src_rdy_i(vita_valid_sys), .dst_rdy_o(vita_ready_sys),
-        .rclk(dsp_clk), .dataout(vita_data_dsp), .src_rdy_o(vita_valid_dsp), .dst_rdy_i(vita_ready_dsp),
-        .arst(dsp_rst | sys_rst)
+        .i_aclk(sys_clk), .i_tdata(vita_data_sys), .i_tvalid(vita_valid_sys), .i_tready(vita_ready_sys),
+        .o_aclk(dsp_clk), .o_tdata(vita_data_dsp), .o_tvalid(vita_valid_dsp), .o_tready(vita_ready_dsp),
+        .reset(dsp_rst | sys_rst)
     );
-    fifo_2clock #(.WIDTH(36)) fifo_2clock_err
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_err
     (
-        .wclk(dsp_clk), .datain(err_data_dsp), .src_rdy_i(err_valid_dsp), .dst_rdy_o(err_ready_dsp),
-        .rclk(sys_clk), .dataout(err_data_sys), .src_rdy_o(err_valid_sys), .dst_rdy_i(err_ready_sys),
-        .arst(dsp_rst | sys_rst)
+        .i_aclk(dsp_clk), .i_tdata(err_data_dsp), .i_tvalid(err_valid_dsp), .i_tready(err_ready_dsp),
+        .o_aclk(sys_clk), .o_tdata(err_data_sys), .o_tvalid(err_valid_sys), .o_tready(err_ready_sys),
+        .reset(dsp_rst | sys_rst)
     );
 
 endmodule //umtrx_tx_chain

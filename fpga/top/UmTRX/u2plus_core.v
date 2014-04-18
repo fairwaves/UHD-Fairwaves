@@ -505,19 +505,15 @@ module u2plus_core
       .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
 
    // Output control lines
-   wire [7:0] 	 clock_outs, adc_outs;
+   wire [7:0] 	 clock_outs;
    assign 	 {clock_ready, clk_en[1:0], clk_sel[1:0]} = clock_outs[4:0];
    assign lms_res = clock_outs[6:5];
-   assign 	 {adc_oe_a, adc_on_a, adc_oe_b, adc_on_b } = adc_outs[3:0];
 
    wire 	 phy_reset;
    assign 	 PHY_RESETn = ~phy_reset;
    
    setting_reg #(.my_addr(SR_MISC+0),.width(8)) sr_clk
      (.clk(wb_clk),.rst(wb_rst),.strobe(s7_ack),.addr(set_addr),.in(set_data),.out(clock_outs),.changed());
-
-   setting_reg #(.my_addr(SR_MISC+2),.width(8)) sr_adc
-     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(adc_outs),.changed());
 
    setting_reg #(.my_addr(SR_MISC+4),.width(1)) sr_phy
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(phy_reset),.changed());
