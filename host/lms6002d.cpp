@@ -181,6 +181,10 @@ void lms6002d_dev::init()
     // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
     // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
     lms_set_bits(0x44, (3 << 1));
+
+    // Icp=0.2mA
+    // This gives much better results for the GMSK modulation
+    lms_write_bits(0x16, 0x0f, 0x02);
 }
 
 void lms6002d_dev::set_txrx_polarity_and_interleaving(int rx_fsync_polarity,
