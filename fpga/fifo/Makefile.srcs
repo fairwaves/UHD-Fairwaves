@@ -39,7 +39,10 @@ packet_verifier.v \
 fifo19_pad.v \
 axi_fifo.v \
 axi_fifo_2clk.v \
+axi_fifo_short.v \
 axi_packet_gate.v \
 axi_mux4.v \
 axi_mux8.v \
+axi_demux4.v \
+axi_demux8.v \
 ))
