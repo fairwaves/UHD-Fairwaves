@@ -21,6 +21,7 @@
 
 #include "usrp2/fw_common.h"
 #include "umtrx_iface.hpp"
+#include "umtrx_fifo_ctrl.hpp"
 #include "lms6002d_ctrl.hpp"
 #include "cores/rx_frontend_core_200.hpp"
 #include "cores/tx_frontend_core_200.hpp"
@@ -58,6 +59,16 @@ static const double UMTRX_LINK_RATE_BPS = 1000e6/8;
 static const boost::uint32_t UMTRX_TX_ASYNC_SID_BASE = 2;
 static const boost::uint32_t UMTRX_RX_SID_BASE = 4;
 
+static const size_t UMTRX_DSP_RX0_FRAMER = 0;
+static const size_t UMTRX_DSP_RX1_FRAMER = 1;
+static const size_t UMTRX_CTRL_FRAMER = 3;
+
+static const boost::uint32_t UMTRX_CTRL_SID = 1;
+static const boost::uint32_t UMTRX_DSP_TX0_SID = 2;
+static const boost::uint32_t UMTRX_DSP_TX1_SID = 3;
+static const boost::uint32_t UMTRX_DSP_TX2_SID = 4;
+static const boost::uint32_t UMTRX_DSP_TX3_SID = 5;
+
 //! load and store for umtrx mboard eeprom map
 void load_umtrx_eeprom(uhd::usrp::mboard_eeprom_t &mb_eeprom, uhd::i2c_iface &iface);
 void store_umtrx_eeprom(const uhd::usrp::mboard_eeprom_t &mb_eeprom, uhd::i2c_iface &iface);
@@ -82,6 +93,7 @@ private:
     //communication interfaces
     std::string _device_ip_addr;
     umtrx_iface::sptr _iface;
+    umtrx_fifo_ctrl::sptr _ctrl;
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
@@ -108,6 +120,7 @@ private:
     void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
+    uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;

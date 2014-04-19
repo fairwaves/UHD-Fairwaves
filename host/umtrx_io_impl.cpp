@@ -109,10 +109,10 @@ void umtrx_impl::update_tick_rate(const double rate)
 }
 
 /***********************************************************************
- * Stream destination programmer
+ * Transport creation and framer programming
  **********************************************************************/
 static void program_stream_dest(
-    zero_copy_if::sptr &xport, const uhd::stream_args_t &args
+    zero_copy_if::sptr &xport, const size_t which, const device_addr_t &args
 ){
     //perform an initial flush of transport
     while (xport->get_recv_buff(0.0)){}
@@ -121,46 +121,26 @@ static void program_stream_dest(
     usrp2_stream_ctrl_t stream_ctrl = usrp2_stream_ctrl_t();
     stream_ctrl.sequence = uhd::htonx(boost::uint32_t(0 /* don't care seq num */));
     stream_ctrl.vrt_hdr = uhd::htonx(boost::uint32_t(USRP2_INVALID_VRT_HEADER));
+    stream_ctrl.which = uhd::htonx(boost::uint32_t(which));
 
-    //user has provided an alternative address and port for destination
-    if (args.args.has_key("addr") and args.args.has_key("port")){
-        UHD_MSG(status) << boost::format(
-            "Programming streaming destination for custom address.\n"
-            "IPv4 Address: %s, UDP Port: %s\n"
-        ) % args.args["addr"] % args.args["port"] << std::endl;
+    //send the partial stream control without destination
+    managed_send_buffer::sptr send_buff = xport->get_send_buff();
+    std::memcpy(send_buff->cast<void *>(), &stream_ctrl, sizeof(stream_ctrl));
+    send_buff->commit(sizeof(stream_ctrl));
+}
 
-        asio::io_service io_service;
-        asio::ip::udp::resolver resolver(io_service);
-        asio::ip::udp::resolver::query query(asio::ip::udp::v4(), args.args["addr"], args.args["port"]);
-        asio::ip::udp::endpoint endpoint = *resolver.resolve(query);
-        stream_ctrl.ip_addr = uhd::htonx(boost::uint32_t(endpoint.address().to_v4().to_ulong()));
-        stream_ctrl.udp_port = uhd::htonx(boost::uint32_t(endpoint.port()));
-
-        for (size_t i = 0; i < 3; i++){
-            UHD_MSG(status) << "ARP attempt " << i << std::endl;
-            managed_send_buffer::sptr send_buff = xport->get_send_buff();
-            std::memcpy(send_buff->cast<void *>(), &stream_ctrl, sizeof(stream_ctrl));
-            send_buff->commit(sizeof(stream_ctrl));
-            send_buff.reset();
-            boost::this_thread::sleep(boost::posix_time::milliseconds(300));
-            managed_recv_buffer::sptr recv_buff = xport->get_recv_buff(0.0);
-            if (recv_buff and recv_buff->size() >= sizeof(boost::uint32_t)){
-                const boost::uint32_t result = uhd::ntohx(recv_buff->cast<const boost::uint32_t *>()[0]);
-                if (result == 0){
-                    UHD_MSG(status) << "Success! " << std::endl;
-                    return;
-                }
-            }
-        }
-        throw uhd::runtime_error("Device failed to ARP when programming alternative streaming destination.");
-    }
-
-    else{
-        //send the partial stream control without destination
-        managed_send_buffer::sptr send_buff = xport->get_send_buff();
-        std::memcpy(send_buff->cast<void *>(), &stream_ctrl, sizeof(stream_ctrl));
-        send_buff->commit(sizeof(stream_ctrl)/2);
-    }
+uhd::transport::zero_copy_if::sptr umtrx_impl::make_xport(const size_t which, const uhd::device_addr_t &args)
+{
+    zero_copy_xport_params default_params;
+    default_params.send_frame_size = transport::udp_simple::mtu;
+    default_params.recv_frame_size = transport::udp_simple::mtu;
+    default_params.num_send_frames = DEFAULT_NUM_FRAMES;
+    default_params.num_recv_frames = DEFAULT_NUM_FRAMES;
+    udp_zero_copy::buff_params ignored_params;
+    zero_copy_if::sptr xport = udp_zero_copy::make(_device_ip_addr, BOOST_STRINGIZE(USRP2_UDP_SERVER_PORT), default_params, ignored_params, args);
+    program_stream_dest(xport, which, args);
+    _iface->peek32(0); //peek to ensure the zpu processed the program_stream_dest()
+    return xport;
 }
 
 /***********************************************************************
@@ -196,15 +176,12 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
     for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
     {
         const size_t dsp = args.channels[chan_i];
-        udp_zero_copy::buff_params ignored_params;
-        std::string port;
-        if (dsp == 0) port = BOOST_STRINGIZE(USRP2_UDP_RX_DSP0_PORT);
-        if (dsp == 1) port = BOOST_STRINGIZE(USRP2_UDP_RX_DSP1_PORT);
-        UHD_ASSERT_THROW(not port.empty());
-        xports[dsp] = udp_zero_copy::make(_device_ip_addr, port, default_params, ignored_params, args.args);
-        program_stream_dest(xports[dsp], args);
+        size_t which = ~0;
+        if (dsp == 0) which = UMTRX_DSP_RX0_FRAMER;
+        if (dsp == 1) which = UMTRX_DSP_RX1_FRAMER;
+        UHD_ASSERT_THROW(which != ~0);
+        xports[dsp] = make_xport(which, args.args);
     }
-    _iface->peek32(0); //peek to ensure the zpu processed the program_stream_dest()
 
     //calculate packet size
     static const size_t hdr_size = 0

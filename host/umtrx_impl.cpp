@@ -162,6 +162,17 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     //lock the device/motherboard to this process
     _iface->lock_device(true);
 
+    ////////////////////////////////////////////////////////////////
+    // high performance settings control
+    ////////////////////////////////////////////////////////////////
+    _iface->poke32(U2_REG_SR_ADDR(SR_MISC+1), 1); //clear settings fifo control state machine
+    _ctrl = umtrx_fifo_ctrl::make(this->make_xport(UMTRX_CTRL_FRAMER, device_addr_t()), UMTRX_CTRL_SID);
+    _ctrl->peek32(0); //test readback
+    _tree->create<time_spec_t>(mb_path / "time/cmd")
+        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_time, _ctrl, _1));
+    _tree->create<double>(mb_path / "tick_rate")
+        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_tick_rate, _ctrl, _1));
+
     ////////////////////////////////////////////////////////////////////
     // setup the mboard eeprom
     ////////////////////////////////////////////////////////////////////
@@ -172,7 +183,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////
     // create clock control objects
     ////////////////////////////////////////////////////////////////
-    _tree->create<double>(mb_path / "tick_rate")
+    _tree->access<double>(mb_path / "tick_rate")
         .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
         .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
 
@@ -331,7 +342,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _lms_ctrl["B"] = lms6002d_ctrl::make(_iface, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
 
     // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
-    dboard_eeprom_t rx_db_eeprom, tx_db_eeprom;
+    dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_db_eeprom;
     rx_db_eeprom.id = 0xfa07;
     rx_db_eeprom.revision = _iface->mb_eeprom["revision"];
     tx_db_eeprom.id = 0xfa09;
@@ -355,6 +366,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .set(rx_db_eeprom);
         _tree->create<dboard_eeprom_t>(mb_path / "dboards" / fe_name / "tx_eeprom")
             .set(tx_db_eeprom);
+        _tree->create<dboard_eeprom_t>(mb_path / "dboards" / fe_name / "gdb_eeprom")
+            .set(gdb_db_eeprom);
 
         //sensors -- always say locked
         _tree->create<sensor_value_t>(rx_rf_fe_path / "sensors" / "lo_locked")

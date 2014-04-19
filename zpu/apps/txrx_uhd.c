@@ -56,55 +56,16 @@ static void handle_udp_data_packet(
     unsigned char *payload, int payload_len
 ){
     //handle ICMP destination unreachable
-    if (payload == NULL) switch(src.port){
-    case USRP2_UDP_RX_DSP0_PORT:
-        //the end continuous streaming command
-        sr_rx_ctrl0->cmd = 1 << 31 | 1 << 28; //no samples now
-        sr_rx_ctrl0->time_secs = 0;
-        sr_rx_ctrl0->time_ticks = 0; //latch the command
-        break;
-
-    case USRP2_UDP_RX_DSP1_PORT:
-        //the end continuous streaming command
-        sr_rx_ctrl1->cmd = 1 << 31 | 1 << 28; //no samples now
-        sr_rx_ctrl1->time_secs = 0;
-        sr_rx_ctrl1->time_ticks = 0; //latch the command
-        break;
-
-    case USRP2_UDP_TX_DSP0_PORT:
-        //end async update packets per second
-        sr_tx_ctrl0->cyc_per_up = 0;
-        break;
-
-    case USRP2_UDP_TX_DSP1_PORT:
-        //end async update packets per second
-        sr_tx_ctrl1->cyc_per_up = 0;
-        break;
-
-    default: return;
+    if (payload == NULL)
+    {
+        //TODO shutoff things
+        return;
     }
 
     //handle an incoming UDP packet
-    size_t which = 0;
-    if (payload != 0) switch(dst.port){
-    case USRP2_UDP_RX_DSP0_PORT:
-        which = 0;
-        break;
-
-    case USRP2_UDP_RX_DSP1_PORT:
-        which = 2;
-        break;
-
-    case USRP2_UDP_TX_DSP0_PORT:
-        which = 1;
-        break;
-
-    case USRP2_UDP_TX_DSP1_PORT:
-        which = 3;
-        break;
-
-    default: return;
-    }
+    if (payload_len < sizeof(usrp2_stream_ctrl_t)) return;
+    const usrp2_stream_ctrl_t *stream_ctrl = (const usrp2_stream_ctrl_t *)payload;
+    const size_t which = stream_ctrl->which;
 
     eth_mac_addr_t eth_mac_host; arp_cache_lookup_mac(&src.addr, &eth_mac_host);
     setup_framer(eth_mac_host, *ethernet_mac_addr(), src, dst, which);
@@ -358,11 +319,8 @@ main(void)
   //2) register callbacks for udp ports we service
   init_udp_listeners();
   register_udp_listener(USRP2_UDP_CTRL_PORT, handle_udp_ctrl_packet);
-  register_udp_listener(USRP2_UDP_RX_DSP0_PORT, handle_udp_data_packet);
-  register_udp_listener(USRP2_UDP_RX_DSP1_PORT, handle_udp_data_packet);
-  register_udp_listener(USRP2_UDP_TX_DSP0_PORT, handle_udp_data_packet);
-  register_udp_listener(USRP2_UDP_TX_DSP1_PORT, handle_udp_data_packet);
-  
+  register_udp_listener(USRP2_UDP_SERVER_PORT, handle_udp_data_packet);
+
 #ifdef USRP2P
 #ifndef NO_FLASH
   register_udp_listener(USRP2_UDP_UPDATE_PORT, handle_udp_fw_update_packet);

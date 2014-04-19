@@ -31,8 +31,8 @@ extern "C" {
 
 //fpga and firmware compatibility numbers
 #define USRP2_FPGA_COMPAT_NUM 9
-#define USRP2_FW_COMPAT_NUM 11
-#define USRP2_FW_VER_MINOR 1
+#define USRP2_FW_COMPAT_NUM 12
+#define USRP2_FW_VER_MINOR 0
 
 //used to differentiate control packets over data port
 #define USRP2_INVALID_VRT_HEADER 0
@@ -40,8 +40,7 @@ extern "C" {
 typedef struct{
     uint32_t sequence;
     uint32_t vrt_hdr;
-    uint32_t ip_addr;
-    uint32_t udp_port;
+    uint32_t which;
 } usrp2_stream_ctrl_t;
 
 // udp ports for the usrp2 communication
@@ -49,10 +48,6 @@ typedef struct{
 #define USRP2_UDP_CTRL_PORT 49152
 //#define USRP2_UDP_UPDATE_PORT 49154
 #define USRP2_UDP_SERVER_PORT 49156
-#define USRP2_UDP_RX_DSP0_PORT 49156
-#define USRP2_UDP_TX_DSP0_PORT 49157
-#define USRP2_UDP_RX_DSP1_PORT 49158
-#define USRP2_UDP_TX_DSP1_PORT 49159
 #define USRP2_UDP_UART_BASE_PORT 49170
 #define USRP2_UDP_UART_GPS_PORT 49172
 

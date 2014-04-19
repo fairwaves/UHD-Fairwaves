@@ -365,6 +365,10 @@ module u2plus_core
    wire [35:0] 	 err_tx1_data;
    wire 	 err_tx1_valid, err_tx1_ready;
 
+   wire [35:0] resp_data, ctrl_data;
+   wire resp_valid, ctrl_valid;
+   wire resp_ready, ctrl_ready;
+
     umtrx_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) router
     (
         .wb_clk_i(wb_clk),.wb_rst_i(wb_rst),
@@ -380,7 +384,7 @@ module u2plus_core
         .eth_inp_data(eth_rx_data), .eth_inp_valid(eth_rx_valid), .eth_inp_ready(eth_rx_ready),
         .eth_out_data(eth_tx_data), .eth_out_valid(eth_tx_valid), .eth_out_ready(eth_tx_ready),
 
-        .ctrl_inp_data(), .ctrl_inp_valid(1'b0), .ctrl_inp_ready(),
+        .ctrl_inp_data(resp_data), .ctrl_inp_valid(resp_valid), .ctrl_inp_ready(resp_ready),
         .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
         .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
         .err0_inp_data(err_tx0_data), .err0_inp_valid(err_tx0_valid), .err0_inp_ready(err_tx0_ready),
@@ -388,7 +392,7 @@ module u2plus_core
         .err2_inp_data(), .err2_inp_valid(1'b0), .err2_inp_ready(),
         .err3_inp_data(), .err3_inp_valid(1'b0), .err3_inp_ready(),
 
-        .ctrl_out_data(), .ctrl_out_valid(), .ctrl_out_ready(1'b1),
+        .ctrl_out_data(ctrl_data), .ctrl_out_valid(ctrl_valid), .ctrl_out_ready(ctrl_ready),
         .dsp0_out_data(dsp_tx0_data), .dsp0_out_valid(dsp_tx0_valid), .dsp0_out_ready(dsp_tx0_ready),
         .dsp1_out_data(dsp_tx1_data), .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready),
         .dsp2_out_data(), .dsp2_out_valid(), .dsp2_out_ready(1'b1),
@@ -438,7 +442,7 @@ module u2plus_core
       .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
       .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
-      .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 1'b0, clk_status, 1'b0, 10'b0}),
+      .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 13'b0}),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
       );
 
@@ -481,6 +485,26 @@ module u2plus_core
      (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
       .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
 
+   // /////////////////////////////////////////////////////////////////////////
+   // Settings + Readback Bus -- FIFO controlled
+
+    wire [31:0] sfc_debug;
+    wire sfc_clear;
+    settings_fifo_ctrl #(.PROT_DEST(3), .PROT_HDR(1)) sfc
+    (
+        .clock(sys_clk), .reset(sys_rst), .clear(sfc_clear),
+        .vita_time(vita_time), .perfs_ready(1'b1),
+        .in_data(ctrl_data), .in_valid(ctrl_valid), .in_ready(ctrl_ready),
+        .out_data(resp_data), .out_valid(resp_valid), .out_ready(resp_ready),
+        .strobe(), .addr(), .data(),
+        .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
+        .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
+        .word08(32'b0),.word09(32'b0),.word10(vita_time[63:32]),
+        .word11(vita_time[31:0]),.word12(32'b0),.word13(32'b0),
+        .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0]),
+        .debug(sfc_debug)
+    );
+
    // Output control lines
    wire [7:0] 	 clock_outs;
    assign lms_res = clock_outs[6:5];
@@ -490,6 +514,9 @@ module u2plus_core
    
    setting_reg #(.my_addr(SR_MISC+0),.width(8)) sr_clk
      (.clk(wb_clk),.rst(wb_rst),.strobe(s7_ack),.addr(set_addr),.in(set_data),.out(clock_outs),.changed());
+
+   setting_reg #(.my_addr(SR_MISC+1),.width(1)) sr_clear_sfc
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.changed(sfc_clear));
 
    setting_reg #(.my_addr(SR_MISC+4),.width(1)) sr_phy
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(phy_reset),.changed());
@@ -553,7 +580,7 @@ module u2plus_core
 
    assign irq= {{8'b0},
 		{uart_tx_int[3:0], uart_rx_int[3:0]},
-		{4'b0, clk_status, 3'b0},
+		{8'b0},
 		{2'b0,aux_i2c_int, PHY_INTn, i2c_int,spi_int,gpsdo_int,1'b0}};
    
    pic pic(.clk_i(wb_clk),.rst_i(wb_rst),.cyc_i(s8_cyc),.stb_i(s8_stb),.adr_i(s8_adr[4:2]),
@@ -587,7 +614,7 @@ module u2plus_core
 
    // /////////////////////////////////////////////////////////////////////////
    // RX chains
-
+/*
     umtrx_rx_chain
     #(
         .DSPNO(0),
@@ -673,6 +700,13 @@ module u2plus_core
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
     );
+*/
+assign sram0_ready = 1;
+assign sram1_ready = 1;
+assign err_tx0_valid = 0;
+assign err_tx1_valid = 0;
+assign dsp_rx0_valid = 0;
+assign dsp_rx1_valid = 0;
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
