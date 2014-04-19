@@ -152,7 +152,6 @@ module u2plus_core
    localparam SR_TX_FRONT_SW = 177;
 
    localparam SR_DIVSW    = 180;   // 2
-   localparam SR_UDP_SM   = 192;   // 64
    
    // FIFO Sizes, 9 = 512 lines, 10 = 1024, 11 = 2048
    // all (most?) are 36 bits wide, so 9 is 1 BRAM, 10 is 2, 11 is 4 BRAMs
@@ -161,9 +160,9 @@ module u2plus_core
    localparam ETH_TX_FIFOSIZE = 9;
    localparam ETH_RX_FIFOSIZE = 11;
    
-   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys;
-   wire [31:0] 	set_data, set_data_dsp, set_data_sys;
-   wire 	set_stb, set_stb_dsp, set_stb_sys;
+   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys, set_addr_udp_wb, set_addr_udp_sys;
+   wire [31:0] 	set_data, set_data_dsp, set_data_sys, set_data_udp_wb, set_data_udp_sys;
+   wire 	set_stb, set_stb_dsp, set_stb_sys, set_stb_udp_wb, set_stb_udp_sys;
    
    reg 		wb_rst;
    wire 	dsp_rst, sys_rst, fe_rst;
@@ -226,7 +225,7 @@ module u2plus_core
 		.s8_addr(8'b1000_0000),.s8_mask(8'b1111_1100),  // PIC
 		.s9_addr(8'b1000_0100),.s9_mask(8'b1111_1100),  // I2C AUX
 		.sa_addr(8'b1000_1000),.sa_mask(8'b1111_1100),  // UART
-		.sb_addr(8'b1000_1100),.sb_mask(8'b1111_1100),  // Unused
+		.sb_addr(8'b1000_1100),.sb_mask(8'b1111_1100),  // Settings Bus for framer (1K)
 		.sc_addr(8'b1001_0000),.sc_mask(8'b1111_0000),  // Unused
 		.sd_addr(8'b1010_0000),.sd_mask(8'b1111_0000),  // ICAP
 		.se_addr(8'b1011_0000),.se_mask(8'b1111_0000),  // SPI Flash
@@ -268,9 +267,9 @@ module u2plus_core
       .sf_dat_o(sf_dat_o),.sf_adr_o(sf_adr),.sf_sel_o(sf_sel),.sf_we_o(sf_we),.sf_cyc_o(sf_cyc),.sf_stb_o(sf_stb),
       .sf_dat_i(sf_dat_i),.sf_ack_i(sf_ack),.sf_err_i(0),.sf_rty_i(0));
 
-   // Unused Slaves b, c
-   assign sb_ack = 0;   assign sc_ack = 0;
-   
+   // Unused Slaves
+   assign sc_ack = 0;
+
    // ////////////////////////////////////////////////////////////////////////////////////////
    // Reset Controller
 
@@ -369,13 +368,14 @@ module u2plus_core
    wire resp_valid, ctrl_valid;
    wire resp_ready, ctrl_ready;
 
-    umtrx_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) router
+    umtrx_router #(.BUF_SIZE(9), .CTRL_BASE(SR_BUF_POOL)) router
     (
         .wb_clk_i(wb_clk),.wb_rst_i(wb_rst),
         .wb_we_i(s1_we),.wb_stb_i(s1_stb),.wb_adr_i(s1_adr),.wb_dat_i(s1_dat_o),
         .wb_dat_o(s1_dat_i),.wb_ack_o(s1_ack),.wb_err_o(),.wb_rty_o(),
 
         .set_stb(set_stb_sys), .set_addr(set_addr_sys), .set_data(set_data_sys),
+        .set_stb_udp(set_stb_udp_sys), .set_addr_udp(set_addr_udp_sys), .set_data_udp(set_data_udp_sys),
 
         .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(1'b0),
 
@@ -620,6 +620,20 @@ module u2plus_core
       .adr_i(sa_adr[6:2]),.dat_i(sa_dat_o),.dat_o(sa_dat_i),
       .rx_int_o(uart_rx_int),.tx_int_o(uart_tx_int),
       .tx_o(uart_tx_o),.rx_i(uart_rx_i),.baud_o(uart_baud_o));
+
+   // /////////////////////////////////////////////////////////////////////////
+   // Settings Bus Framer -- Slave #B
+   settings_bus settings_bus_framer
+     (.wb_clk(wb_clk),.wb_rst(wb_rst),.wb_adr_i(sb_adr),.wb_dat_i(sb_dat_o),
+      .wb_stb_i(sb_stb),.wb_we_i(sb_we),.wb_ack_o(sb_ack),
+      .strobe(set_stb_udp_wb),.addr(set_addr_udp_wb),.data(set_data_udp_wb));
+   
+   assign 	 sb_dat_i = 32'd0;
+
+   settings_bus_crossclock settings_bus_udp_sys_crossclock
+     (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb_udp_wb), .set_addr_i(set_addr_udp_wb), .set_data_i(set_data_udp_wb),
+      .clk_o(sys_clk), .rst_o(sys_rst), .set_stb_o(set_stb_udp_sys), .set_addr_o(set_addr_udp_sys), .set_data_o(set_data_udp_sys));
+
    // /////////////////////////////////////////////////////////////////////////
    // ICAP for reprogramming the FPGA, Slave #13 (D)
 

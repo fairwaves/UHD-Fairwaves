@@ -55,6 +55,7 @@
 #define SPIF_BASE           0xB000
 #define RAM_BASE            0xC000
 #endif
+#define UDP_FRAMER_BASE     0x8C00
 
 /////////////////////////////////////////////////////
 // SPI Core, Slave 2.  See core docs for more info
@@ -270,8 +271,6 @@ typedef struct {
 #define SR_TX_DSP1   170   // 5
 #endif
 
-#define SR_UDP_SM   192   // 64
-
 #define	_SR_ADDR(sr) (SETTING_REGS_BASE + (sr) * sizeof(uint32_t))
 
 #define SR_ADDR_BLDRDONE _SR_ADDR(5)
@@ -332,10 +331,10 @@ typedef struct {
 typedef struct{
     struct{
         volatile uint32_t entry[16];
-    } table[4];
+    } table[8];
 } sr_proto_framer_t;
 
-#define sr_proto_framer_regs ((sr_proto_framer_t *) _SR_ADDR(SR_UDP_SM))
+#define sr_proto_framer_regs ((sr_proto_framer_t *) UDP_FRAMER_BASE)
 
 // --- VITA TX CTRL regs ---
 

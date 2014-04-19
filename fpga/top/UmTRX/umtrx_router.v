@@ -18,7 +18,6 @@
 module umtrx_router
     #(
         parameter BUF_SIZE = 9,
-        parameter UDP_BASE = 0,
         parameter CTRL_BASE = 0
     )
     (
@@ -36,6 +35,7 @@ module umtrx_router
 
         //setting register interface
         input set_stb, input [7:0] set_addr, input [31:0] set_data,
+        input set_stb_udp, input [7:0] set_addr_udp, input [31:0] set_data_udp,
 
         input stream_clk,
         input stream_rst,
@@ -186,11 +186,11 @@ module umtrx_router
     );
 
     ////////////////////////////////////////////////////////////////////
-    // UDP TX Protocol machine
+    // UDP TX Protocol framer
     ////////////////////////////////////////////////////////////////////
-    prot_eng_tx #(.BASE(UDP_BASE)) udp_prot_eng_tx
+    prot_eng_tx #(.BASE(0)) udp_prot_eng_tx
      (.clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-      .set_stb(set_stb), .set_addr(set_addr), .set_data(set_data),
+      .set_stb(set_stb_udp), .set_addr(set_addr_udp), .set_data(set_data_udp),
       .datain(com_out_data),  .src_rdy_i(com_out_valid), .dst_rdy_o(com_out_ready),
       .dataout(eth_out_data), .src_rdy_o(eth_out_valid), .dst_rdy_i(eth_out_ready) );
 
