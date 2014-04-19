@@ -172,6 +172,11 @@ void lms6002d_dev::init()
     write_reg(0x64, 0x36); // Common Mode Voltage For ADC’s
     write_reg(0x79, 0x37); // Higher LNA Gain
 
+    // Power down DC comparators to improve the receiver linearity
+    // (see FAQ v1.0r12, 5.26)
+    lms_set_bits(0x6E, (0x3 << 6));
+    lms_set_bits(0x5F, (0x1 << 7));
+
     // Disable AUX PA
     // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
     // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
@@ -247,6 +252,10 @@ int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibrati
 
 int lms6002d_dev::general_dc_calibration(uint8_t dc_addr, uint8_t calibration_reg_base)
 {
+    // Power up DC comparators
+    lms_clear_bits(0x6E, (0x3 << 6));
+    lms_clear_bits(0x5F, (0x1 << 7));
+
     // Set DC_REGVAL to 31
     write_reg(calibration_reg_base+0x00, 31);
     // Run the calibration first time
@@ -269,6 +278,11 @@ int lms6002d_dev::general_dc_calibration(uint8_t dc_addr, uint8_t calibration_re
             return -1;
         }
     }
+
+    // Power down DC comparators to improve the receiver linearity
+    // (see FAQ v1.0r12, 5.26)
+    lms_set_bits(0x6E, (0x3 << 6));
+    lms_set_bits(0x5F, (0x1 << 7));
 
     if (verbosity > 0) printf("Successful DC Offset Calibration for register bank 0x%X, DC addr %d. Result: 0x%X\n",
                               calibration_reg_base, dc_addr, DC_REGVAL);
