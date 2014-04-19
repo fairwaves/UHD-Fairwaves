@@ -160,15 +160,20 @@ module umtrx_packet_dispatcher
                         pd_dest <= CPU_INDEX;
                     end
 
+                    //not my IP address:
+                    else if (~is_eth_ipv4_dst_addr_here) begin
+                        pd_dest <= DROP_INDEX;
+                    end
+
                     //UDP data port and VRT:
-                    else if (is_eth_ipv4_dst_addr_here && is_eth_udp_dst_port_here && ~is_vrt_size_zero) begin
+                    else if (is_eth_udp_dst_port_here && ~is_vrt_size_zero) begin
                         pd_dest <= com_inp_data[7:0];
                         pd_dreg_count <= PD_DREGS_DSP_OFFSET;
                     end
 
                     //other:
                     else begin
-                        pd_dest <= DROP_INDEX;
+                        pd_dest <= CPU_INDEX;
                     end
                     //---------- end inspection decision -------------//
 
