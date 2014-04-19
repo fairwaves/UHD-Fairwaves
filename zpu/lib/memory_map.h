@@ -288,7 +288,7 @@ typedef struct {
 // --- misc outputs ---
 
 typedef struct {
-  volatile uint32_t clk_ctrl;
+  volatile uint32_t lms_res;
   volatile uint32_t serdes_ctrl;
   volatile uint32_t adc_ctrl;
   volatile uint32_t leds;
@@ -298,11 +298,8 @@ typedef struct {
   volatile uint32_t flush_icache;    // Flush the icache
 } output_regs_t;
 
-#define LMS1_RESET  (1<<5)
-#define LMS2_RESET  (1<<6)
-#define CLK_RESET  (1<<4)
-#define CLK_ENABLE (1<<3) | (1<<2)
-#define CLK_SEL    (1<<1) | (1<<0)
+#define LMS1_RESET  (1<<0)
+#define LMS2_RESET  (1<<1)
 
 #define SERDES_ENABLE 8
 #define SERDES_PRBSEN 4

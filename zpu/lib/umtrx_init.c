@@ -34,15 +34,14 @@
 bool
 umtrx_init(void)
 {
-  uint8_t val;
   uint32_t res;
 
 //issue a reset to the LMS chips
-  output_regs->clk_ctrl |= LMS1_RESET | LMS2_RESET; // reset pins of lms chips switched to 1
+  output_regs->lms_res == (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
   mdelay(100);
-  output_regs->clk_ctrl &= 0xcf; // reset pins of lms chips switched to 0
+  output_regs->lms_res = 0; // reset pins of lms chips switched to 0
   mdelay(100);
-  output_regs->clk_ctrl |= LMS1_RESET | LMS2_RESET; // reset pins of lms chips switched to 1
+  output_regs->lms_res == (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
 
   // Check LMS presense
   res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPIF_PUSH_FALL|SPIF_LATCH_RISE);

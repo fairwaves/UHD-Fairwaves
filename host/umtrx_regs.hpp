@@ -90,15 +90,13 @@
 /////////////////////////////////////////////////
 // Misc Control
 ////////////////////////////////////////////////
-#define U2_REG_MISC_CTRL_CLOCK U2_REG_SR_ADDR(0)
-#define U2_REG_MISC_CTRL_SERDES U2_REG_SR_ADDR(1)
-#define U2_REG_MISC_CTRL_ADC U2_REG_SR_ADDR(2)
+#define U2_REG_MISC_LMS_RES U2_REG_SR_ADDR(0)
+#define U2_REG_MISC_CTRL_SFC_CLEAR U2_REG_SR_ADDR(1)
 #define U2_REG_MISC_CTRL_LEDS U2_REG_SR_ADDR(3)
 #define U2_REG_MISC_CTRL_PHY U2_REG_SR_ADDR(4)
 #define U2_REG_MISC_CTRL_DBG_MUX U2_REG_SR_ADDR(5)
 #define U2_REG_MISC_CTRL_RAM_PAGE U2_REG_SR_ADDR(6)
 #define U2_REG_MISC_CTRL_FLUSH_ICACHE U2_REG_SR_ADDR(7)
-#define U2_REG_MISC_CTRL_LED_SRC U2_REG_SR_ADDR(8)
 
 #define U2_FLAG_MISC_CTRL_SERDES_ENABLE 8
 #define U2_FLAG_MISC_CTRL_SERDES_PRBSEN 4
@@ -137,8 +135,8 @@
 #define LMS_DC_ADDR_SHIFT          0
 #define LMS_DC_ADDR_MASK           (7<<LMS_DC_ADDR_SHIFT)
 
-// Defined for the U2_REG_MISC_CTRL_CLOCK register
-#define LMS1_RESET  (1<<5)
-#define LMS2_RESET  (1<<6)
+// Defined for the U2_REG_MISC_LMS_CLOCK register
+#define LMS1_RESET  (1<<0)
+#define LMS2_RESET  (1<<1)
 
 #endif
