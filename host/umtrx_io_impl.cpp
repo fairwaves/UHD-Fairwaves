@@ -165,11 +165,6 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
             args.args["recv_buff_size"] = "50e6";
         #endif
     }
-    zero_copy_xport_params default_params;
-    default_params.send_frame_size = transport::udp_simple::mtu;
-    default_params.recv_frame_size = transport::udp_simple::mtu;
-    default_params.num_send_frames = DEFAULT_NUM_FRAMES;
-    default_params.num_recv_frames = DEFAULT_NUM_FRAMES;
 
     //create the transport
     std::vector<zero_copy_if::sptr> xports(_rx_dsps.size());
@@ -179,7 +174,7 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
         size_t which = ~0;
         if (dsp == 0) which = UMTRX_DSP_RX0_FRAMER;
         if (dsp == 1) which = UMTRX_DSP_RX1_FRAMER;
-        UHD_ASSERT_THROW(which != ~0);
+        UHD_ASSERT_THROW(which != size_t(~0));
         xports[dsp] = make_xport(which, args.args);
     }
 

@@ -259,8 +259,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     // create rx dsp control objects
     ////////////////////////////////////////////////////////////////
     _rx_dsps.resize(2);
-    _rx_dsps[0] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP0), U2_REG_SR_ADDR(SR_RX_CTRL0), UMTRX_RX_SID_BASE + 0, true);
-    _rx_dsps[1] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_RX_SID_BASE + 1, true);
+    _rx_dsps[0] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP0), U2_REG_SR_ADDR(SR_RX_CTRL0), UMTRX_DSP_RX0_SID, true);
+    _rx_dsps[1] = rx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_DSP_RX1_SID, true);
 
     for (size_t dspno = 0; dspno < _rx_dsps.size(); dspno++){
         _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
@@ -285,8 +285,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     // create tx dsp control objects
     ////////////////////////////////////////////////////////////////
     _tx_dsps.resize(2);
-    _tx_dsps[0] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_TX_ASYNC_SID_BASE+0);
-    _tx_dsps[1] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_TX_ASYNC_SID_BASE+1);
+    _tx_dsps[0] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_DSP_TX0_SID);
+    _tx_dsps[1] = tx_dsp_core_200::make(_iface, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_DSP_TX1_SID);
 
     for (size_t dspno = 0; dspno < _tx_dsps.size(); dspno++){
         _tx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);

@@ -56,18 +56,27 @@
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
 static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
 static const double UMTRX_LINK_RATE_BPS = 1000e6/8;
-static const boost::uint32_t UMTRX_TX_ASYNC_SID_BASE = 2;
-static const boost::uint32_t UMTRX_RX_SID_BASE = 4;
 
+//framer indexes for use with make_xport()
+//see .PROT_DEST() in fpga module parameters
 static const size_t UMTRX_DSP_RX0_FRAMER = 0;
 static const size_t UMTRX_DSP_RX1_FRAMER = 1;
 static const size_t UMTRX_CTRL_FRAMER = 3;
+static const size_t UMTRX_DSP_TX0_FRAMER = 4;
+static const size_t UMTRX_DSP_TX1_FRAMER = 5;
+static const size_t UMTRX_DSP_TX2_FRAMER = 6;
+static const size_t UMTRX_DSP_TX3_FRAMER = 7;
 
+//stream IDs used by packet dispatcher to determine destination
 static const boost::uint32_t UMTRX_CTRL_SID = 1;
 static const boost::uint32_t UMTRX_DSP_TX0_SID = 2;
 static const boost::uint32_t UMTRX_DSP_TX1_SID = 3;
 static const boost::uint32_t UMTRX_DSP_TX2_SID = 4;
 static const boost::uint32_t UMTRX_DSP_TX3_SID = 5;
+
+//RX stream IDs -- random -- no relevance to FPGA config
+static const boost::uint32_t UMTRX_DSP_RX0_SID = 0x20;
+static const boost::uint32_t UMTRX_DSP_RX1_SID = 0x21;
 
 //! load and store for umtrx mboard eeprom map
 void load_umtrx_eeprom(uhd::usrp::mboard_eeprom_t &mb_eeprom, uhd::i2c_iface &iface);

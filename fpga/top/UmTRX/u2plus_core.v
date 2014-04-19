@@ -652,7 +652,7 @@ module u2plus_core
 
    // /////////////////////////////////////////////////////////////////////////
    // RX chains
-/*
+//*
     umtrx_rx_chain
     #(
         .PROT_DEST(0),
@@ -693,17 +693,21 @@ module u2plus_core
         .vita_data_sys(dsp_rx1_data), .vita_valid_sys(dsp_rx1_valid), .vita_ready_sys(dsp_rx1_ready),
         .vita_time(vita_time)
     );
+//*/
+/*
+assign dsp_rx0_valid = 0;
+assign dsp_rx1_valid = 0;
+//*/
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
-
     wire [35:0] sram0_data, sram1_data;
     wire sram0_valid, sram1_valid;
     wire sram0_ready, sram1_ready;
-
+//*
     umtrx_tx_chain
     #(
-        .PROT_DEST(1), //TODO
+        .PROT_DEST(4),
         .DSPNO(0),
         .FRONT_BASE(SR_TX_FRONT0),
         .DSP_BASE(SR_TX_DSP0),
@@ -724,7 +728,7 @@ module u2plus_core
 
     umtrx_tx_chain
     #(
-        .PROT_DEST(1), //TODO
+        .PROT_DEST(5),
         .DSPNO(1),
         .FRONT_BASE(SR_TX_FRONT1),
         .DSP_BASE(SR_TX_DSP1),
@@ -742,13 +746,13 @@ module u2plus_core
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
     );
-*/
+//*/
+/*
 assign sram0_ready = 1;
 assign sram1_ready = 1;
 assign err_tx0_valid = 0;
 assign err_tx1_valid = 0;
-assign dsp_rx0_valid = 0;
-assign dsp_rx1_valid = 0;
+//*/
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
