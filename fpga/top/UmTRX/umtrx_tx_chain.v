@@ -4,8 +4,8 @@
 
 module umtrx_tx_chain
 #(
-    //the dsp unit number: 0, 1, 2...
-    parameter DSPNO = 0,
+    parameter PROT_DEST = 0, //framer index
+    parameter DSPNO = 0, //the dsp unit number: 0, 1, 2...
     parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
@@ -124,7 +124,7 @@ module umtrx_tx_chain
 
     vita_tx_chain #(.BASE(CTRL_BASE), .FIFOSIZE(FIFOSIZE),
         .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
-        .PROT_ENG_FLAGS(1), .USE_TRANS_HEADER(1),
+        .PROT_ENG_FLAGS(PROT_DEST), .USE_TRANS_HEADER(1),
         .DSP_NUMBER(DSPNO))
     vita_tx_chain
     (

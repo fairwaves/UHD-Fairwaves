@@ -4,8 +4,8 @@
 
 module umtrx_rx_chain
 #(
-    //the dsp unit number: 0, 1, 2...
-    parameter DSPNO = 0,
+    parameter PROT_DEST = 0, //framer index
+    parameter DSPNO = 0, //the dsp unit number: 0, 1, 2...
     parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
@@ -119,7 +119,7 @@ module umtrx_rx_chain
     wire vita_valid_dsp;
     wire vita_ready_dsp;
 
-    vita_rx_chain #(.BASE(CTRL_BASE),.UNIT(DSPNO),.FIFOSIZE(FIFOSIZE), .DSP_NUMBER(DSPNO)) vita_rx_chain
+    vita_rx_chain #(.BASE(CTRL_BASE),.UNIT(PROT_DEST),.FIFOSIZE(FIFOSIZE), .DSP_NUMBER(DSPNO)) vita_rx_chain
      (.clk(dsp_clk), .reset(dsp_rst),
       .set_stb(set_stb_dsp),.set_addr(set_addr_dsp),.set_data(set_data_dsp),
       .set_stb_user(), .set_addr_user(), .set_data_user(),

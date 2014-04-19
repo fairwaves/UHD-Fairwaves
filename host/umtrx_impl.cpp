@@ -313,7 +313,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     time64_rb_bases.rb_lo_now = U2_REG_TIME64_LO_RB_IMM;
     time64_rb_bases.rb_hi_pps = U2_REG_TIME64_HI_RB_PPS;
     time64_rb_bases.rb_lo_pps = U2_REG_TIME64_LO_RB_PPS;
-    _time64 = time64_core_200::make(_iface, U2_REG_SR_ADDR(SR_TIME64), time64_rb_bases);
+    _time64 = time64_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TIME64), time64_rb_bases);
 
     _tree->access<double>(mb_path / "tick_rate")
         .subscribe(boost::bind(&time64_core_200::set_tick_rate, _time64, _1));

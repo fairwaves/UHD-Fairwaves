@@ -161,9 +161,9 @@ module u2plus_core
    localparam ETH_TX_FIFOSIZE = 9;
    localparam ETH_RX_FIFOSIZE = 11;
    
-   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys, set_addr_user, set_addr_fe;
-   wire [31:0] 	set_data, set_data_dsp, set_data_sys, set_data_user, set_data_fe;
-   wire 	set_stb, set_stb_dsp, set_stb_sys, set_stb_user, set_stb_fe;
+   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys;
+   wire [31:0] 	set_data, set_data_dsp, set_data_sys;
+   wire 	set_stb, set_stb_dsp, set_stb_sys;
    
    reg 		wb_rst;
    wire 	dsp_rst, sys_rst, fe_rst;
@@ -473,30 +473,54 @@ module u2plus_core
    
    assign 	 s7_dat_i = 32'd0;
 
-   settings_bus_crossclock settings_bus_dsp_crossclock
-     (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
-      .clk_o(dsp_clk), .rst_o(dsp_rst), .set_stb_o(set_stb_dsp), .set_addr_o(set_addr_dsp), .set_data_o(set_data_dsp));
-
    settings_bus_crossclock settings_bus_sys_crossclock
      (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
       .clk_o(sys_clk), .rst_o(sys_rst), .set_stb_o(set_stb_sys), .set_addr_o(set_addr_sys), .set_data_o(set_data_sys));
 
-   settings_bus_crossclock settings_bus_fe_crossclock
+   wire set_stb_dsp0, set_stb_dsp1;
+   wire [31:0] set_data_dsp0, set_data_dsp1;
+   wire [7:0] set_addr_dsp0, set_addr_dsp1;
+
+   //mux settings_bus_crossclock and settings_readback_bus_fifo_ctrl with prio
+   assign set_stb_dsp = set_stb_dsp0 | set_stb_dsp1;
+   assign set_addr_dsp = set_stb_dsp1? set_addr_dsp1 : set_addr_dsp0;
+   assign set_data_dsp = set_stb_dsp1? set_data_dsp1 : set_data_dsp0;
+
+   settings_bus_crossclock #(.FLOW_CTRL(1/*on*/)) settings_bus_dsp_crossclock
      (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
-      .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
+      .clk_o(dsp_clk), .rst_o(dsp_rst), .set_stb_o(set_stb_dsp0), .set_addr_o(set_addr_dsp0), .set_data_o(set_data_dsp0),
+      .blocked(set_stb_dsp1));
 
    // /////////////////////////////////////////////////////////////////////////
    // Settings + Readback Bus -- FIFO controlled
+
+    wire [35:0] ctrl_data_dsp, resp_data_dsp;
+    wire ctrl_valid_dsp, resp_valid_dsp;
+    wire ctrl_ready_dsp, resp_ready_dsp;
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_ctrl
+    (
+        .i_aclk(sys_clk), .i_tdata(ctrl_data), .i_tvalid(ctrl_valid), .i_tready(ctrl_ready),
+        .o_aclk(dsp_clk), .o_tdata(ctrl_data_dsp), .o_tvalid(ctrl_valid_dsp), .o_tready(ctrl_ready_dsp),
+        .reset(dsp_rst | sys_rst)
+    );
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_resp
+    (
+        .i_aclk(dsp_clk), .i_tdata(resp_data_dsp), .i_tvalid(resp_valid_dsp), .i_tready(resp_ready_dsp),
+        .o_aclk(sys_clk), .o_tdata(resp_data), .o_tvalid(resp_valid), .o_tready(resp_ready),
+        .reset(dsp_rst | sys_rst)
+    );
 
     wire [31:0] sfc_debug;
     wire sfc_clear;
     settings_fifo_ctrl #(.PROT_DEST(3), .PROT_HDR(1)) sfc
     (
-        .clock(sys_clk), .reset(sys_rst), .clear(sfc_clear),
+        .clock(dsp_clk), .reset(dsp_rst), .clear(sfc_clear),
         .vita_time(vita_time), .perfs_ready(1'b1),
-        .in_data(ctrl_data), .in_valid(ctrl_valid), .in_ready(ctrl_ready),
-        .out_data(resp_data), .out_valid(resp_valid), .out_ready(resp_ready),
-        .strobe(), .addr(), .data(),
+        .in_data(ctrl_data_dsp), .in_valid(ctrl_valid_dsp), .in_ready(ctrl_ready_dsp),
+        .out_data(resp_data_dsp), .out_valid(resp_valid_dsp), .out_ready(resp_ready_dsp),
+        .strobe(set_stb_dsp1), .addr(set_addr_dsp1), .data(set_data_dsp1),
         .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
         .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
         .word08(32'b0),.word09(32'b0),.word10(vita_time[63:32]),
@@ -516,7 +540,7 @@ module u2plus_core
      (.clk(wb_clk),.rst(wb_rst),.strobe(s7_ack),.addr(set_addr),.in(set_data),.out(clock_outs),.changed());
 
    setting_reg #(.my_addr(SR_MISC+1),.width(1)) sr_clear_sfc
-     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.changed(sfc_clear));
+     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.changed(sfc_clear));
 
    setting_reg #(.my_addr(SR_MISC+4),.width(1)) sr_phy
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(phy_reset),.changed());
@@ -617,6 +641,7 @@ module u2plus_core
 /*
     umtrx_rx_chain
     #(
+        .PROT_DEST(0),
         .DSPNO(0),
         .FRONT_BASE(SR_RX_FRONT0),
         .DSP_BASE(SR_RX_DSP0),
@@ -637,6 +662,7 @@ module u2plus_core
 
     umtrx_rx_chain
     #(
+        .PROT_DEST(1),
         .DSPNO(1),
         .FRONT_BASE(SR_RX_FRONT1),
         .DSP_BASE(SR_RX_DSP1),
@@ -663,6 +689,7 @@ module u2plus_core
 
     umtrx_tx_chain
     #(
+        .PROT_DEST(1), //TODO
         .DSPNO(0),
         .FRONT_BASE(SR_TX_FRONT0),
         .DSP_BASE(SR_TX_DSP0),
@@ -683,6 +710,7 @@ module u2plus_core
 
     umtrx_tx_chain
     #(
+        .PROT_DEST(1), //TODO
         .DSPNO(1),
         .FRONT_BASE(SR_TX_FRONT1),
         .DSP_BASE(SR_TX_DSP1),
