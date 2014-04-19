@@ -35,22 +35,22 @@ module prot_eng_tx
       .space(),.occupied() );
    
    // Store header values in a small dual-port (distributed) ram
-   reg [31:0] 	  header_ram[0:63];
+   reg [31:0] 	  header_ram[0:127];
    reg [3:0] 	  state;
-   reg [1:0] 	  port_sel;
+   reg [2:0] 	  port_sel;
    
    always @(posedge clk)
-     if(set_stb & ((set_addr & 8'hC0) == BASE))
-       header_ram[set_addr[5:0]] <= set_data;
+     if(set_stb & ((set_addr & 8'h80) == BASE))
+       header_ram[set_addr[6:0]] <= set_data;
 
-   wire [31:0] 	  header_word = header_ram[{port_sel[1:0],state[3:0]}];
+   wire [31:0] 	  header_word = header_ram[{port_sel[2:0],state[3:0]}];
 
-   reg [15:0] 	  pre_checksums [0:3];
+   reg [15:0] 	  pre_checksums [0:7];
    always @(posedge clk)
-     if(set_stb & ((set_addr & 8'hCF)== (BASE+7)))
-       pre_checksums[set_addr[5:4]] <= set_data[15:0];
+     if(set_stb & ((set_addr & 8'h8F)== (BASE+7)))
+       pre_checksums[set_addr[6:4]] <= set_data[15:0];
 
-   wire [15:0] 	  pre_checksum = pre_checksums[port_sel[1:0]];
+   wire [15:0] 	  pre_checksum = pre_checksums[port_sel[2:0]];
 
    // Protocol State Machine
    reg [15:0] length;
@@ -70,7 +70,7 @@ module prot_eng_tx
 	 case(state)
 	   0 :
 	     begin
-		port_sel <= data_int1[18:17];
+		port_sel <= data_int1[19:17];
 		length 	<= data_int1[15:0];
 		sof_o <= 1;
 		if(data_int1[16])
