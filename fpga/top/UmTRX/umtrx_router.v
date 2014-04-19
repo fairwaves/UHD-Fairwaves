@@ -44,21 +44,25 @@ module umtrx_router
         //output status register
         output [31:0] status,
 
-        output [31:0] debug,
+        //eth interfaces
+        input [35:0] eth_inp_data, input eth_inp_valid, output eth_inp_ready,
+        output [35:0] eth_out_data, output eth_out_valid, input eth_out_ready,
 
         // Input Interfaces (in to router)
+        input [35:0] ctrl_inp_data, input ctrl_inp_valid, output ctrl_inp_ready,
         input [35:0] dsp0_inp_data, input dsp0_inp_valid, output dsp0_inp_ready,
         input [35:0] dsp1_inp_data, input dsp1_inp_valid, output dsp1_inp_ready,
-        input [35:0] eth_inp_data, input eth_inp_valid, output eth_inp_ready,
-        input [35:0] err_inp_data, input err_inp_valid, output err_inp_ready,
-        input [35:0] ctl_inp_data, input ctl_inp_valid, output ctl_inp_ready,
+        input [35:0] err0_inp_data, input err0_inp_valid, output err0_inp_ready,
+        input [35:0] err1_inp_data, input err1_inp_valid, output err1_inp_ready,
+        input [35:0] err2_inp_data, input err2_inp_valid, output err2_inp_ready,
+        input [35:0] err3_inp_data, input err3_inp_valid, output err3_inp_ready,
 
         // Output Interfaces (out of router)
-        output [35:0] dsp_out_data, output dsp_out_valid, input dsp_out_ready,
-        output dsp1_out_valid, input dsp1_out_ready,
-        input [35:0] err_inp1_data, input err_inp1_valid, output err_inp1_ready,
-        output [35:0] eth_out_data, output eth_out_valid, input eth_out_ready,
-        output [35:0] ctl_out_data, output ctl_out_valid, input ctl_out_ready
+        output [35:0] ctrl_out_data, output ctrl_out_valid, input ctrl_out_ready,
+        output [35:0] dsp0_out_data, output dsp0_out_valid, input dsp0_out_ready,
+        output [35:0] dsp1_out_data, output dsp1_out_valid, input dsp1_out_ready,
+        output [35:0] dsp2_out_data, output dsp2_out_valid, input dsp2_out_ready,
+        output [35:0] dsp3_out_data, output dsp3_out_valid, input dsp3_out_ready
     );
 
     assign wb_err_o = 1'b0;  // Unused for now
@@ -103,57 +107,26 @@ module umtrx_router
 
     ////////////////////////////////////////////////////////////////////
     // Communication output source combiner (feeds UDP proto machine)
-    //   - DSP input
-    //   - CPU input
-    //   - ERR input
     ////////////////////////////////////////////////////////////////////
-
-    //dummy signals to join the the muxes below
-    wire [35:0] _combiner0_data, _combiner1_data;
-    wire        _combiner0_valid, _combiner1_valid;
-    wire        _combiner0_ready, _combiner1_ready;
-
-    wire [35:0] _combiner0_0_data;
-    wire        _combiner0_0_valid;
-    wire        _combiner0_0_ready;
-
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner0_0(
+    axi_mux8 #(.WIDTH(36), .BUFFER(1)) combiner
+    (
         .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(err_inp_data), .src0_rdy_i(err_inp_valid), .dst0_rdy_o(err_inp_ready),
-        .data1_i(err_inp1_data), .src1_rdy_i(err_inp1_valid), .dst1_rdy_o(err_inp1_ready),
-        .data_o(_combiner0_0_data), .src_rdy_o(_combiner0_0_valid), .dst_rdy_i(_combiner0_0_ready)
-    );
-
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner0(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(_combiner0_0_data), .src0_rdy_i(_combiner0_0_valid), .dst0_rdy_o(_combiner0_0_ready),
-        .data1_i(cpu_inp_data), .src1_rdy_i(cpu_inp_valid), .dst1_rdy_o(cpu_inp_ready),
-        .data_o(_combiner0_data), .src_rdy_o(_combiner0_valid), .dst_rdy_i(_combiner0_ready)
-    );
-
-    fifo36_mux #(.prio(0)) // No priority, fair sharing
-     _com_output_combiner1(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(dsp0_inp_data), .src0_rdy_i(dsp0_inp_valid), .dst0_rdy_o(dsp0_inp_ready),
-        .data1_i(dsp1_inp_data), .src1_rdy_i(dsp1_inp_valid), .dst1_rdy_o(dsp1_inp_ready),
-        .data_o(_combiner1_data), .src_rdy_o(_combiner1_valid), .dst_rdy_i(_combiner1_ready)
-    );
-
-    fifo36_mux #(.prio(1)) // Give priority to err/cpu over dsp
-     com_output_source(
-        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
-        .data0_i(_combiner0_data), .src0_rdy_i(_combiner0_valid), .dst0_rdy_o(_combiner0_ready),
-        .data1_i(_combiner1_data), .src1_rdy_i(_combiner1_valid), .dst1_rdy_o(_combiner1_ready),
-        .data_o(com_out_data), .src_rdy_o(com_out_valid), .dst_rdy_i(com_out_ready)
+        .i0_tdata(cpu_inp_data), .i0_tlast(cpu_inp_data[33]), .i0_tvalid(cpu_inp_valid), .i0_tready(cpu_inp_ready),
+        .i1_tdata(ctrl_inp_data), .i1_tlast(ctrl_inp_data[33]), .i1_tvalid(ctrl_inp_valid), .i1_tready(ctrl_inp_ready),
+        .i2_tdata(dsp0_inp_data), .i2_tlast(dsp0_inp_data[33]), .i2_tvalid(dsp0_inp_valid), .i2_tready(dsp0_inp_ready),
+        .i3_tdata(dsp1_inp_data), .i3_tlast(dsp1_inp_data[33]), .i3_tvalid(dsp1_inp_valid), .i3_tready(dsp1_inp_ready),
+        .i4_tdata(err0_inp_data), .i4_tlast(err0_inp_data[33]), .i4_tvalid(err0_inp_valid), .i4_tready(err0_inp_ready),
+        .i5_tdata(err1_inp_data), .i5_tlast(err1_inp_data[33]), .i5_tvalid(err1_inp_valid), .i5_tready(err1_inp_ready),
+        .i6_tdata(err2_inp_data), .i6_tlast(err2_inp_data[33]), .i6_tvalid(err2_inp_valid), .i6_tready(err2_inp_ready),
+        .i7_tdata(err3_inp_data), .i7_tlast(err3_inp_data[33]), .i7_tvalid(err3_inp_valid), .i7_tready(err3_inp_ready),
+        .o_tdata(com_out_data), .o_tlast(), .o_tvalid(com_out_valid), .o_tready(com_out_ready)
     );
 
     ////////////////////////////////////////////////////////////////////
     // Interface CPU to memory mapped wishbone
     //   - Uses 1 setting register
     ////////////////////////////////////////////////////////////////////
-    buffer_int2 #(.BASE(CTRL_BASE+3), .BUF_SIZE(BUF_SIZE)) cpu_to_wb(
+    buffer_int2 #(.BASE(CTRL_BASE), .BUF_SIZE(BUF_SIZE)) cpu_to_wb(
         .clk(stream_clk), .rst(stream_rst | stream_clr),
         .set_stb(set_stb), .set_addr(set_addr), .set_data(set_data),
         .status(cpu_iface_status),
@@ -174,21 +147,36 @@ module umtrx_router
 
     ////////////////////////////////////////////////////////////////////
     // Packet Dispatcher
-    //   - Uses 2 setting registers
     //   - provide buffering before cpu for random + small packet bursts
     ////////////////////////////////////////////////////////////////////
     wire [35:0] _cpu_out_data;
     wire        _cpu_out_valid;
     wire        _cpu_out_ready;
 
-    packet_dispatcher36_x3 #(.BASE(CTRL_BASE+1)) packet_dispatcher(
+    wire [7:0] pd_dest;
+    wire [35:0] pd_out_data;
+    wire pd_out_valid, pd_out_ready;
+
+    umtrx_packet_dispatcher #(.BASE(CTRL_BASE+1), .PORTS(7), .DROP_INDEX(7), .CPU_INDEX(0)) packet_dispatcher(
         .clk(stream_clk), .rst(stream_rst), .clr(stream_clr),
         .set_stb(set_stb), .set_addr(set_addr), .set_data(set_data),
         .com_inp_data(com_inp_data), .com_inp_valid(com_inp_valid), .com_inp_ready(com_inp_ready),
-        .ext_out_data(), .ext_out_valid(), .ext_out_ready(1'b1),
-        .dsp_out_data(dsp_out_data), .dsp_out_valid(dsp_out_valid), .dsp_out_ready(dsp_out_ready),
-        .dsp1_out_valid(dsp1_out_valid), .dsp1_out_ready(dsp1_out_ready),
-        .cpu_out_data(_cpu_out_data), .cpu_out_valid(_cpu_out_valid), .cpu_out_ready(_cpu_out_ready)
+        .pd_out_data(pd_out_data), .pd_out_valid(pd_out_valid), .pd_out_ready(pd_out_ready), .pd_dest(pd_dest)
+    );
+
+    axi_demux8 #(.WIDTH(36), .BUFFER(1)) splitter
+    (
+        .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
+        .header(), .dest(pd_dest[2:0]),
+        .i_tdata(pd_out_data), .i_tlast(pd_out_data[33]), .i_tvalid(pd_out_valid), .i_tready(pd_out_ready),
+        .o0_tdata(_cpu_out_data), .o0_tlast(), .o0_tvalid(_cpu_out_valid), .o0_tready(_cpu_out_ready),
+        .o1_tdata(ctrl_out_data), .o1_tlast(), .o1_tvalid(ctrl_out_valid), .o1_tready(ctrl_out_ready),
+        .o2_tdata(dsp0_out_data), .o2_tlast(), .o2_tvalid(dsp0_out_valid), .o2_tready(dsp0_out_ready),
+        .o3_tdata(dsp1_out_data), .o3_tlast(), .o3_tvalid(dsp1_out_valid), .o3_tready(dsp1_out_ready),
+        .o4_tdata(dsp2_out_data), .o4_tlast(), .o4_tvalid(dsp2_out_valid), .o4_tready(dsp2_out_ready),
+        .o5_tdata(dsp3_out_data), .o5_tlast(), .o5_tvalid(dsp3_out_valid), .o5_tready(dsp3_out_ready),
+        .o6_tdata(), .o6_tlast(), .o6_tvalid(), .o6_tready(1'b1),
+        .o7_tdata(), .o7_tlast(), .o7_tvalid(), .o7_tready(1'b1)
     );
 
     fifo_cascade #(.WIDTH(36), .SIZE(9/*512 lines plenty for short pkts*/)) cpu_out_fifo (
@@ -200,39 +188,10 @@ module umtrx_router
     ////////////////////////////////////////////////////////////////////
     // UDP TX Protocol machine
     ////////////////////////////////////////////////////////////////////
-
     prot_eng_tx #(.BASE(UDP_BASE)) udp_prot_eng_tx
      (.clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
       .set_stb(set_stb), .set_addr(set_addr), .set_data(set_data),
       .datain(com_out_data),  .src_rdy_i(com_out_valid), .dst_rdy_o(com_out_ready),
       .dataout(eth_out_data), .src_rdy_o(eth_out_valid), .dst_rdy_i(eth_out_ready) );
-
-    ////////////////////////////////////////////////////////////////////
-    // Assign debugs
-    ////////////////////////////////////////////////////////////////////
-
-    assign debug = {
-        //inputs to the router (12)
-        dsp0_inp_ready, dsp0_inp_valid,
-        dsp1_inp_ready, dsp1_inp_valid,
-        err_inp_ready, err_inp_valid,
-        2'b0,
-        eth_inp_ready, eth_inp_valid,
-        cpu_inp_ready, cpu_inp_valid,
-
-        //outputs from the router (8)
-        dsp_out_ready, dsp_out_valid,
-        2'b0,
-        eth_out_ready, eth_out_valid,
-        cpu_out_ready, cpu_out_valid,
-
-        //other interfaces (8)
-        2'b0,
-        com_out_ready, com_out_valid,
-        2'b0,
-        com_inp_ready, com_inp_valid,
-
-        4'b0
-    };
 
 endmodule // umtrx_router

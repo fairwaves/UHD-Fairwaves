@@ -279,10 +279,9 @@ typedef struct {
 // --- packet router control regs ---
 
 typedef struct {
-  volatile uint32_t mode_ctrl;
-  volatile uint32_t ip_addr;
-  volatile uint32_t data_ports; //dsp0 (low 16) dsp1 (high 16)
   volatile uint32_t iface_ctrl;
+  volatile uint32_t ip_addr;
+  volatile uint32_t data_port; //lower 16
 } router_ctrl_t;
 
 #define router_ctrl ((router_ctrl_t *) _SR_ADDR(SR_BUF_POOL))

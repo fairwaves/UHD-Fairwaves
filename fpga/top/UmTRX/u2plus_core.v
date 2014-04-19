@@ -353,7 +353,7 @@ module u2plus_core
    wire 	 dsp_tx0_ready, dsp_tx0_valid;
    wire 	 dsp_tx1_ready, dsp_tx1_valid;
    wire 	 eth_tx_ready, eth_tx_valid;
-   wire [35:0] 	 dsp_tx_data, eth_tx_data;
+   wire [35:0] 	 dsp_tx0_data, dsp_tx1_data, eth_tx_data;
 
    wire 	 dsp_rx0_valid, dsp_rx0_ready;
    wire 	 eth_rx_valid, eth_rx_ready;
@@ -365,29 +365,35 @@ module u2plus_core
    wire [35:0] 	 err_tx1_data;
    wire 	 err_tx1_valid, err_tx1_ready;
 
-   wire [31:0] router_debug;
+    umtrx_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) router
+    (
+        .wb_clk_i(wb_clk),.wb_rst_i(wb_rst),
+        .wb_we_i(s1_we),.wb_stb_i(s1_stb),.wb_adr_i(s1_adr),.wb_dat_i(s1_dat_o),
+        .wb_dat_o(s1_dat_i),.wb_ack_o(s1_ack),.wb_err_o(),.wb_rty_o(),
 
-   umtrx_router #(.BUF_SIZE(9), .UDP_BASE(SR_UDP_SM), .CTRL_BASE(SR_BUF_POOL)) router
-     (.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),
-      .wb_we_i(s1_we),.wb_stb_i(s1_stb),.wb_adr_i(s1_adr),.wb_dat_i(s1_dat_o),
-      .wb_dat_o(s1_dat_i),.wb_ack_o(s1_ack),.wb_err_o(),.wb_rty_o(),
+        .set_stb(set_stb_sys), .set_addr(set_addr_sys), .set_data(set_data_sys),
 
-      .set_stb(set_stb_sys), .set_addr(set_addr_sys), .set_data(set_data_sys),
+        .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(1'b0),
 
-      .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(1'b0),
+        .status(status),
 
-      .status(status), .debug(router_debug),
+        .eth_inp_data(eth_rx_data), .eth_inp_valid(eth_rx_valid), .eth_inp_ready(eth_rx_ready),
+        .eth_out_data(eth_tx_data), .eth_out_valid(eth_tx_valid), .eth_out_ready(eth_tx_ready),
 
-      .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
-      .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
-      .eth_inp_data(eth_rx_data), .eth_inp_valid(eth_rx_valid), .eth_inp_ready(eth_rx_ready),
-      .err_inp_data(err_tx0_data), .err_inp_ready(err_tx0_ready), .err_inp_valid(err_tx0_valid),
+        .ctrl_inp_data(), .ctrl_inp_valid(1'b0), .ctrl_inp_ready(),
+        .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
+        .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
+        .err0_inp_data(err_tx0_data), .err0_inp_valid(err_tx0_valid), .err0_inp_ready(err_tx0_ready),
+        .err1_inp_data(err_tx1_data), .err1_inp_valid(err_tx1_valid), .err1_inp_ready(err_tx1_ready),
+        .err2_inp_data(), .err2_inp_valid(1'b0), .err2_inp_ready(),
+        .err3_inp_data(), .err3_inp_valid(1'b0), .err3_inp_ready(),
 
-      .dsp_out_data(dsp_tx_data), .dsp_out_valid(dsp_tx0_valid), .dsp_out_ready(dsp_tx0_ready),
-      .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready),
-      .err_inp1_data(err_tx1_data), .err_inp1_ready(err_tx1_ready), .err_inp1_valid(err_tx1_valid),
-      .eth_out_data(eth_tx_data), .eth_out_valid(eth_tx_valid), .eth_out_ready(eth_tx_ready)
-      );
+        .ctrl_out_data(), .ctrl_out_valid(), .ctrl_out_ready(1'b1),
+        .dsp0_out_data(dsp_tx0_data), .dsp0_out_valid(dsp_tx0_valid), .dsp0_out_ready(dsp_tx0_ready),
+        .dsp1_out_data(dsp_tx1_data), .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready),
+        .dsp2_out_data(), .dsp2_out_valid(), .dsp2_out_ready(1'b1),
+        .dsp3_out_data(), .dsp3_out_valid(), .dsp3_out_ready(1'b1)
+    );
 
    // /////////////////////////////////////////////////////////////////////////
    // SPI -- Slave #2
@@ -701,7 +707,7 @@ module u2plus_core
 	.RAM_OEn(),
 	.RAM_CE1n(),
 `endif // !`ifndef NO_EXT_FIFO
-	.datain(dsp_tx_data),
+	.datain(dsp_tx0_valid?dsp_tx0_data:dsp_tx1_data),
 	.src_rdy_i(dsp_tx0_valid),
 	.dst_rdy_o(dsp_tx0_ready),
 	.dataout(sram0_data),

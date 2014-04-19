@@ -313,13 +313,11 @@ void link_changed_callback(int speed){
     if (speed != 0){
         char led = speed==1000?LED_RJ45_ORANGE:LED_RJ45_GREEN;
         hal_set_leds(led, led);
-        pkt_ctrl_set_routing_mode(PKT_CTRL_ROUTING_MODE_MASTER);
         send_gratuitous_arp();
     }
     else{
         hal_set_leds(0x0, LED_RJ45_ORANGE);
         hal_set_leds(0x0, LED_RJ45_GREEN);
-        pkt_ctrl_set_routing_mode(PKT_CTRL_ROUTING_MODE_SLAVE);
     }
 }
 
@@ -355,7 +353,7 @@ main(void)
 
   //1) register the addresses into the network stack
   register_addrs(ethernet_mac_addr(), get_ip_addr());
-  pkt_ctrl_program_inspector(get_ip_addr(), USRP2_UDP_TX_DSP0_PORT, USRP2_UDP_TX_DSP1_PORT);
+  pkt_ctrl_program_inspector(get_ip_addr(), USRP2_UDP_SERVER_PORT);
 
   //2) register callbacks for udp ports we service
   init_udp_listeners();
@@ -373,8 +371,8 @@ main(void)
 
   udp_uart_init(USRP2_UDP_UART_BASE_PORT); //setup uart messaging
 
-  //3) set the routing mode to slave to set defaults
-  pkt_ctrl_set_routing_mode(PKT_CTRL_ROUTING_MODE_SLAVE);
+  //3) init input state
+  pkt_ctrl_release_incoming_buffer();
 
   //4) setup ethernet hardware to bring the link up
   ethernet_register_link_changed_callback(link_changed_callback);

@@ -23,18 +23,10 @@
 #include <stdbool.h>
 #include <lwip/ip_addr.h>
 
-typedef enum {
-    PKT_CTRL_ROUTING_MODE_SLAVE = 0,
-    PKT_CTRL_ROUTING_MODE_MASTER = 1
-} pkt_ctrl_routing_mode_t;
-
 //! Program the decision values into the packet inspector
 void pkt_ctrl_program_inspector(
-    const struct ip_addr *ip_addr, uint16_t data_port0, uint16_t data_port1
+    const struct ip_addr *ip_addr, uint16_t data_port0
 );
-
-//! Set the routing mode for this device
-void pkt_ctrl_set_routing_mode(pkt_ctrl_routing_mode_t mode);
 
 /*!
  * Try to claim an incomming buffer.

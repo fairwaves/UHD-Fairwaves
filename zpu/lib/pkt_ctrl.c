@@ -38,19 +38,10 @@
 #define CPU_CTRL_WR_START (1 << 3)
 
 void pkt_ctrl_program_inspector(
-    const struct ip_addr *ip_addr, uint16_t data_port0, uint16_t data_port1
+    const struct ip_addr *ip_addr, uint16_t data_port
 ){
     router_ctrl->ip_addr = ip_addr->addr;
-    router_ctrl->data_ports = data_port0 | ((uint32_t)(data_port1) << 16);
-}
-
-void pkt_ctrl_set_routing_mode(pkt_ctrl_routing_mode_t mode){
-    //About to change the mode; ensure that we are accepting packets.
-    //The plumbing will not switch if it cannot pass an end of packet.
-    pkt_ctrl_release_incoming_buffer();
-
-    //Change the mode; this switches the valves and crossbars.
-    router_ctrl->mode_ctrl = mode;
+    router_ctrl->data_port = data_port;
 }
 
 static inline void cpu_stat_wait_for(int bm){

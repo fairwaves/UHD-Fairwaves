@@ -51,6 +51,7 @@ u2plus_core.v \
 umtrx_tx_chain.v \
 umtrx_rx_chain.v \
 umtrx_router.v \
+umtrx_packet_dispatcher.v \
 coregen/chipscope_icon.v \
 coregen/chipscope_icon.xco \
 coregen/chipscope_ila.v \
