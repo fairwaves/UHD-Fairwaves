@@ -345,15 +345,12 @@ static void handle_tx_async_msgs(
     boost::shared_ptr<umtrx_impl::async_md_type> async_queue,
     boost::shared_ptr<umtrx_impl::async_md_type> old_async_queue
 ){
-    UHD_MSG(status) << "started handle_tx_async_msgs\n";
     set_thread_priority_safe();
 
     while (not boost::this_thread::interruption_requested())
     {
         managed_recv_buffer::sptr buff = xport->get_recv_buff();
         if (not buff) continue; //ignore timeout/error buffers
-
-        UHD_MSG(status) << "handle_tx_async_msgs buffer\n";
 
         try{
             //extract the vrt header packet info
@@ -390,7 +387,6 @@ static void handle_tx_async_msgs(
     }
 
     stop_flow_control();
-    UHD_MSG(status) << "stopped handle_tx_async_msgs\n";
 }
 
 /***********************************************************************
@@ -492,10 +488,6 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
 
         _tx_streamers[dsp] = my_streamer; //store weak pointer
     }
-
-    //TODO turn on flow control
-    //TODO spwan threads
-    //TODO set/enable sid
 
     //sets all tick and samp rates on this streamer
     this->update_rates();

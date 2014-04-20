@@ -354,10 +354,14 @@ module u2plus_core
    wire 	 eth_tx_ready, eth_tx_valid;
    wire [35:0] 	 dsp_tx0_data, dsp_tx1_data, eth_tx_data;
 
-   wire 	 dsp_rx0_valid, dsp_rx0_ready;
    wire 	 eth_rx_valid, eth_rx_ready;
+   wire 	 dsp_rx0_valid, dsp_rx0_ready;
    wire 	 dsp_rx1_valid, dsp_rx1_ready;
-   wire [35:0] 	 dsp_rx0_data, eth_rx_data, dsp_rx1_data;
+   wire 	 dsp_rx2_valid, dsp_rx2_ready;
+   wire 	 dsp_rx3_valid, dsp_rx3_ready;
+   wire [35:0] 	 eth_rx_data;
+   wire [35:0] 	 dsp_rx0_data, dsp_rx1_data;
+   wire [35:0] 	 dsp_rx2_data, dsp_rx3_data;
 
    wire [35:0] 	 err_tx0_data;
    wire 	 err_tx0_valid, err_tx0_ready;
@@ -387,8 +391,8 @@ module u2plus_core
         .ctrl_inp_data(resp_data), .ctrl_inp_valid(resp_valid), .ctrl_inp_ready(resp_ready),
         .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
         .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
-        .dsp2_inp_data(), .dsp2_inp_valid(1'b0), .dsp2_inp_ready(),
-        .dsp3_inp_data(), .dsp3_inp_valid(1'b0), .dsp3_inp_ready(),
+        .dsp2_inp_data(dsp_rx2_data), .dsp2_inp_valid(dsp_rx2_valid), .dsp2_inp_ready(dsp_rx2_ready),
+        .dsp3_inp_data(dsp_rx3_data), .dsp3_inp_valid(dsp_rx3_valid), .dsp3_inp_ready(dsp_rx3_ready),
         .err0_inp_data(err_tx0_data), .err0_inp_valid(err_tx0_valid), .err0_inp_ready(err_tx0_ready),
         .err1_inp_data(err_tx1_data), .err1_inp_valid(err_tx1_valid), .err1_inp_ready(err_tx1_ready),
 
@@ -693,6 +697,8 @@ module u2plus_core
 assign dsp_rx0_valid = 0;
 assign dsp_rx1_valid = 0;
 //*/
+assign dsp_rx2_valid = 0;
+assign dsp_rx3_valid = 0;
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
