@@ -19,6 +19,8 @@
 #ifndef INCLUDED_UMTRX_REGS_HPP
 #define INCLUDED_UMTRX_REGS_HPP
 
+#define localparam static const int
+
 ////////////////////////////////////////////////////////////////////////
 // Define slave bases
 ////////////////////////////////////////////////////////////////////////
@@ -37,35 +39,29 @@
 ////////////////////////////////////////////////////////////////////////
 // Setting register offsets
 ////////////////////////////////////////////////////////////////////////
-#define SR_MISC       0   // 7 regs
-#define SR_TESTSIG    8   // 2
-#define SR_TIME64    10   // 6
-#define SR_BUF_POOL  16   // 4
+localparam SR_MISC     =   0;   // 7 regs
+localparam SR_TIME64   =  10;   // 6
+localparam SR_BUF_POOL =  16;   // 4
 
-#define SR_RX_FRONT0  20   // 5
-#define SR_RX_FRONT1  25   // 5
+localparam SR_RX_FRONT0 =  20;   // 5
+localparam SR_RX_FRONT1 =  25;   // 5
+localparam SR_RX_CTRL0 =  32;   // 9
+localparam SR_RX_DSP0  =  48;   // 7
+localparam SR_RX_CTRL1 =  80;   // 9
+localparam SR_RX_DSP1  =  96;   // 7
+localparam SR_RX_CTRL2 =  66;   // 9
+localparam SR_RX_DSP2  =  76;   // 7
+localparam SR_RX_CTRL3 =  83;   // 9
+localparam SR_RX_DSP3  =  93;   // 7
 
-#define SR_RX_CTRL0  32   // 9
-#define SR_RX_DSP0   48   // 7
-#define SR_RX_CTRL1  80   // 9
-#define SR_RX_DSP1   96   // 7
+localparam SR_TX_FRONT0 = 110;   // ?
+localparam SR_TX_CTRL0  = 126;   // 6
+localparam SR_TX_DSP0   = 135;   // 5
+localparam SR_TX_FRONT1 = 145;   // ?
+localparam SR_TX_CTRL1  = 161;   // 6
+localparam SR_TX_DSP1   = 170;   // 5
 
-#define SR_TX_FRONT0 110   // ?
-#define SR_TX_CTRL0  126   // 6
-#define SR_TX_DSP0   135   // 5
-#define SR_TX_FRONT1 145   // ?
-#define SR_TX_CTRL1  161   // 6
-#define SR_TX_DSP1   170   // 5
-
-// DSPs to frontends mapping controls
-#define SR_RX_FRONT_SW 176 // 1
-#define SR_TX_FRONT_SW 177 // 1
-
-// Registers for controlling diversity switches
-#define SR_DIVSW   180 // 2
-
-#define SR_GPIO     184
-#define SR_UDP_SM   192   // 64
+localparam SR_DIVSW    = 180;   // 2
 
 #define U2_REG_SR_ADDR(sr) (SETTING_REGS_BASE + (4 * (sr)))
 

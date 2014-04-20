@@ -82,7 +82,5 @@ u2_init(void)
   }
 #endif
 
-  output_regs->serdes_ctrl = (SERDES_ENABLE | SERDES_RXEN);
-
   return true;
 }

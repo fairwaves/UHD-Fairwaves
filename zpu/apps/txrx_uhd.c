@@ -56,9 +56,36 @@ static void handle_udp_data_packet(
     unsigned char *payload, int payload_len
 ){
     //handle ICMP destination unreachable
+    //shut all systems down that could send packets to the host
     if (payload == NULL)
     {
-        //TODO shutoff things
+        //clear the tx SRAM (both channels)
+        output_regs->sram_clear = 1;
+
+        //turn off fc update msgs from tx0
+        wb_poke32(_SR_ADDR(SR_TX_CTRL0 + 4), 0);
+        wb_poke32(_SR_ADDR(SR_TX_CTRL0 + 5), 0);
+
+        //turn off fc update msgs from tx1
+        wb_poke32(_SR_ADDR(SR_TX_CTRL1 + 4), 0);
+        wb_poke32(_SR_ADDR(SR_TX_CTRL1 + 5), 0);
+
+        //issue stop streaming on rx0
+        wb_poke32(_SR_ADDR(SR_RX_CTRL0 + 0), (1 << 28) | (1 << 31)); //stop
+        wb_poke32(_SR_ADDR(SR_RX_CTRL0 + 2), 0); //latch
+
+        //issue stop streaming on rx1
+        wb_poke32(_SR_ADDR(SR_RX_CTRL1 + 0), (1 << 28) | (1 << 31)); //stop
+        wb_poke32(_SR_ADDR(SR_RX_CTRL1 + 2), 0); //latch
+
+        //issue stop streaming on rx2
+        wb_poke32(_SR_ADDR(SR_RX_CTRL2 + 0), (1 << 28) | (1 << 31)); //stop
+        wb_poke32(_SR_ADDR(SR_RX_CTRL2 + 2), 0); //latch
+
+        //issue stop streaming on rx3
+        wb_poke32(_SR_ADDR(SR_RX_CTRL3 + 0), (1 << 28) | (1 << 31)); //stop
+        wb_poke32(_SR_ADDR(SR_RX_CTRL3 + 2), 0); //latch
+
         return;
     }
 

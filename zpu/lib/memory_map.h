@@ -20,18 +20,12 @@
 #define INCLUDED_MEMORY_MAP_H
 
 #include <stdint.h>
+#include "wb_utils.h"
 
-#ifdef UMTRX
 // The master clock rate in FPGA
 # define MASTER_CLK_RATE 104000000 // UmTRX:    104 MHz
 // The TIME64 / VITA TIMER clock rate in FPGA
 # define TIME64_CLK_RATE 26000000  // UmTRX:    26 MHz
-#else
-// The master clock rate in FPGA
-# define MASTER_CLK_RATE 100000000 // USRP2(p): 100 MHz
-// The TIME64 / VITA TIMER clock rate in FPGA
-# define TIME64_CLK_RATE 100000000 // USRP2(p): 100 MHz
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Define slave bases
@@ -241,35 +235,31 @@ typedef struct {
 // Output-only from processor point-of-view.
 // 1KB of address space (== 256 32-bit write-only regs)
 ////////////////////////////////////////////////////
+#define localparam static const int
 
-#define SR_MISC       0   // 7 regs
-#define SR_SIMTIMER   8   // 2
-#define SR_TIME64    10   // 6
-#define SR_BUF_POOL  16   // 4
+localparam SR_MISC     =   0;   // 7 regs
+localparam SR_TIME64   =  10;   // 6
+localparam SR_BUF_POOL =  16;   // 4
 
-#ifndef UMTRX
-#define SR_RX_FRONT  24   // 5
-#else
-#define SR_RX_FRONT  20   // 5
-#define SR_RX_FRONT1  25   // 5
-#endif
-#define SR_RX_CTRL0  32   // 9
-#define SR_RX_DSP0   48   // 7
-#define SR_RX_CTRL1  80   // 9
-#define SR_RX_DSP1   96   // 7
+localparam SR_RX_FRONT0 =  20;   // 5
+localparam SR_RX_FRONT1 =  25;   // 5
+localparam SR_RX_CTRL0 =  32;   // 9
+localparam SR_RX_DSP0  =  48;   // 7
+localparam SR_RX_CTRL1 =  80;   // 9
+localparam SR_RX_DSP1  =  96;   // 7
+localparam SR_RX_CTRL2 =  66;   // 9
+localparam SR_RX_DSP2  =  76;   // 7
+localparam SR_RX_CTRL3 =  83;   // 9
+localparam SR_RX_DSP3  =  93;   // 7
 
-#ifndef UMTRX
-#define SR_TX_FRONT 128   // ?
-#define SR_TX_CTRL  144   // 6
-#define SR_TX_DSP   160   // 5
-#else
-#define SR_TX_FRONT0 110   // ?
-#define SR_TX_CTRL0  126   // 6
-#define SR_TX_DSP0   135   // 5
-#define SR_TX_FRONT1 145   // ?
-#define SR_TX_CTRL1  161   // 6
-#define SR_TX_DSP1   170   // 5
-#endif
+localparam SR_TX_FRONT0 = 110;   // ?
+localparam SR_TX_CTRL0  = 126;   // 6
+localparam SR_TX_DSP0   = 135;   // 5
+localparam SR_TX_FRONT1 = 145;   // ?
+localparam SR_TX_CTRL1  = 161;   // 6
+localparam SR_TX_DSP1   = 170;   // 5
+
+localparam SR_DIVSW    = 180;   // 2
 
 #define	_SR_ADDR(sr) (SETTING_REGS_BASE + (sr) * sizeof(uint32_t))
 
@@ -289,8 +279,8 @@ typedef struct {
 
 typedef struct {
   volatile uint32_t lms_res;
-  volatile uint32_t serdes_ctrl;
-  volatile uint32_t adc_ctrl;
+  volatile uint32_t sfc_clear;
+  volatile uint32_t sram_clear;
   volatile uint32_t leds;
   volatile uint32_t phy_ctrl;        // LSB is reset line to eth phy
   volatile uint32_t debug_mux_ctrl;
@@ -300,14 +290,6 @@ typedef struct {
 
 #define LMS1_RESET  (1<<0)
 #define LMS2_RESET  (1<<1)
-
-#define SERDES_ENABLE 8
-#define SERDES_PRBSEN 4
-#define SERDES_LOOPEN 2
-#define SERDES_RXEN   1
-
-#define	ADC_CTRL_ON	0x0F
-#define	ADC_CTRL_OFF	0x00
 
 // crazy order that matches the labels on the case
 
@@ -332,32 +314,6 @@ typedef struct{
 } sr_proto_framer_t;
 
 #define sr_proto_framer_regs ((sr_proto_framer_t *) UDP_FRAMER_BASE)
-
-// --- VITA TX CTRL regs ---
-
-typedef struct {
-  volatile uint32_t     num_chan;
-  volatile uint32_t     clear_state;	// clears out state machine, fifos,
-  volatile uint32_t     report_sid;
-  volatile uint32_t     policy;
-  volatile uint32_t     cyc_per_up;
-  volatile uint32_t     packets_per_up;
-} sr_tx_ctrl_t;
-
-#define sr_tx_ctrl0 ((sr_tx_ctrl_t *) _SR_ADDR(SR_TX_CTRL0))
-#define sr_tx_ctrl1 ((sr_tx_ctrl_t *) _SR_ADDR(SR_TX_CTRL1))
-
-// --- VITA RX CTRL regs ---
-typedef struct {
-  // The following 3 are logically a single command register.
-  // They are clocked into the underlying fifo when time_ticks is written.
-  volatile uint32_t	cmd;		// {now, chain, num_samples(30)
-  volatile uint32_t	time_secs;
-  volatile uint32_t	time_ticks;
-} sr_rx_ctrl_t;
-
-#define sr_rx_ctrl0 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL0))
-#define sr_rx_ctrl1 ((sr_rx_ctrl_t *) _SR_ADDR(SR_RX_CTRL1))
 
 // ----------------------------------------------------------------
 // VITA49 64 bit time (write only)
@@ -438,15 +394,6 @@ typedef struct {
 } pic_regs_t;
 
 #define pic_regs ((pic_regs_t *) PIC_BASE)
-
-// ----------------------------------------------------------------
-// WB_CLK_RATE is the time base for this
-typedef struct {
-  volatile uint32_t	onetime;   // Number of wb clk cycles till the onetime interrupt
-  volatile uint32_t	periodic;  // Repeat rate of periodic interrupt
-} sr_simple_timer_t;
-
-#define sr_simple_timer ((sr_simple_timer_t *) _SR_ADDR(SR_SIMTIMER))
 
 ///////////////////////////////////////////////////
 // UART, Slave 10

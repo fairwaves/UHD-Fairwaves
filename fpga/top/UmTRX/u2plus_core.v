@@ -141,6 +141,10 @@ module u2plus_core
    localparam SR_RX_DSP0  =  48;   // 7
    localparam SR_RX_CTRL1 =  80;   // 9
    localparam SR_RX_DSP1  =  96;   // 7
+   localparam SR_RX_CTRL2 =  66;   // 9
+   localparam SR_RX_DSP2  =  76;   // 7
+   localparam SR_RX_CTRL3 =  83;   // 9
+   localparam SR_RX_DSP3  =  93;   // 7
 
    localparam SR_TX_FRONT0 = 110;   // ?
    localparam SR_TX_CTRL0  = 126;   // 6
@@ -148,8 +152,6 @@ module u2plus_core
    localparam SR_TX_FRONT1 = 145;   // ?
    localparam SR_TX_CTRL1  = 161;   // 6
    localparam SR_TX_DSP1   = 170;   // 5
-   localparam SR_RX_FRONT_SW = 176;
-   localparam SR_TX_FRONT_SW = 177;
 
    localparam SR_DIVSW    = 180;   // 2
    
@@ -536,10 +538,14 @@ module u2plus_core
    assign 	 PHY_RESETn = ~phy_reset;
    
    setting_reg #(.my_addr(SR_MISC+0),.width(2)) sr_lms_res
-     (.clk(wb_clk),.rst(wb_rst),.strobe(s7_ack),.addr(set_addr),.in(set_data),.out(lms_res),.changed());
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(lms_res),.changed());
 
    setting_reg #(.my_addr(SR_MISC+1),.width(1)) sr_clear_sfc
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.changed(sfc_clear));
+
+   wire sram_clear;
+   setting_reg #(.my_addr(SR_MISC+2),.width(1)) sr_sram_clear
+     (.clk(sys_clk),.rst(sys_rst),.strobe(set_stb_sys),.addr(set_addr_sys),.in(set_data_sys),.changed(sram_clear));
 
    setting_reg #(.my_addr(SR_MISC+4),.width(1)) sr_phy
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(phy_reset),.changed());
@@ -766,7 +772,7 @@ assign err_tx1_valid = 0;
      ext_fifo_i1
        (.int_clk(sys_clk),
 	.ext_clk(sys_clk),
-	.rst(sys_rst),
+	.rst(sys_rst | sram_clear),
 `ifndef NO_EXT_FIFO
 	.RAM_D_pi(RAM_D_pi),
 	.RAM_D_po(RAM_D_po),
