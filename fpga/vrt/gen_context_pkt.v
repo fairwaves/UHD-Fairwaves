@@ -19,7 +19,7 @@
 
 module gen_context_pkt
   #(parameter PROT_ENG_FLAGS=1,
-    parameter DSP_NUMBER=0)
+    parameter PORT_SEL=0)
    (input clk, input reset, input clear,
     input trigger, output sent,
     input [31:0] streamid,
@@ -38,6 +38,7 @@ module gen_context_pkt
    localparam CTXT_FLOWCTRL = 7;
    localparam CTXT_DONE = 8;
 
+   wire [14:0] 	  port_sel_bits = PORT_SEL;
    reg [33:0] 	 data_int;
    wire 	 src_rdy_int, dst_rdy_int;
    reg [3:0] 	 seqno;
@@ -87,7 +88,7 @@ module gen_context_pkt
 
    always @*
      case(ctxt_state)
-       CTXT_PROT_ENG : data_int <= { 2'b01, 13'b0, DSP_NUMBER[0], 1'b1, 1'b1, 16'd24 }; // UDP port 1 or 3
+       CTXT_PROT_ENG : data_int <= { 2'b01, port_sel_bits, 1'b1, 1'b1, 16'd24 }; // UDP port 1 or 3
        CTXT_HEADER : data_int <= { 1'b0, (PROT_ENG_FLAGS ? 1'b0 : 1'b1), 12'b010100000001, seqno, 16'd6 };
        CTXT_STREAMID : data_int <= { 2'b00, streamid };
        CTXT_TICS : data_int <= { 2'b00, err_time[63:32] };

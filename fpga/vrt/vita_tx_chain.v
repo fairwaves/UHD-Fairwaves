@@ -18,6 +18,7 @@
 
 module vita_tx_chain
   #(parameter BASE=0,
+    parameter UNIT=0,
     parameter FIFOSIZE=10,
     parameter POST_ENGINE_FIFOSIZE=10,
     parameter REPORT_ERROR=0,
@@ -133,7 +134,7 @@ module vita_tx_chain
    wire [35:0] 		flow_data, err_data_int;
    wire 		flow_src_rdy, flow_dst_rdy, err_src_rdy_int, err_dst_rdy_int;
    
-   gen_context_pkt #(.PROT_ENG_FLAGS(PROT_ENG_FLAGS),.DSP_NUMBER(DSP_NUMBER)) gen_flow_pkt
+   gen_context_pkt #(.PROT_ENG_FLAGS(PROT_ENG_FLAGS),.PORT_SEL(UNIT)) gen_flow_pkt
      (.clk(clk), .reset(reset), .clear(clear),
       .trigger(trigger & (DO_FLOW_CONTROL==1)), .sent(), 
       .streamid(streamid), .vita_time(vita_time), .message(32'd0),
@@ -144,7 +145,7 @@ module vita_tx_chain
       .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
       .packet_consumed(packet_consumed), .trigger(trigger));
    
-   gen_context_pkt #(.PROT_ENG_FLAGS(PROT_ENG_FLAGS),.DSP_NUMBER(DSP_NUMBER)) gen_tx_err_pkt
+   gen_context_pkt #(.PROT_ENG_FLAGS(PROT_ENG_FLAGS),.PORT_SEL(UNIT)) gen_tx_err_pkt
      (.clk(clk), .reset(reset), .clear(clear),
       .trigger((error|ack) & (REPORT_ERROR==1)), .sent(), 
       .streamid(streamid), .vita_time(vita_time), .message(message),

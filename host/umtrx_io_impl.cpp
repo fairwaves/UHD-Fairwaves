@@ -23,6 +23,11 @@
 #include "cores/async_packet_handler.hpp"
 #include "cores/super_recv_packet_handler.hpp"
 #include "cores/super_send_packet_handler.hpp"
+#include <uhd/utils/tasks.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <uhd/utils/thread_priority.hpp>
 
 //A reasonable number of frames for send/recv and async/sync
 static const size_t DEFAULT_NUM_FRAMES = 32;
@@ -32,6 +37,22 @@ using namespace uhd::usrp;
 using namespace uhd::transport;
 namespace asio = boost::asio;
 namespace pt = boost::posix_time;
+
+/***********************************************************************
+ * helpers
+ **********************************************************************/
+static UHD_INLINE pt::time_duration to_time_dur(double timeout){
+    return pt::microseconds(long(timeout*1e6));
+}
+
+static UHD_INLINE double from_time_dur(const pt::time_duration &time_dur){
+    return 1e-6*time_dur.total_microseconds();
+}
+
+/***********************************************************************
+ * constants
+ **********************************************************************/
+static const size_t vrt_send_header_offset_words32 = 1;
 
 /***********************************************************************
  * Subdevice spec
@@ -111,9 +132,8 @@ void umtrx_impl::update_tick_rate(const double rate)
 /***********************************************************************
  * Transport creation and framer programming
  **********************************************************************/
-static void program_stream_dest(
-    zero_copy_if::sptr &xport, const size_t which, const device_addr_t &args
-){
+static void program_stream_dest(zero_copy_if::sptr &xport, const size_t which)
+{
     //perform an initial flush of transport
     while (xport->get_recv_buff(0.0)){}
 
@@ -138,7 +158,7 @@ uhd::transport::zero_copy_if::sptr umtrx_impl::make_xport(const size_t which, co
     default_params.num_recv_frames = DEFAULT_NUM_FRAMES;
     udp_zero_copy::buff_params ignored_params;
     zero_copy_if::sptr xport = udp_zero_copy::make(_device_ip_addr, BOOST_STRINGIZE(USRP2_UDP_SERVER_PORT), default_params, ignored_params, args);
-    program_stream_dest(xport, which, args);
+    program_stream_dest(xport, which);
     _iface->peek32(0); //peek to ensure the zpu processed the program_stream_dest()
     return xport;
 }
@@ -174,6 +194,8 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
         size_t which = ~0;
         if (dsp == 0) which = UMTRX_DSP_RX0_FRAMER;
         if (dsp == 1) which = UMTRX_DSP_RX1_FRAMER;
+        if (dsp == 2) which = UMTRX_DSP_RX2_FRAMER;
+        if (dsp == 3) which = UMTRX_DSP_RX3_FRAMER;
         UHD_ASSERT_THROW(which != size_t(~0));
         xports[dsp] = make_xport(which, args.args);
     }
@@ -228,16 +250,261 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
     return my_streamer;
 }
 
+/***********************************************************************
+ * TX flow control
+ **********************************************************************/
+class flow_control_monitor{
+public:
+    typedef boost::uint32_t seq_type;
+    typedef boost::shared_ptr<flow_control_monitor> sptr;
+
+    /*!
+     * Make a new flow control monitor.
+     * \param max_seqs_out num seqs before throttling
+     */
+    flow_control_monitor(seq_type max_seqs_out):_max_seqs_out(max_seqs_out){
+        this->clear();
+        _ready_fcn = boost::bind(&flow_control_monitor::ready, this);
+    }
+
+    //! Clear the monitor, Ex: when a streamer is created
+    void clear(void){
+        _last_seq_out = 0;
+        _last_seq_ack = 0;
+    }
+
+    /*!
+     * Gets the current sequence number to go out.
+     * Increments the sequence for the next call
+     * \return the sequence to be sent to the dsp
+     */
+    UHD_INLINE seq_type get_curr_seq_out(void){
+        return _last_seq_out++;
+    }
+
+    /*!
+     * Check the flow control condition.
+     * \param timeout the timeout in seconds
+     * \return false on timeout
+     */
+    UHD_INLINE bool check_fc_condition(double timeout){
+        boost::mutex::scoped_lock lock(_fc_mutex);
+        if (this->ready()) return true;
+        boost::this_thread::disable_interruption di; //disable because the wait can throw
+        return _fc_cond.timed_wait(lock, to_time_dur(timeout), _ready_fcn);
+    }
+
+    /*!
+     * Update the flow control condition.
+     * \param seq the last sequence number to be ACK'd
+     */
+    UHD_INLINE void update_fc_condition(seq_type seq){
+        boost::mutex::scoped_lock lock(_fc_mutex);
+        _last_seq_ack = seq;
+        lock.unlock();
+        _fc_cond.notify_one();
+    }
+
+private:
+    bool ready(void){
+        return seq_type(_last_seq_out -_last_seq_ack) < _max_seqs_out;
+    }
+
+    boost::mutex _fc_mutex;
+    boost::condition_variable _fc_cond;
+    seq_type _last_seq_out, _last_seq_ack;
+    const seq_type _max_seqs_out;
+    boost::function<bool(void)> _ready_fcn;
+};
+
+static managed_send_buffer::sptr get_send_buff(
+    task::sptr /*holds ref*/,
+    flow_control_monitor::sptr fc_mon,
+    zero_copy_if::sptr xport,
+    double timeout
+)
+{
+    //wait on flow control w/ timeout
+    if (not fc_mon->check_fc_condition(timeout)) return managed_send_buffer::sptr();
+
+    //get a buffer from the transport w/ timeout
+    managed_send_buffer::sptr buff = xport->get_send_buff(timeout);
+
+    //write the flow control word into the buffer
+    if (buff.get()) buff->cast<boost::uint32_t *>()[0] = uhd::htonx(fc_mon->get_curr_seq_out());
+
+    return buff;
+}
+
+static void handle_tx_async_msgs(
+    const size_t chan,
+    const double tick_rate,
+    flow_control_monitor::sptr fc_mon,
+    zero_copy_if::sptr xport,
+    boost::function<void(void)> stop_flow_control,
+    boost::shared_ptr<umtrx_impl::async_md_type> async_queue,
+    boost::shared_ptr<umtrx_impl::async_md_type> old_async_queue
+){
+    UHD_MSG(status) << "started handle_tx_async_msgs\n";
+    set_thread_priority_safe();
+
+    while (not boost::this_thread::interruption_requested())
+    {
+        managed_recv_buffer::sptr buff = xport->get_recv_buff();
+        if (not buff) continue; //ignore timeout/error buffers
+
+        UHD_MSG(status) << "handle_tx_async_msgs buffer\n";
+
+        try{
+            //extract the vrt header packet info
+            vrt::if_packet_info_t if_packet_info;
+            if_packet_info.num_packet_words32 = buff->size()/sizeof(boost::uint32_t);
+            const boost::uint32_t *vrt_hdr = buff->cast<const boost::uint32_t *>();
+            vrt::if_hdr_unpack_be(vrt_hdr, if_packet_info);
+
+            //handle a tx async report message
+            if (if_packet_info.packet_type != vrt::if_packet_info_t::PACKET_TYPE_DATA)
+            {
+                //fill in the async metadata
+                async_metadata_t metadata;
+                load_metadata_from_buff(uhd::ntohx<boost::uint32_t>, metadata, if_packet_info, vrt_hdr, tick_rate, chan);
+
+                //catch the flow control packets and react
+                if (metadata.event_code == 0){
+                    boost::uint32_t fc_word32 = (vrt_hdr + if_packet_info.num_header_words32)[1];
+                    fc_mon->update_fc_condition(uhd::ntohx(fc_word32));
+                    continue;
+                }
+                //else UHD_MSG(often) << "metadata.event_code " << metadata.event_code << std::endl;
+                async_queue->push_with_pop_on_full(metadata);
+                old_async_queue->push_with_pop_on_full(metadata);
+
+                standard_async_msg_prints(metadata);
+            }
+            else{
+                //TODO unknown received packet, may want to print error...
+            }
+        }catch(const std::exception &e){
+            UHD_MSG(error) << "Error in handle_tx_async_msgs: " << e.what() << std::endl;
+        }
+    }
+
+    stop_flow_control();
+    UHD_MSG(status) << "stopped handle_tx_async_msgs\n";
+}
 
 /***********************************************************************
  * Transmit streamer
  **********************************************************************/
-uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args)
+uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_)
 {
-    
+    stream_args_t args = args_;
+
+    //setup defaults for unspecified values
+    args.otw_format = args.otw_format.empty()? "sc16" : args.otw_format;
+    args.channels = args.channels.empty()? std::vector<size_t>(1, 0) : args.channels;
+
+    //The buffer should be the size of the SRAM on the device,
+    //because we will never commit more than the SRAM can hold.
+    if (not args.args.has_key("send_buff_size"))
+    {
+        args.args["send_buff_size"] = boost::lexical_cast<std::string>(UMTRX_SRAM_BYTES);
+    }
+
+    //create the transport
+    std::vector<zero_copy_if::sptr> xports(_tx_dsps.size());
+    for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
+    {
+        const size_t dsp = args.channels[chan_i];
+        size_t which = ~0;
+        if (dsp == 0) which = UMTRX_DSP_TX0_FRAMER;
+        if (dsp == 1) which = UMTRX_DSP_TX1_FRAMER;
+        UHD_ASSERT_THROW(which != size_t(~0));
+        xports[dsp] = make_xport(which, args.args);
+    }
+
+    //calculate packet size
+    static const size_t hdr_size = 0
+        + vrt_send_header_offset_words32*sizeof(boost::uint32_t)
+        + vrt::max_if_hdr_words32*sizeof(boost::uint32_t)
+        + sizeof(vrt::if_packet_info_t().tlr) //forced to have trailer
+        - sizeof(vrt::if_packet_info_t().cid) //no class id ever used
+        - sizeof(vrt::if_packet_info_t().tsi) //no int time ever used
+    ;
+    const size_t bpp = xports[0]->get_send_frame_size() - hdr_size;
+    const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
+
+    //make the new streamer given the samples per packet
+    boost::shared_ptr<sph::send_packet_streamer> my_streamer = boost::make_shared<sph::send_packet_streamer>(spp);
+
+    //init some streamer stuff
+    my_streamer->resize(args.channels.size());
+    my_streamer->set_vrt_packer(&vrt::if_hdr_pack_be, vrt_send_header_offset_words32);
+
+    //set the converter
+    uhd::convert::id_type id;
+    id.input_format = args.cpu_format;
+    id.num_inputs = 1;
+    id.output_format = args.otw_format + "_item32_be";
+    id.num_outputs = 1;
+    my_streamer->set_converter(id);
+
+    //shared async queue for all channels in streamer
+    boost::shared_ptr<async_md_type> async_md(new async_md_type(1000/*messages deep*/));
+    if (not _old_async_queue) _old_async_queue.reset(new async_md_type(1000/*messages deep*/));
+    my_streamer->set_async_receiver(boost::bind(&async_md_type::pop_with_timed_wait, async_md, _1, _2));
+
+    //bind callbacks for the handler
+    for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
+    {
+        const size_t dsp = args.channels[chan_i];
+        _tx_dsps[dsp]->setup(args);
+
+        //set transmit sid -- needed by packet dispatcher to determine destination
+        boost::uint32_t sid = ~0;
+        if (dsp == 0) sid = UMTRX_DSP_TX0_SID;
+        if (dsp == 1) sid = UMTRX_DSP_TX1_SID;
+        UHD_ASSERT_THROW(sid != boost::uint32_t(~0));
+        my_streamer->set_xport_chan_sid(chan_i, true, sid);
+
+        //create a flow control monitor
+        const size_t fc_window = UMTRX_SRAM_BYTES/xports[dsp]->get_send_frame_size();
+        flow_control_monitor::sptr fc_mon(new flow_control_monitor(fc_window));
+
+        //enable flow control packets
+        const double ups_per_sec = args.args.cast<double>("ups_per_sec", 20);
+        const double ups_per_fifo = args.args.cast<double>("ups_per_fifo", 8.0);
+        _tx_dsps[dsp]->set_updates(
+            (ups_per_sec > 0.0)? size_t(this->get_master_clock_rate()/ups_per_sec) : 0,
+            (ups_per_fifo > 0.0)? size_t(fc_window/ups_per_fifo) : 0
+        );
+
+        //create async task for flow control and msgs
+        boost::function<void(void)> stop_flow_control = boost::bind(&tx_dsp_core_200::set_updates, _tx_dsps[dsp], 0, 0);
+        task::sptr task = task::make(boost::bind(
+            &handle_tx_async_msgs, chan_i, this->get_master_clock_rate(),
+            fc_mon, xports[dsp], stop_flow_control, async_md, _old_async_queue));
+
+        //buffer get method handles flow control and hold task reference count
+        my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
+            &get_send_buff, task, fc_mon, xports[dsp], _1
+        ));
+
+        _tx_streamers[dsp] = my_streamer; //store weak pointer
+    }
+
+    //TODO turn on flow control
+    //TODO spwan threads
+    //TODO set/enable sid
+
+    //sets all tick and samp rates on this streamer
+    this->update_rates();
+
+    return my_streamer;
 }
 
-bool umtrx_impl::recv_async_msg(uhd::async_metadata_t &, double)
+bool umtrx_impl::recv_async_msg(uhd::async_metadata_t &async_metadata, const double timeout)
 {
-    
+    boost::this_thread::disable_interruption di; //disable because the wait can throw
+    return _old_async_queue->pop_with_timed_wait(async_metadata, timeout);
 }

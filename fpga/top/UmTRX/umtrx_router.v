@@ -52,17 +52,15 @@ module umtrx_router
         input [35:0] ctrl_inp_data, input ctrl_inp_valid, output ctrl_inp_ready,
         input [35:0] dsp0_inp_data, input dsp0_inp_valid, output dsp0_inp_ready,
         input [35:0] dsp1_inp_data, input dsp1_inp_valid, output dsp1_inp_ready,
+        input [35:0] dsp2_inp_data, input dsp2_inp_valid, output dsp2_inp_ready,
+        input [35:0] dsp3_inp_data, input dsp3_inp_valid, output dsp3_inp_ready,
         input [35:0] err0_inp_data, input err0_inp_valid, output err0_inp_ready,
         input [35:0] err1_inp_data, input err1_inp_valid, output err1_inp_ready,
-        input [35:0] err2_inp_data, input err2_inp_valid, output err2_inp_ready,
-        input [35:0] err3_inp_data, input err3_inp_valid, output err3_inp_ready,
 
         // Output Interfaces (out of router)
         output [35:0] ctrl_out_data, output ctrl_out_valid, input ctrl_out_ready,
         output [35:0] dsp0_out_data, output dsp0_out_valid, input dsp0_out_ready,
-        output [35:0] dsp1_out_data, output dsp1_out_valid, input dsp1_out_ready,
-        output [35:0] dsp2_out_data, output dsp2_out_valid, input dsp2_out_ready,
-        output [35:0] dsp3_out_data, output dsp3_out_valid, input dsp3_out_ready
+        output [35:0] dsp1_out_data, output dsp1_out_valid, input dsp1_out_ready
     );
 
     assign wb_err_o = 1'b0;  // Unused for now
@@ -115,10 +113,10 @@ module umtrx_router
         .i1_tdata(ctrl_inp_data), .i1_tlast(ctrl_inp_data[33]), .i1_tvalid(ctrl_inp_valid), .i1_tready(ctrl_inp_ready),
         .i2_tdata(dsp0_inp_data), .i2_tlast(dsp0_inp_data[33]), .i2_tvalid(dsp0_inp_valid), .i2_tready(dsp0_inp_ready),
         .i3_tdata(dsp1_inp_data), .i3_tlast(dsp1_inp_data[33]), .i3_tvalid(dsp1_inp_valid), .i3_tready(dsp1_inp_ready),
-        .i4_tdata(err0_inp_data), .i4_tlast(err0_inp_data[33]), .i4_tvalid(err0_inp_valid), .i4_tready(err0_inp_ready),
-        .i5_tdata(err1_inp_data), .i5_tlast(err1_inp_data[33]), .i5_tvalid(err1_inp_valid), .i5_tready(err1_inp_ready),
-        .i6_tdata(err2_inp_data), .i6_tlast(err2_inp_data[33]), .i6_tvalid(err2_inp_valid), .i6_tready(err2_inp_ready),
-        .i7_tdata(err3_inp_data), .i7_tlast(err3_inp_data[33]), .i7_tvalid(err3_inp_valid), .i7_tready(err3_inp_ready),
+        .i4_tdata(dsp2_inp_data), .i4_tlast(dsp2_inp_data[33]), .i4_tvalid(dsp2_inp_valid), .i4_tready(dsp2_inp_ready),
+        .i5_tdata(dsp3_inp_data), .i5_tlast(dsp3_inp_data[33]), .i5_tvalid(dsp3_inp_valid), .i5_tready(dsp3_inp_ready),
+        .i6_tdata(err0_inp_data), .i6_tlast(err0_inp_data[33]), .i6_tvalid(err0_inp_valid), .i6_tready(err0_inp_ready),
+        .i7_tdata(err1_inp_data), .i7_tlast(err1_inp_data[33]), .i7_tvalid(err1_inp_valid), .i7_tready(err1_inp_ready),
         .o_tdata(com_out_data), .o_tlast(), .o_tvalid(com_out_valid), .o_tready(com_out_ready)
     );
 
@@ -164,7 +162,7 @@ module umtrx_router
         .pd_out_data(pd_out_data), .pd_out_valid(pd_out_valid), .pd_out_ready(pd_out_ready), .pd_dest(pd_dest)
     );
 
-    axi_demux8 #(.WIDTH(36), .BUFFER(1)) splitter
+    axi_demux4 #(.WIDTH(36), .BUFFER(1)) splitter
     (
         .clk(stream_clk), .reset(stream_rst), .clear(stream_clr),
         .header(), .dest(pd_dest[2:0]),
@@ -172,11 +170,11 @@ module umtrx_router
         .o0_tdata(_cpu_out_data), .o0_tlast(), .o0_tvalid(_cpu_out_valid), .o0_tready(_cpu_out_ready),
         .o1_tdata(ctrl_out_data), .o1_tlast(), .o1_tvalid(ctrl_out_valid), .o1_tready(ctrl_out_ready),
         .o2_tdata(dsp0_out_data), .o2_tlast(), .o2_tvalid(dsp0_out_valid), .o2_tready(dsp0_out_ready),
-        .o3_tdata(dsp1_out_data), .o3_tlast(), .o3_tvalid(dsp1_out_valid), .o3_tready(dsp1_out_ready),
-        .o4_tdata(dsp2_out_data), .o4_tlast(), .o4_tvalid(dsp2_out_valid), .o4_tready(dsp2_out_ready),
-        .o5_tdata(dsp3_out_data), .o5_tlast(), .o5_tvalid(dsp3_out_valid), .o5_tready(dsp3_out_ready),
+        .o3_tdata(dsp1_out_data), .o3_tlast(), .o3_tvalid(dsp1_out_valid), .o3_tready(dsp1_out_ready)/*,
+        .o4_tdata(), .o4_tlast(), .o4_tvalid(), .o4_tready(1'b1),
+        .o5_tdata(), .o5_tlast(), .o5_tvalid(), .o5_tready(1'b1),
         .o6_tdata(), .o6_tlast(), .o6_tvalid(), .o6_tready(1'b1),
-        .o7_tdata(), .o7_tlast(), .o7_tvalid(), .o7_tready(1'b1)
+        .o7_tdata(), .o7_tlast(), .o7_tvalid(), .o7_tready(1'b1)*/
     );
 
     fifo_cascade #(.WIDTH(36), .SIZE(9/*512 lines plenty for short pkts*/)) cpu_out_fifo (

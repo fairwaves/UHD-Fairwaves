@@ -122,9 +122,9 @@ module umtrx_tx_chain
     wire vita_valid_dsp, err_valid_dsp;
     wire vita_ready_dsp, err_ready_dsp;
 
-    vita_tx_chain #(.BASE(CTRL_BASE), .FIFOSIZE(FIFOSIZE),
+    vita_tx_chain #(.BASE(CTRL_BASE), .UNIT(PROT_DEST), .FIFOSIZE(FIFOSIZE),
         .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
-        .PROT_ENG_FLAGS(PROT_DEST), .USE_TRANS_HEADER(1),
+        .PROT_ENG_FLAGS(1), .USE_TRANS_HEADER(1),
         .DSP_NUMBER(DSPNO))
     vita_tx_chain
     (

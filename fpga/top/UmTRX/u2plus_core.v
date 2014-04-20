@@ -387,16 +387,14 @@ module u2plus_core
         .ctrl_inp_data(resp_data), .ctrl_inp_valid(resp_valid), .ctrl_inp_ready(resp_ready),
         .dsp0_inp_data(dsp_rx0_data), .dsp0_inp_valid(dsp_rx0_valid), .dsp0_inp_ready(dsp_rx0_ready),
         .dsp1_inp_data(dsp_rx1_data), .dsp1_inp_valid(dsp_rx1_valid), .dsp1_inp_ready(dsp_rx1_ready),
+        .dsp2_inp_data(), .dsp2_inp_valid(1'b0), .dsp2_inp_ready(),
+        .dsp3_inp_data(), .dsp3_inp_valid(1'b0), .dsp3_inp_ready(),
         .err0_inp_data(err_tx0_data), .err0_inp_valid(err_tx0_valid), .err0_inp_ready(err_tx0_ready),
         .err1_inp_data(err_tx1_data), .err1_inp_valid(err_tx1_valid), .err1_inp_ready(err_tx1_ready),
-        .err2_inp_data(), .err2_inp_valid(1'b0), .err2_inp_ready(),
-        .err3_inp_data(), .err3_inp_valid(1'b0), .err3_inp_ready(),
 
         .ctrl_out_data(ctrl_data), .ctrl_out_valid(ctrl_valid), .ctrl_out_ready(ctrl_ready),
         .dsp0_out_data(dsp_tx0_data), .dsp0_out_valid(dsp_tx0_valid), .dsp0_out_ready(dsp_tx0_ready),
-        .dsp1_out_data(dsp_tx1_data), .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready),
-        .dsp2_out_data(), .dsp2_out_valid(), .dsp2_out_ready(1'b1),
-        .dsp3_out_data(), .dsp3_out_valid(), .dsp3_out_ready(1'b1)
+        .dsp1_out_data(dsp_tx1_data), .dsp1_out_valid(dsp_tx1_valid), .dsp1_out_ready(dsp_tx1_ready)
     );
 
    // /////////////////////////////////////////////////////////////////////////
@@ -652,7 +650,7 @@ module u2plus_core
 //*
     umtrx_rx_chain
     #(
-        .PROT_DEST(0),
+        .PROT_DEST(4),
         .DSPNO(0),
         .FRONT_BASE(SR_RX_FRONT0),
         .DSP_BASE(SR_RX_DSP0),
@@ -673,7 +671,7 @@ module u2plus_core
 
     umtrx_rx_chain
     #(
-        .PROT_DEST(1),
+        .PROT_DEST(5),
         .DSPNO(1),
         .FRONT_BASE(SR_RX_FRONT1),
         .DSP_BASE(SR_RX_DSP1),
@@ -704,7 +702,7 @@ assign dsp_rx1_valid = 0;
 //*
     umtrx_tx_chain
     #(
-        .PROT_DEST(4),
+        .PROT_DEST(0),
         .DSPNO(0),
         .FRONT_BASE(SR_TX_FRONT0),
         .DSP_BASE(SR_TX_DSP0),
@@ -725,7 +723,7 @@ assign dsp_rx1_valid = 0;
 
     umtrx_tx_chain
     #(
-        .PROT_DEST(5),
+        .PROT_DEST(1),
         .DSPNO(1),
         .FRONT_BASE(SR_TX_FRONT1),
         .DSP_BASE(SR_TX_DSP1),

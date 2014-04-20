@@ -43,6 +43,7 @@
 #include <uhd/transport/vrt_if_packet.hpp>
 #include <uhd/transport/udp_simple.hpp>
 #include <uhd/transport/udp_zero_copy.hpp>
+#include <uhd/transport/bounded_buffer.hpp>
 #include <uhd/types/ranges.hpp>
 #include <uhd/exception.hpp>
 #include <uhd/utils/static.hpp>
@@ -59,20 +60,18 @@ static const double UMTRX_LINK_RATE_BPS = 1000e6/8;
 
 //framer indexes for use with make_xport()
 //see .PROT_DEST() in fpga module parameters
-static const size_t UMTRX_DSP_RX0_FRAMER = 0;
-static const size_t UMTRX_DSP_RX1_FRAMER = 1;
+static const size_t UMTRX_DSP_TX0_FRAMER = 0;
+static const size_t UMTRX_DSP_TX1_FRAMER = 1;
 static const size_t UMTRX_CTRL_FRAMER = 3;
-static const size_t UMTRX_DSP_TX0_FRAMER = 4;
-static const size_t UMTRX_DSP_TX1_FRAMER = 5;
-static const size_t UMTRX_DSP_TX2_FRAMER = 6;
-static const size_t UMTRX_DSP_TX3_FRAMER = 7;
+static const size_t UMTRX_DSP_RX0_FRAMER = 4;
+static const size_t UMTRX_DSP_RX1_FRAMER = 5;
+static const size_t UMTRX_DSP_RX2_FRAMER = 6;
+static const size_t UMTRX_DSP_RX3_FRAMER = 7;
 
 //stream IDs used by packet dispatcher to determine destination
 static const boost::uint32_t UMTRX_CTRL_SID = 1;
 static const boost::uint32_t UMTRX_DSP_TX0_SID = 2;
 static const boost::uint32_t UMTRX_DSP_TX1_SID = 3;
-static const boost::uint32_t UMTRX_DSP_TX2_SID = 4;
-static const boost::uint32_t UMTRX_DSP_TX3_SID = 5;
 
 //RX stream IDs -- random -- no relevance to FPGA config
 static const boost::uint32_t UMTRX_DSP_RX0_SID = 0x20;
@@ -93,9 +92,11 @@ public:
     ~umtrx_impl(void);
 
     //the io interface
+    typedef uhd::transport::bounded_buffer<uhd::async_metadata_t> async_md_type;
     uhd::rx_streamer::sptr get_rx_stream(const uhd::stream_args_t &args);
     uhd::tx_streamer::sptr get_tx_stream(const uhd::stream_args_t &args);
     bool recv_async_msg(uhd::async_metadata_t &, double);
+    boost::shared_ptr<async_md_type> _old_async_queue;
 
 private:
 
