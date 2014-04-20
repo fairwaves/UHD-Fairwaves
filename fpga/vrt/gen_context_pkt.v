@@ -88,7 +88,7 @@ module gen_context_pkt
 
    always @*
      case(ctxt_state)
-       CTXT_PROT_ENG : data_int <= { 2'b01, port_sel_bits, 1'b1, 1'b1, 16'd24 }; // UDP port 1 or 3
+       CTXT_PROT_ENG : data_int <= { 2'b01, port_sel_bits, 1'b1, 16'd24 };
        CTXT_HEADER : data_int <= { 1'b0, (PROT_ENG_FLAGS ? 1'b0 : 1'b1), 12'b010100000001, seqno, 16'd6 };
        CTXT_STREAMID : data_int <= { 2'b00, streamid };
        CTXT_TICS : data_int <= { 2'b00, err_time[63:32] };
