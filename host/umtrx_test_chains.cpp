@@ -188,11 +188,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //test tx chains
     for (size_t i = 0; i < 2; i++)
     {
+        std::cout << "TX test with DSP " << i << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(i);
         test_tx_chain(usrp, stream_args, ampl, begin_delta, num_samps);
     }
     {
+        std::cout << "TX test dual DSP " << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(0);
         stream_args.channels.push_back(1);
@@ -202,11 +204,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //test rx chains
     for (size_t i = 0; i < 2; i++)
     {
+        std::cout << "RX test with DSP " << i << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(i);
         test_rx_chain(usrp, stream_args, begin_delta, num_samps);
     }
     {
+        std::cout << "RX test dual DSP " << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(0);
         stream_args.channels.push_back(1);
