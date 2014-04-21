@@ -319,7 +319,7 @@ wire DivSw1, DivSw2;
    assign pps = PPS_IN;
 
    
-   u2plus_core u2p_c(.dsp_clk           (dsp_clk),
+   umtrx_core u2p_c(.dsp_clk           (dsp_clk),
 		     .wb_clk            (wb_clk),
 		     .lms_clk  (clk_icap),
 		     .clk_icap		(clk_icap),
