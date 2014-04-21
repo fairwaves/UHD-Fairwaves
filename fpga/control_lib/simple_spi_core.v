@@ -202,6 +202,7 @@ module simple_spi_core
         end
     end
 
+    /*
     assign debug = {
         trigger_spi, state, //4
         sclk, mosi, miso, ready, //4
@@ -210,5 +211,6 @@ module simple_spi_core
         sclk_counter_done, bit_counter_done, //2
         sclk_counter[5:0] //6
     };
+    */
 
 endmodule //simple_spi_core

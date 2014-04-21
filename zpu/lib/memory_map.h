@@ -157,7 +157,8 @@ typedef struct {
 ///////////////////////////////////////////////////
 
 typedef struct {
-  volatile uint32_t _padding[8];
+  volatile uint32_t spi;
+  volatile uint32_t _padding[7];
   volatile uint32_t status;
   volatile uint32_t _unused;
   volatile uint32_t time64_secs_rb;
@@ -166,7 +167,10 @@ typedef struct {
   volatile uint32_t irqs;
 } router_status_t;
 
+#define SPI_READY_IRQ (1 << 12)
+
 #define router_status ((router_status_t *) READBACK_BASE)
+#define readback_mux ((router_status_t *) READBACK_BASE) //alias with a better name
 
 /*!
  * \brief return non-zero if we're running under the simulator
@@ -260,10 +264,26 @@ localparam SR_TX_CTRL1  = 161;   // 6
 localparam SR_TX_DSP1   = 170;   // 5
 
 localparam SR_DIVSW    = 180;   // 2
+localparam SR_SPI_CORE = 185;   // 3
 
 #define	_SR_ADDR(sr) (SETTING_REGS_BASE + (sr) * sizeof(uint32_t))
 
 #define SR_ADDR_BLDRDONE _SR_ADDR(5)
+
+// --- spi core control regs ---
+
+typedef struct {
+  volatile uint32_t divider;
+  volatile uint32_t control;
+  volatile uint32_t data;
+} spi_core_t;
+
+#define SPI_CORE_SLAVE_SELECT_SHIFT 0
+#define SPI_CORE_NUM_BITS_SHIFT 24
+#define SPI_CORE_DATA_IN_EDGE_SHIFT 30
+#define SPI_CORE_DATA_OUT_EDGE_SHIFT 31
+
+#define spi_core ((spi_core_t *) _SR_ADDR(SR_SPI_CORE))
 
 // --- packet router control regs ---
 

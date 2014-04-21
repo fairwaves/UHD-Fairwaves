@@ -35,12 +35,10 @@ static const double ACK_TIMEOUT = 0.5;
 static const double MASSIVE_TIMEOUT = 10.0; //for when we wait on a timed command
 static const boost::uint32_t MAX_SEQS_OUT = 15;
 
-#define SR_SPI_CORE 0 //TODO
 #define SPI_DIV SR_SPI_CORE + 0
 #define SPI_CTRL SR_SPI_CORE + 1
 #define SPI_DATA SR_SPI_CORE + 2
-#define SPI_READBACK 0
-// spi clock rate = master_clock/(div+1)/2 (10MHz in this case)
+// spi clock rate = master_clock/(div+1)/2
 #define SPI_DIVIDER 4
 
 class umtrx_fifo_ctrl_impl : public umtrx_fifo_ctrl{
@@ -56,7 +54,7 @@ public:
         while (_xport->get_recv_buff(0.0)){} //flush
         this->set_time(uhd::time_spec_t(0.0));
         this->set_tick_rate(1.0); //something possible but bogus
-        //TODO this->init_spi();
+        this->init_spi();
     }
 
     ~umtrx_fifo_ctrl_impl(void){
@@ -140,7 +138,7 @@ public:
 
         //conditional readback
         if (readback){
-            this->send_pkt(SPI_READBACK, 0, PEEK32_CMD);
+            this->send_pkt(U2_REG_SPI_RB, 0, PEEK32_CMD);
             return this->wait_for_ack(_seq_out);
         }
 

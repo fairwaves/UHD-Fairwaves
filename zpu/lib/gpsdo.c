@@ -51,7 +51,7 @@ set_vctcxo_dac(uint16_t v)
   return spi_transact(
     SPI_TXRX, SPI_SS_DAC,
     v & ((1 << DAC_BITS) - 1),
-    16, SPIF_PUSH_RISE | SPIF_LATCH_RISE
+    16, SPI_PUSH_RISE | SPI_LATCH_RISE
   );
 }
 

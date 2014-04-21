@@ -154,6 +154,7 @@ module umtrx_core
    localparam SR_TX_DSP1   = 170;   // 5
 
    localparam SR_DIVSW    = 180;   // 2
+   localparam SR_SPI_CORE = 185;   // 3
    
    // FIFO Sizes, 9 = 512 lines, 10 = 1024, 11 = 2048
    // all (most?) are 36 bits wide, so 9 is 1 BRAM, 10 is 2, 11 is 4 BRAMs
@@ -270,6 +271,7 @@ module umtrx_core
       .sf_dat_i(sf_dat_i),.sf_ack_i(sf_ack),.sf_err_i(0),.sf_rty_i(0));
 
    // Unused Slaves
+   assign s2_ack = 0;
    assign sc_ack = 0;
 
    // ////////////////////////////////////////////////////////////////////////////////////////
@@ -405,12 +407,16 @@ module umtrx_core
 
    // /////////////////////////////////////////////////////////////////////////
    // SPI -- Slave #2
-   spi_top shared_spi
-     (.wb_clk_i(wb_clk),.wb_rst_i(wb_rst),.wb_adr_i(s2_adr[4:0]),.wb_dat_i(s2_dat_o),
-      .wb_dat_o(s2_dat_i),.wb_sel_i(s2_sel),.wb_we_i(s2_we),.wb_stb_i(s2_stb),
-      .wb_cyc_i(s2_cyc),.wb_ack_o(s2_ack),.wb_err_o(),.wb_int_o(spi_int),
-      .ss_pad_o({aux_sen2,aux_sen1,sen_dac,sen_lms2,sen_lms1}),
-      .sclk_pad_o(sclk),.mosi_pad_o(mosi),.miso_pad_i(miso) );
+    wire [31:0] spi_debug;
+    wire [31:0] spi_readback;
+    wire spi_ready;
+    simple_spi_core #(.BASE(SR_SPI_CORE), .WIDTH(5)) shared_spi(
+        .clock(dsp_clk), .reset(dsp_rst),
+        .set_stb(set_stb_dsp), .set_addr(set_addr_dsp), .set_data(set_data_dsp),
+        .readback(spi_readback), .ready(spi_ready),
+        .sen({aux_sen2,aux_sen1,sen_dac,sen_lms2,sen_lms1}),
+        .sclk(sclk), .mosi(mosi), .miso(miso), .debug(spi_debug)
+    );
 
    // /////////////////////////////////////////////////////////////////////////
    // I2C -- Slave #3
@@ -439,14 +445,16 @@ module umtrx_core
    //compatibility number -> increment when the fpga has been sufficiently altered
    localparam compat_num = {16'd9, 16'd0}; //major, minor
 
+   wire [31:0] irq_readback = {16'b0, aux_ld2, aux_ld1, button, spi_ready, 12'b0};
+
    wb_readback_mux buff_pool_status
      (.wb_clk_i(wb_clk), .wb_rst_i(wb_rst), .wb_stb_i(s5_stb),
       .wb_adr_i(s5_adr), .wb_dat_o(s5_dat_i), .wb_ack_o(s5_ack),
 
-      .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
+      .word00(spi_readback),.word01(32'b0),.word02(32'b0),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
       .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
-      .word11(vita_time[31:0]),.word12(compat_num),.word13({16'b0, aux_ld2, aux_ld1, button, 13'b0}),
+      .word11(vita_time[31:0]),.word12(compat_num),.word13(irq_readback),
       .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0])
       );
 
@@ -521,14 +529,14 @@ module umtrx_core
     settings_fifo_ctrl #(.PROT_DEST(3), .PROT_HDR(1)) sfc
     (
         .clock(dsp_clk), .reset(dsp_rst), .clear(sfc_clear),
-        .vita_time(vita_time), .perfs_ready(1'b1),
+        .vita_time(vita_time), .perfs_ready(spi_ready),
         .in_data(ctrl_data_dsp), .in_valid(ctrl_valid_dsp), .in_ready(ctrl_ready_dsp),
         .out_data(resp_data_dsp), .out_valid(resp_valid_dsp), .out_ready(resp_ready_dsp),
         .strobe(set_stb_dsp1), .addr(set_addr_dsp1), .data(set_data_dsp1),
-        .word00(32'b0),.word01(32'b0),.word02(32'b0),.word03(32'b0),
+        .word00(spi_readback),.word01(32'b0),.word02(32'b0),.word03(32'b0),
         .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
         .word08(32'b0),.word09(32'b0),.word10(vita_time[63:32]),
-        .word11(vita_time[31:0]),.word12(32'b0),.word13(32'b0),
+        .word11(vita_time[31:0]),.word12(32'b0),.word13(irq_readback),
         .word14(vita_time_pps[63:32]),.word15(vita_time_pps[31:0]),
         .debug(sfc_debug)
     );

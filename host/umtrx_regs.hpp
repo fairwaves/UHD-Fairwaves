@@ -62,6 +62,7 @@ localparam SR_TX_CTRL1  = 161;   // 6
 localparam SR_TX_DSP1   = 170;   // 5
 
 localparam SR_DIVSW    = 180;   // 2
+localparam SR_SPI_CORE = 185;   // 3
 
 #define U2_REG_SR_ADDR(sr) (SETTING_REGS_BASE + (4 * (sr)))
 
@@ -105,6 +106,7 @@ localparam SR_DIVSW    = 180;   // 2
 /////////////////////////////////////////////////
 // Readback regs
 ////////////////////////////////////////////////
+#define U2_REG_SPI_RB READBACK_BASE + 4*0
 #define U2_REG_ADC0 READBACK_BASE + 4*6
 #define U2_REG_ADC1 READBACK_BASE + 4*7
 #define U2_REG_STATUS READBACK_BASE + 4*8
