@@ -69,6 +69,7 @@ SET(BOOST_REQUIRED_COMPONENTS
     filesystem
     system
     thread
+    program_options
 )
 
 IF(UNIX AND EXISTS "/usr/lib64")
@@ -125,7 +126,7 @@ endif()
 ########################################################################
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 add_library(umtrx MODULE ${UMTRX_SOURCES})
-target_link_libraries(umtrx ${POTHOS_LIBRARIES} ${UMTRX_LIBRARIES})
+target_link_libraries(umtrx ${UMTRX_LIBRARIES})
 
 ########################################################################
 # Install the UmTRX module
@@ -142,3 +143,7 @@ INSTALL(PROGRAMS
     utils/umtrx_net_burner
     DESTINATION bin
 )
+
+add_executable(umtrx_test_chains umtrx_test_chains.cpp)
+target_link_libraries(umtrx_test_chains ${UMTRX_LIBRARIES})
+install(TARGETS umtrx_test_chains DESTINATION bin)

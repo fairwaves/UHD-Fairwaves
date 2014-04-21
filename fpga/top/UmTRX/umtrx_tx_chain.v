@@ -26,9 +26,14 @@ module umtrx_tx_chain
     input [7:0] set_addr_dsp,
     input [31:0] set_data_dsp,
 
+    //settings bus fe clock domain
+    input set_stb_fe,
+    input [7:0] set_addr_fe,
+    input [31:0] set_data_fe,
+
     //dsp clock domain
-    output reg [11:0] dac_i,
-    output reg [11:0] dac_q,
+    output reg [11:0] dac_a,
+    output reg [11:0] dac_b,
     input dac_stb,
     output run,
 
@@ -47,23 +52,13 @@ module umtrx_tx_chain
 );
 
     /*******************************************************************
-     * Create settings bus for fe clock domain
-     ******************************************************************/
-    wire set_stb_fe;
-    wire [7:0] set_addr_fe;
-    wire [31:0] set_data_fe;
-    settings_bus_crossclock settings_bus_fe_crossclock
-     (.clk_i(dsp_clk), .rst_i(dsp_rst), .set_stb_i(set_stb_dsp), .set_addr_i(set_addr_dsp), .set_data_i(set_data_dsp),
-      .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
-
-    /*******************************************************************
      * Cross DAC signals from fe to dsp clock domain
-     * dac_i/q come from a register on the fe clock domain
+     * dac_a/b come from a register on the fe clock domain
      ******************************************************************/
     wire [15:0] dac_a_16, dac_b_16;
     always @(posedge fe_clk) begin
-        dac_i <= dac_a_16[15:4];
-        dac_q <= dac_b_16[15:4];
+        dac_a <= dac_a_16[15:4];
+        dac_b <= dac_b_16[15:4];
     end
 
     /*******************************************************************

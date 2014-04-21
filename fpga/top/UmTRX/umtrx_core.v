@@ -154,6 +154,7 @@ module umtrx_core
    localparam SR_TX_DSP1   = 170;   // 5
 
    localparam SR_DIVSW    = 180;   // 2
+   localparam SR_RX_FE_SW = 183;   // 1
    localparam SR_SPI_CORE = 185;   // 3
    
    // FIFO Sizes, 9 = 512 lines, 10 = 1024, 11 = 2048
@@ -163,9 +164,9 @@ module umtrx_core
    localparam ETH_TX_FIFOSIZE = 9;
    localparam ETH_RX_FIFOSIZE = 11;
    
-   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys, set_addr_udp_wb, set_addr_udp_sys;
-   wire [31:0] 	set_data, set_data_dsp, set_data_sys, set_data_udp_wb, set_data_udp_sys;
-   wire 	set_stb, set_stb_dsp, set_stb_sys, set_stb_udp_wb, set_stb_udp_sys;
+   wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys, set_addr_fe, set_addr_udp_wb, set_addr_udp_sys;
+   wire [31:0] 	set_data, set_data_dsp, set_data_sys, set_data_fe, set_data_udp_wb, set_data_udp_sys;
+   wire 	set_stb, set_stb_dsp, set_stb_sys, set_stb_fe, set_stb_udp_wb, set_stb_udp_sys;
    
    reg 		wb_rst;
    wire 	dsp_rst, sys_rst, fe_rst;
@@ -189,8 +190,6 @@ module umtrx_core
    wire [63:0] 	vita_time, vita_time_pps;
    
    wire 	 run_rx0, run_rx1, run_tx0, run_tx1;
-   wire   run_rx0_mux, run_rx1_mux;
-   wire   run_tx0_mux, run_tx1_mux;
 
     //generate sync reset signals for dsp and sys domains
     reset_sync sys_rst_sync(.clk(sys_clk), .reset_in(wb_rst), .reset_out(sys_rst));
@@ -489,6 +488,10 @@ module umtrx_core
      (.clk_i(wb_clk), .rst_i(wb_rst), .set_stb_i(set_stb), .set_addr_i(set_addr), .set_data_i(set_data),
       .clk_o(sys_clk), .rst_o(sys_rst), .set_stb_o(set_stb_sys), .set_addr_o(set_addr_sys), .set_data_o(set_data_sys));
 
+   settings_bus_crossclock settings_bus_fe_crossclock
+     (.clk_i(dsp_clk), .rst_i(dsp_rst), .set_stb_i(set_stb_dsp), .set_addr_i(set_addr_dsp), .set_data_i(set_data_dsp),
+      .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
+
    wire set_stb_dsp0, set_stb_dsp1;
    wire [31:0] set_data_dsp0, set_data_dsp1;
    wire [7:0] set_addr_dsp0, set_addr_dsp1;
@@ -574,14 +577,8 @@ module umtrx_core
    //    1 = controlled by HW, 0 = by SW
    //    In Rev3 there are only 6 leds, and the highest one is on the ETH connector
 
-    //FIXME
-    assign run_tx0_mux = run_tx0;
-    assign run_rx0_mux = run_rx0;
-    assign run_tx1_mux = run_tx1;
-    assign run_rx1_mux = run_rx1;
-
    wire [7:0] 	 led_src, led_sw;
-   wire [7:0] 	 led_hw = {run_tx0_mux, run_rx0_mux, run_tx1_mux, run_rx1_mux, 1'b0};
+   wire [7:0] 	 led_hw = {run_tx0, run_rx0, run_tx1, run_rx1, 1'b0};
    
    setting_reg #(.my_addr(SR_MISC+3),.width(8)) sr_led
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(led_sw),.changed());
@@ -664,13 +661,42 @@ module umtrx_core
       .sclk_pad_o(spiflash_clk),.mosi_pad_o(spiflash_mosi),.miso_pad_i(spiflash_miso) );
 
    // /////////////////////////////////////////////////////////////////////////
+   // RX Frontend
+    wire [23:0] front0_i, front0_q;
+    rx_frontend #(.BASE(SR_RX_FRONT0)) rx_frontend0
+    (
+        .clk(fe_clk), .rst(fe_rst),
+        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
+        .i_out(front0_i), .q_out(front0_q), .run(1'b1),
+        .adc_a({adc0_a, 4'b0}), .adc_b({adc0_b, 4'b0})
+    );
+    wire [23:0] front1_i, front1_q;
+    rx_frontend #(.BASE(SR_RX_FRONT1)) rx_frontend1
+    (
+        .clk(fe_clk), .rst(fe_rst),
+        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
+        .i_out(front1_i), .q_out(front1_q), .run(1'b1),
+        .adc_a({adc1_a, 4'b0}), .adc_b({adc1_b, 4'b0})
+    );
+
+   // /////////////////////////////////////////////////////////////////////////
    // RX chains
+
+    //switch to select frontend used per DSP
+    wire [3:0] rx_fe_sw;
+    setting_reg #(.my_addr(SR_RX_FE_SW),.width(4)) sr_rx_fe_sw
+     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(rx_fe_sw),.changed());
+
+    //run logic to map running DSPs to active frontends
+    wire [3:0] run_rx_dsp;
+    assign run_rx0 = |((~run_rx_dsp) & rx_fe_sw);
+    assign run_rx1 = |(run_rx_dsp & rx_fe_sw);
+
 //*
     umtrx_rx_chain
     #(
         .PROT_DEST(4),
         .DSPNO(0),
-        .FRONT_BASE(SR_RX_FRONT0),
         .DSP_BASE(SR_RX_DSP0),
         .CTRL_BASE(SR_RX_CTRL0),
         .FIFOSIZE(DSP_RX_FIFOSIZE),
@@ -682,7 +708,11 @@ module umtrx_core
         .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
-        .adc_i(adc0_a), .adc_q(adc0_b), .adc_stb(adc0_strobe), .run(run_rx0),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .front_i(rx_fe_sw[0]?front1_i:front0_i),
+        .front_q(rx_fe_sw[0]?front1_q:front0_q),
+        .adc_stb(rx_fe_sw[0]?adc1_strobe:adc0_strobe),
+        .run(run_rx_dsp[0]),
         .vita_data_sys(dsp_rx0_data), .vita_valid_sys(dsp_rx0_valid), .vita_ready_sys(dsp_rx0_ready),
         .vita_time(vita_time)
     );
@@ -691,7 +721,6 @@ module umtrx_core
     #(
         .PROT_DEST(5),
         .DSPNO(1),
-        .FRONT_BASE(SR_RX_FRONT1),
         .DSP_BASE(SR_RX_DSP1),
         .CTRL_BASE(SR_RX_CTRL1),
         .FIFOSIZE(DSP_RX_FIFOSIZE)
@@ -702,7 +731,11 @@ module umtrx_core
         .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
-        .adc_i(adc1_a), .adc_q(adc1_b), .adc_stb(adc1_strobe), .run(run_rx1),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .front_i(rx_fe_sw[1]?front1_i:front0_i),
+        .front_q(rx_fe_sw[1]?front1_q:front0_q),
+        .adc_stb(rx_fe_sw[1]?adc1_strobe:adc0_strobe),
+        .run(run_rx_dsp[1]),
         .vita_data_sys(dsp_rx1_data), .vita_valid_sys(dsp_rx1_valid), .vita_ready_sys(dsp_rx1_ready),
         .vita_time(vita_time)
     );
@@ -711,8 +744,57 @@ module umtrx_core
 assign dsp_rx0_valid = 0;
 assign dsp_rx1_valid = 0;
 //*/
+/*
+    umtrx_rx_chain
+    #(
+        .PROT_DEST(6),
+        .DSPNO(2),
+        .DSP_BASE(SR_RX_DSP2),
+        .CTRL_BASE(SR_RX_CTRL2),
+        .FIFOSIZE(DSP_RX_FIFOSIZE)
+    )
+    umtrx_rx_chain2
+    (
+        .sys_clk(sys_clk), .sys_rst(sys_rst),
+        .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
+        .fe_clk(fe_clk), .fe_rst(fe_rst),
+        .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .front_i(rx_fe_sw[2]?front1_i:front0_i),
+        .front_q(rx_fe_sw[2]?front1_q:front0_q),
+        .adc_stb(rx_fe_sw[2]?adc1_strobe:adc0_strobe),
+        .run(run_rx_dsp[2]),
+        .vita_data_sys(dsp_rx2_data), .vita_valid_sys(dsp_rx2_valid), .vita_ready_sys(dsp_rx2_ready),
+        .vita_time(vita_time)
+    );
+
+    umtrx_rx_chain
+    #(
+        .PROT_DEST(7),
+        .DSPNO(3),
+        .DSP_BASE(SR_RX_DSP3),
+        .CTRL_BASE(SR_RX_CTRL3),
+        .FIFOSIZE(DSP_RX_FIFOSIZE)
+    )
+    umtrx_rx_chain3
+    (
+        .sys_clk(sys_clk), .sys_rst(sys_rst),
+        .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
+        .fe_clk(fe_clk), .fe_rst(fe_rst),
+        .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .front_i(rx_fe_sw[3]?front1_i:front0_i),
+        .front_q(rx_fe_sw[3]?front1_q:front0_q),
+        .adc_stb(rx_fe_sw[3]?adc1_strobe:adc0_strobe),
+        .run(run_rx_dsp[3]),
+        .vita_data_sys(dsp_rx3_data), .vita_valid_sys(dsp_rx3_valid), .vita_ready_sys(dsp_rx3_ready),
+        .vita_time(vita_time)
+    );
+//*/
+//*
 assign dsp_rx2_valid = 0;
 assign dsp_rx3_valid = 0;
+//*/
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
@@ -735,7 +817,8 @@ assign dsp_rx3_valid = 0;
         .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
-        .dac_i(dac0_a), .dac_q(dac0_b), .dac_stb(dac0_strobe), .run(run_tx0),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .dac_a(dac0_a), .dac_b(dac0_b), .dac_stb(dac0_strobe), .run(run_tx0),
         .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
@@ -756,7 +839,8 @@ assign dsp_rx3_valid = 0;
         .dsp_clk(dsp_clk), .dsp_rst(dsp_rst),
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
-        .dac_i(dac1_a), .dac_q(dac1_b), .dac_stb(dac1_strobe), .run(run_tx1),
+        .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_dsp), .set_data_fe(set_data_fe),
+        .dac_a(dac1_a), .dac_b(dac1_b), .dac_stb(dac1_strobe), .run(run_tx1),
         .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)

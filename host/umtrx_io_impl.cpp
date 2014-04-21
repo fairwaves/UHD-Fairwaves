@@ -59,14 +59,27 @@ static const size_t vrt_send_header_offset_words32 = 1;
  **********************************************************************/
 void umtrx_impl::update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &spec)
 {
-    //sanity checking
     validate_subdev_spec(_tree, spec, "rx");
+    boost::uint32_t rx_fe_sw = 0;
+    for (size_t i = 0; i < spec.size(); i++)
+    {
+        UHD_ASSERT_THROW(spec[i].sd_name == "0");
+        UHD_ASSERT_THROW(spec[i].db_name == "A" or spec[i].db_name == "B");
+        if (spec[i].db_name == "A") rx_fe_sw |= (0 << i);
+        if (spec[i].db_name == "B") rx_fe_sw |= (1 << i);
+    }
+    _ctrl->poke32(U2_REG_SR_ADDR(SR_RX_FE_SW), rx_fe_sw);
 }
 
 void umtrx_impl::update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &spec)
 {
     //sanity checking
     validate_subdev_spec(_tree, spec, "tx");
+    for (size_t i = 0; i < spec.size(); i++)
+    {
+        if (i == 0) UHD_ASSERT_THROW(spec[i].db_name == "A");
+        if (i == 1) UHD_ASSERT_THROW(spec[i].db_name == "B");
+    }
 }
 
 /***********************************************************************
@@ -187,7 +200,7 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
     }
 
     //create the transport
-    std::vector<zero_copy_if::sptr> xports(_rx_dsps.size());
+    std::vector<zero_copy_if::sptr> xports;
     for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
     {
         const size_t dsp = args.channels[chan_i];
@@ -197,7 +210,7 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
         if (dsp == 2) which = UMTRX_DSP_RX2_FRAMER;
         if (dsp == 3) which = UMTRX_DSP_RX3_FRAMER;
         UHD_ASSERT_THROW(which != size_t(~0));
-        xports[dsp] = make_xport(which, args.args);
+        xports.push_back(make_xport(which, args.args));
     }
 
     //calculate packet size
@@ -233,7 +246,7 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
         _rx_dsps[dsp]->set_nsamps_per_packet(spp); //seems to be a good place to set this
         _rx_dsps[dsp]->setup(args);
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &zero_copy_if::get_recv_buff, xports[dsp], _1
+            &zero_copy_if::get_recv_buff, xports[chan_i], _1
         ), true /*flush*/);
         my_streamer->set_issue_stream_cmd(chan_i, boost::bind(
             &rx_dsp_core_200::issue_stream_command, _rx_dsps[dsp], _1));
@@ -387,6 +400,7 @@ static void handle_tx_async_msgs(
     }
 
     stop_flow_control();
+    while (not xport->get_recv_buff()){};//flush after fc off
 }
 
 /***********************************************************************
@@ -408,7 +422,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
     }
 
     //create the transport
-    std::vector<zero_copy_if::sptr> xports(_tx_dsps.size());
+    std::vector<zero_copy_if::sptr> xports;
     for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
     {
         const size_t dsp = args.channels[chan_i];
@@ -416,7 +430,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
         if (dsp == 0) which = UMTRX_DSP_TX0_FRAMER;
         if (dsp == 1) which = UMTRX_DSP_TX1_FRAMER;
         UHD_ASSERT_THROW(which != size_t(~0));
-        xports[dsp] = make_xport(which, args.args);
+        xports.push_back(make_xport(which, args.args));
     }
 
     //calculate packet size
@@ -464,7 +478,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
         my_streamer->set_xport_chan_sid(chan_i, true, sid);
 
         //create a flow control monitor
-        const size_t fc_window = UMTRX_SRAM_BYTES/xports[dsp]->get_send_frame_size();
+        const size_t fc_window = UMTRX_SRAM_BYTES/xports[chan_i]->get_send_frame_size();
         flow_control_monitor::sptr fc_mon(new flow_control_monitor(fc_window));
 
         //enable flow control packets
@@ -479,11 +493,11 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
         boost::function<void(void)> stop_flow_control = boost::bind(&tx_dsp_core_200::set_updates, _tx_dsps[dsp], 0, 0);
         task::sptr task = task::make(boost::bind(
             &handle_tx_async_msgs, chan_i, this->get_master_clock_rate(),
-            fc_mon, xports[dsp], stop_flow_control, async_md, _old_async_queue));
+            fc_mon, xports[chan_i], stop_flow_control, async_md, _old_async_queue));
 
         //buffer get method handles flow control and hold task reference count
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &get_send_buff, task, fc_mon, xports[dsp], _1
+            &get_send_buff, task, fc_mon, xports[chan_i], _1
         ));
 
         _tx_streamers[dsp] = my_streamer; //store weak pointer

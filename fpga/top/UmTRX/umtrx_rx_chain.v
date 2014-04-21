@@ -6,7 +6,6 @@ module umtrx_rx_chain
 #(
     parameter PROT_DEST = 0, //framer index
     parameter DSPNO = 0, //the dsp unit number: 0, 1, 2...
-    parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
     parameter FIFOSIZE = 10,
@@ -27,9 +26,14 @@ module umtrx_rx_chain
     input [7:0] set_addr_dsp,
     input [31:0] set_data_dsp,
 
-    //dsp clock domain
-    input [11:0] adc_i,
-    input [11:0] adc_q,
+    //settings bus fe clock domain
+    input set_stb_fe,
+    input [7:0] set_addr_fe,
+    input [31:0] set_data_fe,
+
+    //fe clock domain
+    input [23:0] front_i,
+    input [23:0] front_q,
     input adc_stb,
     output run,
 
@@ -41,37 +45,6 @@ module umtrx_rx_chain
     //vita time in dsp clock domain
     wire [63:0] vita_time
 );
-
-    /*******************************************************************
-     * Create settings bus for fe clock domain
-     ******************************************************************/
-    wire set_stb_fe;
-    wire [7:0] set_addr_fe;
-    wire [31:0] set_data_fe;
-    settings_bus_crossclock settings_bus_fe_crossclock
-     (.clk_i(dsp_clk), .rst_i(dsp_rst), .set_stb_i(set_stb_dsp), .set_addr_i(set_addr_dsp), .set_data_i(set_data_dsp),
-      .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
-
-    /*******************************************************************
-     * Cross ADC signals from dsp to fe clock domain
-     ******************************************************************/
-    reg [15:0] adc_a_16, adc_b_16;
-    always @(posedge dsp_clk) begin
-        adc_a_16 <= {adc_i, 4'b0};
-        adc_b_16 <= {adc_q, 4'b0};
-    end
-
-    /*******************************************************************
-     * RX frontend on fe clock domain
-     ******************************************************************/
-    wire [23:0] front_i, front_q;
-    rx_frontend #(.BASE(FRONT_BASE)) rx_frontend
-    (
-        .clk(fe_clk), .rst(fe_rst),
-        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
-        .i_out(front_i), .q_out(front_q), .run(1'b1),
-        .adc_a(adc_a_16), .adc_b(adc_b_16)
-    );
 
     /*******************************************************************
      * DDC chain on fe clock domain
@@ -168,7 +141,6 @@ module umtrx_rx_chain
         assign DATA[63:32] = vita_data_dsp;
         assign DATA[95:64] = vita_sample;
         assign DATA[127:96] = ddc_sample;
-        assign DATA[159:128] = {adc_a_16, adc_b_16};
         assign DATA[191:160] = set_data_dsp;
         assign DATA[223:192] = set_data_fe;
         assign DATA[255] = adc_stb;

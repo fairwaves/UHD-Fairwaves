@@ -62,19 +62,13 @@ localparam SR_TX_CTRL1  = 161;   // 6
 localparam SR_TX_DSP1   = 170;   // 5
 
 localparam SR_DIVSW    = 180;   // 2
+localparam SR_RX_FE_SW = 183;   // 1
 localparam SR_SPI_CORE = 185;   // 3
 
 #define U2_REG_SR_ADDR(sr) (SETTING_REGS_BASE + (4 * (sr)))
 
-#define U2_REG_ROUTER_CTRL_PORTS U2_REG_SR_ADDR(SR_BUF_POOL) + 8
-
 /////////////////////////////////////////////////
 // SPI Slave Constants
-
-////////////////////////////////////////////////
-// Masks for controlling different peripherals
-#define SPI_SS_RX_DB    16
-#define SPI_SS_TX_DB   128
 
 ////////////////////////////////////////////////
 // Masks for controlling different peripherals in UmTRX
@@ -94,14 +88,6 @@ localparam SR_SPI_CORE = 185;   // 3
 #define U2_REG_MISC_CTRL_DBG_MUX U2_REG_SR_ADDR(5)
 #define U2_REG_MISC_CTRL_RAM_PAGE U2_REG_SR_ADDR(6)
 #define U2_REG_MISC_CTRL_FLUSH_ICACHE U2_REG_SR_ADDR(7)
-
-#define U2_FLAG_MISC_CTRL_SERDES_ENABLE 8
-#define U2_FLAG_MISC_CTRL_SERDES_PRBSEN 4
-#define U2_FLAG_MISC_CTRL_SERDES_LOOPEN 2
-#define U2_FLAG_MISC_CTRL_SERDES_RXEN   1
-
-#define U2_FLAG_MISC_CTRL_ADC_ON  0x0F
-#define U2_FLAG_MISC_CTRL_ADC_OFF 0x00
 
 /////////////////////////////////////////////////
 // Readback regs
