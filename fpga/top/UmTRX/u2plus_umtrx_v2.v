@@ -162,8 +162,12 @@ wire DivSw1, DivSw2;
         else
             adc2_b <= RX2D_reg; // ADC_Q signal
 
-        adc1_strobe <= ~RX1IQSEL_reg;
-        adc2_strobe <= ~RX2IQSEL_reg;
+	//FIXME Either the LMS1 and LMS2 can align the RXIQSEL* framing lines,
+	//otherwise we need to use an identical strobe for MIMO time alignment.
+        //adc1_strobe <= ~RX1IQSEL_reg;
+        //adc2_strobe <= ~RX2IQSEL_reg;
+        adc1_strobe <= dsp_clk_div2_tx;
+        adc2_strobe <= dsp_clk_div2_tx;
     end
 
    /////////////////////////////////////////////////////////////////////
