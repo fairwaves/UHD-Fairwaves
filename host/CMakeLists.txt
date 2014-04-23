@@ -144,6 +144,6 @@ INSTALL(PROGRAMS
     DESTINATION bin
 )
 
-add_executable(umtrx_test_chains umtrx_test_chains.cpp)
+add_executable(umtrx_test_chains utils/umtrx_test_chains.cpp)
 target_link_libraries(umtrx_test_chains ${UMTRX_LIBRARIES})
 install(TARGETS umtrx_test_chains DESTINATION bin)
