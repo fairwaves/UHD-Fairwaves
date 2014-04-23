@@ -42,3 +42,83 @@ If MAP fails when remaking the UmTRX FPGA bitstream under Ubuntu Linux for ISE v
 after sourcing the Xilinx settings and before issuing:
 
     make -f Makefile.UmTRX
+
+Changes April 2014
+====
+
+The UMTRX repository builds against stock UHD HEAD as a runtime loadable module.
+ * The host/ directory contains all files needed to build the loadable module.
+ * The fpga/ directory contains all files needed to build the FPGA bin file.
+ * the zpu/ directory contains all files needed to build the firmware bin file.
+
+The host contains a missing/ folder for symbols missing from libuhd library.
+These calls were declared in a public header, but not exported with UHD_API.
+Someone should upstream a patch to the UHD maintainers.
+
+The host contains a cores/ folder for configuring common FPGA cores
+and interfacing with receive and transmit VITA streaming interfaces.
+The cores are copied from mainline UHD and should be versioned with the FPGA code.
+
+The host build installs umtrx_net_burner in the bin/ directory.
+The umtrx_net_burner is the usrp2 net burner with umtrx support.
+
+The host build installs a umtrx_test_chains executable into the bin/ directory.
+The umtrx_test_chains utility is used to confirm configuration and communication
+for each RX and TX VITA streaming interface and multi-channel/MIMO streaming.
+The MIMO RX test fails when a small number of samples is specified (--nsamps=100).
+(FIXME reason unknown)
+
+Reimplemented db_lms.cpp as lms6002d_ctrl.cpp and lms6002d_ctrl.hpp files.
+The lms6002d_ctrl class is directly instantiated inside the umtrx_impl constructor.
+Previously dboard_iface.cpp had modifications to write identical values to both SPI_SS_AUX1 and SPI_SS_AUX1.
+This modifcation was lost in the update and may need to be restored if deemed necessary.
+
+The older u2plus_umtrx.v (non v2) has not been updated with the v2 changes and is currently unbuildable.
+
+The UmTRX now support fast commands and timed commands through settings_fifo_ctrl.v
+This includes fast and timed SPI which now hangs off the same fast setting bus.
+
+The fpga core and top level are no longer ifdef'd from the old u2plus code.
+The ifdefs and extraneous code not related to UmTRX has been removed.
+
+The umtrx_core.v now has 3 major clock domains.
+ * sys_clk - 104 MHz for the packet router and fifo signals
+ * dsp_clk - 26 MHz for ADC/DAC, VITA time, VITA de/framer
+ * fe_clk - 13 MHz for DSP chain and frontend corrections
+
+The host master clock rate now reports 26 MHz for the tick_rate.
+
+ADC/DAC signals are registered in the lms_clk without combinatorial logic
+to guarantee that all signals are driven directly by the flops in the IOBs.
+
+Updated fpga/timing/time_64bit.v which may have removed PPS pipeline changes.
+
+Replaced packet_router.v with umtrx_router.v and umtrx_packet_dispatcher.v modules.
+The new router supports ZPU, FIFO control port, quad RX DSP ports, and dual TX DSP ports.
+The umtrx_packet_dispatcher uses VITA SID to determine the output destination.
+The outgoing router mux may require buffering between RX VITA fifos and mux --
+for worst case buffering when all four RX DSPs are streaming to the router.
+
+The tx protocol framer has been expanded to frame up to 8 unique UDP destinations.
+The protocol framer has its own dedicated settings bus on a dedicated wishbone slave.
+Modified add_routing_header.v and gen_context_pkt.v to accept arbitrary framer destinations.
+
+Created umtrx_rx_chain.v to contain ddc core, vita framer, and clock crossing.
+Four instantiations exist in umtrx_core.v, with instance 2 and 3 commented out.
+All instantiations are connected to the router, ADC lines, and frontend switch.
+The RX frontend switch is configurable with the host's RX subdevice specification.
+The host code has only been partially modified to support all 4 RX DSP chains.
+
+Created umtrx_tx_chain.v to contain duc core, vita deframer, and clock crossing.
+This module also contains the tx_frontend corrections module.
+TX chains are hard-tied to a particular DAC bus -- no frontend switch.
+However, the software API should support DSP selection via stream_args_t.
+
+The RXIQSEL signals are not synchronized between LMS A and B.
+If the RXIQSEL signals are used to drive a valid sample strobe,
+then RX VITA time alignment will not be possible due to ambiguity.
+Currently, the adc sample strobes are driven from a common sigal.
+
+simple_gemac_wrapper.v was modified to have an axi_packet_gate in the eth transmit direction.
+This guarantees thats a packet is 100% buffered before being send out over ethernet.
+This avoid in-packet underflow when the mac is fed from a slower clock domain.
