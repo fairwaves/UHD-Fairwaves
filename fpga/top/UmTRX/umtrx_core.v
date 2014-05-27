@@ -811,8 +811,8 @@ assign dsp_rx3_valid = 0;
     wire [11:0] dac0_a_int, dac0_b_int;
     wire [11:0] dac1_a_int, dac1_b_int;
 
-    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_in : {dac1_a_int, dac1_b_int};
-    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_in : {dac1_a_int, dac1_b_int};
+    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int : {dac1_a_int, dac1_b_int};
+    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int : {dac1_a_int, dac1_b_int};
 
 //*
     umtrx_tx_chain
