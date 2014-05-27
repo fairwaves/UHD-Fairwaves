@@ -75,11 +75,15 @@ void umtrx_impl::update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &spec)
 {
     //sanity checking
     validate_subdev_spec(_tree, spec, "tx");
+    boost::uint32_t tx_fe_sw = 0;
     for (size_t i = 0; i < spec.size(); i++)
     {
-        if (i == 0) UHD_ASSERT_THROW(spec[i].db_name == "A");
-        if (i == 1) UHD_ASSERT_THROW(spec[i].db_name == "B");
+        UHD_ASSERT_THROW(spec[i].sd_name == "0");
+        UHD_ASSERT_THROW(spec[i].db_name == "A" or spec[i].db_name == "B");
+        if (i == 1) UHD_ASSERT_THROW(spec[0].db_name != spec[1].db_name);
+        if (i == 0) tx_fe_sw = (spec[i].db_name == "A")? 0 : 1;
     }
+    _ctrl->poke32(U2_REG_SR_ADDR(SR_TX_FE_SW), tx_fe_sw);
 }
 
 /***********************************************************************

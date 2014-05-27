@@ -155,6 +155,7 @@ module umtrx_core
 
    localparam SR_DIVSW    = 180;   // 2
    localparam SR_RX_FE_SW = 183;   // 1
+   localparam SR_TX_FE_SW = 184;   // 1
    localparam SR_SPI_CORE = 185;   // 3
    
    // FIFO Sizes, 9 = 512 lines, 10 = 1024, 11 = 2048
@@ -801,6 +802,18 @@ assign dsp_rx3_valid = 0;
     wire [35:0] sram0_data, sram1_data;
     wire sram0_valid, sram1_valid;
     wire sram0_ready, sram1_ready;
+
+    //switch to select frontend used per DSP
+    wire tx_fe_sw;
+    setting_reg #(.my_addr(SR_TX_FE_SW),.width(1)) sr_tx_fe_sw
+     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(tx_fe_sw),.changed());
+
+    wire [11:0] dac0_a_int, dac0_b_int;
+    wire [11:0] dac1_a_int, dac1_b_int;
+
+    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_in : {dac1_a_int, dac1_b_int};
+    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_in : {dac1_a_int, dac1_b_int};
+
 //*
     umtrx_tx_chain
     #(
@@ -818,7 +831,7 @@ assign dsp_rx3_valid = 0;
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac0_a), .dac_b(dac0_b), .dac_stb(dac0_strobe), .run(run_tx0),
+        .dac_a(dac0_a_int), .dac_b(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx0),
         .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
@@ -840,7 +853,7 @@ assign dsp_rx3_valid = 0;
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac1_a), .dac_b(dac1_b), .dac_stb(dac1_strobe), .run(run_tx1),
+        .dac_a(dac1_a_int), .dac_b(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx1),
         .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)

@@ -63,6 +63,7 @@ localparam SR_TX_DSP1   = 170;   // 5
 
 localparam SR_DIVSW    = 180;   // 2
 localparam SR_RX_FE_SW = 183;   // 1
+localparam SR_TX_FE_SW = 184;   // 1
 localparam SR_SPI_CORE = 185;   // 3
 
 #define U2_REG_SR_ADDR(sr) (SETTING_REGS_BASE + (4 * (sr)))
