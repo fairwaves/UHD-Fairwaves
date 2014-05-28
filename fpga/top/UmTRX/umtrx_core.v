@@ -808,11 +808,15 @@ assign dsp_rx3_valid = 0;
     setting_reg #(.my_addr(SR_TX_FE_SW),.width(1)) sr_tx_fe_sw
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(tx_fe_sw),.changed());
 
+    //assign dac switch
     wire [11:0] dac0_a_int, dac0_b_int;
     wire [11:0] dac1_a_int, dac1_b_int;
+    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
+    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
 
-    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int : {dac1_a_int, dac1_b_int};
-    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int : {dac1_a_int, dac1_b_int};
+    //assign leds
+    wire run_tx_dsp0, run_tx_dsp1;
+    assign {run_tx0, run_tx1} = (tx_fe_sw == 0)? {run_tx_dsp0, run_tx_dsp1} : {run_tx_dsp1, run_tx_dsp0};
 
 //*
     umtrx_tx_chain
@@ -831,7 +835,7 @@ assign dsp_rx3_valid = 0;
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac0_a_int), .dac_b(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx0),
+        .dac_a(dac0_a_int), .dac_b(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx_dsp0),
         .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
@@ -853,7 +857,7 @@ assign dsp_rx3_valid = 0;
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac1_a_int), .dac_b(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx1),
+        .dac_a(dac1_a_int), .dac_b(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx_dsp1),
         .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
