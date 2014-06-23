@@ -186,6 +186,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<double>(mb_path / "tick_rate")
         .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
         .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
+    _tree->access<double>(mb_path / "dsp_rate")
+        .publish(boost::bind(&umtrx_impl::get_master_dsp_rate, this));
 
     ////////////////////////////////////////////////////////////////
     // reset LMS chips
@@ -262,8 +264,10 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     for (size_t dspno = 0; dspno < _rx_dsps.size(); dspno++){
         _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
-        _tree->access<double>(mb_path / "tick_rate")
+        _tree->access<double>(mb_path / "dsp_rate")
             .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], _1));
+        _tree->access<double>(mb_path / "vita_rate")
+            .subscribe(boost::bind(&rx_dsp_core_200::set_vita_rate, _rx_dsps[dspno], _1));
         fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
         _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
             .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _rx_dsps[dspno]));
@@ -288,7 +292,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     for (size_t dspno = 0; dspno < _tx_dsps.size(); dspno++){
         _tx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
-        _tree->access<double>(mb_path / "tick_rate")
+        _tree->access<double>(mb_path / "dsp_rate")
             .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _tx_dsps[dspno], _1));
         fs_path tx_dsp_path = mb_path / str(boost::format("tx_dsps/%u") % dspno);
         _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
@@ -480,6 +484,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     _tree->access<double>(mb_path / "tick_rate")
         .set(this->get_master_clock_rate());
+    _tree->access<double>(mb_path / "dsp_rate")
+        .set(this->get_master_dsp_rate());
     this->time64_self_test();
     _rx_streamers.resize(_rx_dsps.size());
     _tx_streamers.resize(_tx_dsps.size());

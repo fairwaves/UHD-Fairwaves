@@ -63,6 +63,7 @@ public:
     {
         // previously uninitialized - assuming zero for all
         _tick_rate = _link_rate = _host_extra_scaling = _fxpt_scalar_correction = 0.0;
+        _vita_rate = _tick_rate;
 
         //init to something so update method has reasonable defaults
         _scaling_adjustment = 1.0;
@@ -132,7 +133,7 @@ public:
 
         //issue the stream command
         _iface->poke32(REG_RX_CTRL_STREAM_CMD, cmd_word);
-        const boost::uint64_t ticks = (stream_cmd.stream_now)? 0 : stream_cmd.time_spec.to_ticks(_tick_rate);
+        const boost::uint64_t ticks = (stream_cmd.stream_now)? 0 : stream_cmd.time_spec.to_ticks(_vita_rate);
         _iface->poke32(REG_RX_CTRL_TIME_HI, boost::uint32_t(ticks >> 32));
         _iface->poke32(REG_RX_CTRL_TIME_LO, boost::uint32_t(ticks >> 0)); //latches the command
     }
@@ -149,6 +150,10 @@ public:
 
     void set_tick_rate(const double rate){
         _tick_rate = rate;
+    }
+
+    void set_vita_rate(const double rate){
+        _vita_rate = rate;
     }
 
     void set_link_rate(const double rate){
@@ -272,7 +277,7 @@ public:
 private:
     wb_iface::sptr _iface;
     const size_t _dsp_base, _ctrl_base;
-    double _tick_rate, _link_rate;
+    double _tick_rate, _vita_rate, _link_rate;
     bool _continuous_streaming;
     double _scaling_adjustment, _dsp_extra_scaling, _host_extra_scaling, _fxpt_scalar_correction;
     const boost::uint32_t _sid;
