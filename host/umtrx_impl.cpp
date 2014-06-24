@@ -146,6 +146,11 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->create<std::string>(mb_path / "name").set(_iface->get_cname());
     _tree->create<std::string>(mb_path / "fw_version").set(_iface->get_fw_version_string());
 
+    //get access to the various interfaces
+    _tree->create<uhd::wb_iface::sptr>(mb_path / "wb_iface").set(_iface);
+    _tree->create<uhd::spi_iface::sptr>(mb_path / "spi_iface").set(_iface);
+    _tree->create<uhd::i2c_iface::sptr>(mb_path / "i2c_iface").set(_iface);
+
     //check the fpga compatibility number
     const boost::uint32_t fpga_compat_num = _iface->peek32(U2_REG_COMPAT_NUM_RB);
     const boost::uint16_t fpga_major = fpga_compat_num >> 16, fpga_minor = fpga_compat_num & 0xffff;

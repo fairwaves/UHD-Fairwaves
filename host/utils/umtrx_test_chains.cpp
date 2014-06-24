@@ -172,6 +172,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
     std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
 
+    //access the i2c interface
+    uhd::i2c_iface::sptr i2c = usrp->get_device()->get_tree()->access<uhd::i2c_iface::sptr>("/mboards/0/i2c_iface").get();
+
     //set the tx sample rate
     std::cout << boost::format("Setting TX Rate: %f Msps...") % (tx_rate/1e6) << std::endl;
     usrp->set_tx_rate(tx_rate);
