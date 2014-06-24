@@ -186,7 +186,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<double>(mb_path / "tick_rate")
         .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
         .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
-    _tree->access<double>(mb_path / "dsp_rate")
+    _tree->create<double>(mb_path / "dsp_rate")
         .publish(boost::bind(&umtrx_impl::get_master_dsp_rate, this));
 
     ////////////////////////////////////////////////////////////////
