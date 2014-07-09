@@ -42,8 +42,8 @@ typedef struct {
 
 typedef enum {
   UART_DEBUG = 0,
-  UART_EXP   = 1,
-  UART_GPS   = 2
+  UART_GPS   = 1,
+  UART_EXP   = 2
 } hal_uart_name_t;
 
 /*
