@@ -271,7 +271,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
         _tree->access<double>(mb_path / "dsp_rate")
             .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], _1));
-        _tree->access<double>(mb_path / "vita_rate")
+        _tree->access<double>(mb_path / "tick_rate")
             .subscribe(boost::bind(&rx_dsp_core_200::set_vita_rate, _rx_dsps[dspno], _1));
         fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
         _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
