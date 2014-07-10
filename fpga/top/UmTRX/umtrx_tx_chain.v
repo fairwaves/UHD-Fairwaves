@@ -9,7 +9,8 @@ module umtrx_tx_chain
     parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
-    parameter FIFOSIZE = 10
+    parameter FIFOSIZE = 10,
+    parameter DEBUG = 0
 )
 (
     input sys_clk,
@@ -148,5 +149,40 @@ module umtrx_tx_chain
         .o_aclk(sys_clk), .o_tdata(err_data_sys), .o_tvalid(err_valid_sys), .o_tready(err_ready_sys),
         .reset(dsp_rst | sys_rst)
     );
+
+    /*******************************************************************
+     * Debug
+     ******************************************************************/
+    generate
+    if (DEBUG == 1) begin
+        wire [35:0] CONTROL0;
+        chipscope_icon chipscope_icon
+        (
+            .CONTROL0(CONTROL0)
+        );
+        wire [255:0] DATA;
+        wire [7:0] TRIG0;
+        chipscope_ila chipscope_ila
+        (
+            .CONTROL(CONTROL0),
+            .CLK(dsp_clk),
+            .DATA(DATA),
+            .TRIG0(TRIG0)
+        );
+        assign TRIG0 =
+        {
+            vita_strobe, duc_strobe,
+            vita_run, duc_run,
+            dac_stb, run,
+            2'b0
+        };
+        assign DATA[31:0] = vita_data_dsp[31:0];
+        assign DATA[63:32] = vita_sample;
+        assign DATA[95:64] = duc_sample;
+        assign DATA[127:96] = {front_i[23:8], front_q[23:8]};
+        assign DATA[159:128] = {dac_a_16, dac_b_16};
+        assign DATA[191:160] = {dac_a, 4'b0, dac_b, 4'b0};
+    end
+    endgenerate
 
 endmodule //umtrx_tx_chain

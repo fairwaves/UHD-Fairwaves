@@ -243,6 +243,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         const rx_frontend_core_200::sptr rx_fe = (fe_name=="A")?_rx_fes[0]:_rx_fes[1];
         const tx_frontend_core_200::sptr tx_fe = (fe_name=="A")?_tx_fes[0]:_tx_fes[1];
 
+        tx_fe->set_mux("IQ");
+        rx_fe->set_mux(false/*no swap*/);
         _tree->create<std::complex<double> >(rx_fe_path / "dc_offset" / "value")
             .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, _1))
             .set(std::complex<double>(0.0, 0.0));
@@ -268,6 +270,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _rx_dsps[1] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_DSP_RX1_SID, true);
 
     for (size_t dspno = 0; dspno < _rx_dsps.size(); dspno++){
+        _rx_dsps[dspno]->set_mux("IQ", false/*no swap*/);
         _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
         _tree->access<double>(mb_path / "dsp_rate")
             .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], _1));
