@@ -212,7 +212,7 @@ static void capture_samples(
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
     stream_cmd.num_samps = buff.size();
     stream_cmd.stream_now = true;
-    usrp->issue_stream_cmd(stream_cmd);
+    rx_stream->issue_stream_cmd(stream_cmd);
     num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md);
 
     //validate the received data
