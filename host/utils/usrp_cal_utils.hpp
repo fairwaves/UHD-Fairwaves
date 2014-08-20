@@ -55,9 +55,9 @@ static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
         usrp->set_rx_rate(12.5e6);
     }
     else if (mb_name.find("UMTRX") != std::string::npos){
-        usrp->set_tx_rate(13e6/4);
+        usrp->set_tx_rate(13e6/2);
         usrp->set_tx_bandwidth(5e6);
-        usrp->set_rx_rate(13e6/4);
+        usrp->set_rx_rate(13e6/2);
         usrp->set_rx_bandwidth(5e6);
     }
     else if (mb_name.find("B100") != std::string::npos){

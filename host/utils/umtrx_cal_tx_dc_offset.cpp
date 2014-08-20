@@ -37,7 +37,7 @@ namespace po = boost::program_options;
 /***********************************************************************
  * Transmit thread
  **********************************************************************/
-static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_ampl){
+static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
     uhd::set_thread_priority_safe();
 
     //create a transmit streamer
@@ -50,12 +50,16 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_amp
     std::vector<samp_type> buff(tx_stream->get_max_num_samps()*10);
 
     //values for the wave table lookup
+    size_t index = 0;
+    const double tx_rate = usrp->get_tx_rate();
+    const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
     wave_table table(tx_wave_ampl);
 
     //fill buff and send until interrupted
     while (not boost::this_thread::interruption_requested()){
         for (size_t i = 0; i < buff.size(); i++){
-            buff[i] = samp_type(0,0);// table(index += step);
+            buff[i] = table(index += step);
+            buff[i] = samp_type(0, 0); //using no-power transmit to cal with
         }
         tx_stream->send(&buff.front(), buff.size(), md);
     }
@@ -78,6 +82,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
     //tune the receiver
     usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
 
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     return usrp->get_tx_freq();
 }
 
@@ -86,7 +91,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
  **********************************************************************/
 static int uniform_rand(const int low, const int high)
 {
-    boost::random::mt19937 rng;
+    static boost::random::mt19937 rng;
     boost::random::uniform_int_distribution<> dist(low, high);
     return dist(rng);
 }
@@ -108,7 +113,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
         ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("rx_offset", po::value<double>(&rx_offset)->default_value(1e6), "RX LO offset from the TX LO in Hz")
+        ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
         ("freq_start", po::value<double>(&freq_start), "Frequency start in Hz (do not specify for default)")
         ("freq_stop", po::value<double>(&freq_stop), "Frequency stop in Hz (do not specify for default)")
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
@@ -149,7 +154,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //create a transmitter thread
     boost::thread_group threads;
-    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_ampl));
+    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_freq, tx_wave_ampl));
 
     //re-usable buffer for samples
     std::vector<samp_type> buff;
@@ -191,15 +196,16 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
         if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
-        for (int bound_i = 256; bound_i >= 8; bound_i /= 2) //how many bits of precision to care about for the search
+        for (int bound = 256; bound >= 8; bound /= 2) //how many bits of precision to care about for the search
         {
-            if (vm.count("verbose")) printf("  iteration %du\n", bound_i);
+            if (vm.count("verbose")) printf("  iteration %du\n", bound);
 
             bool has_improvement = false;
-            for (int rand_search_no = 0; rand_search_no < bound_i/4; rand_search_no++) //how many random points to inspect
+            for (int rand_search_no = 0; rand_search_no < bound/4; rand_search_no++) //how many random points to inspect
             {
-                int dc_i = uniform_rand(std::max(0, best_dc_i-bound_i/2), std::min(256, best_dc_i+bound_i/2));
-                int dc_q = uniform_rand(std::max(0, best_dc_q-bound_i/2), std::min(256, best_dc_q+bound_i/2));
+                int dc_i = uniform_rand(std::max(0, best_dc_i-bound/2), std::min(256, best_dc_i+bound/2));
+                int dc_q = uniform_rand(std::max(0, best_dc_q-bound/2), std::min(256, best_dc_q+bound/2));
+                if (vm.count("verbose")) std::cout << "bound " << bound << " dc_i " << dc_i << " dc_q " << dc_q << std::endl;
 
                 dc_i_prop.set(dc_i);
                 dc_q_prop.set(dc_q);
@@ -222,7 +228,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             }
 
             // Stop iterating if no imprevement, but do at least 3 iterations
-            if (!has_improvement and bound_i < 64) break;
+            if (!has_improvement and bound < 64) break;
         }
 
         if (vm.count("verbose")) printf("  best_dc_i = %d best_dc_q = %d", best_dc_i, best_dc_q);
