@@ -26,6 +26,7 @@
 #include <boost/format.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/random.hpp>
 #include <iostream>
 #include <complex>
 #include <cmath>
@@ -78,6 +79,16 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
     usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
 
     return usrp->get_tx_freq();
+}
+
+/***********************************************************************
+ * random uniform int
+ **********************************************************************/
+static int uniform_rand(const int low, const int high)
+{
+    boost::random::mt19937 rng;
+    boost::random::uniform_int_distribution<> dist(low, high);
+    return dist(rng);
 }
 
 /***********************************************************************
@@ -167,8 +178,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         if (vm.count("verbose")) printf("bb_dc_freq = %0.2f MHz\n", bb_dc_freq/1e6);
 
         //bounds and results from searching
-        int dc_i_start, dc_i_stop, dc_i_step;
-        int dc_q_start, dc_q_stop, dc_q_step;
         double lowest_offset;
         int best_dc_i = 128, best_dc_q = 128;
 
@@ -182,71 +191,17 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
         if (vm.count("debug_raw_data")) write_samples_to_file(buff, "initial_samples.dat");
 
-        for (size_t i = 0; i < 10; i++){
-            if (vm.count("verbose")) printf("  iteration %zu\n", i);
+        for (int bound_i = 256; bound_i >= 8; bound_i /= 2) //how many bits of precision to care about for the search
+        {
+            if (vm.count("verbose")) printf("  iteration %du\n", bound_i);
 
             bool has_improvement = false;
-
-            switch (i) {
-            case 0:
-                dc_i_start = 0;
-                dc_i_stop  = 256;
-                dc_q_start = 0;
-                dc_q_stop  = 256;
-                dc_i_step = 10;
-                dc_q_step = 10;
-                break;
-            case 1:
-                dc_i_start = best_dc_i - 15;
-                dc_i_stop  = best_dc_i + 15;
-                dc_q_start = best_dc_q - 15;
-                dc_q_stop  = best_dc_q + 15;
-                dc_i_step = 1;
-                dc_q_step = 1;
-                break;
-            default:
-                dc_i_start = best_dc_i - 3;
-                dc_i_stop  = best_dc_i + 3;
-                dc_q_start = best_dc_q - 3;
-                dc_q_stop  = best_dc_q + 3;
-                dc_i_step = 1;
-                dc_q_step = 1;
-                break;
-            };
-
-            if (vm.count("verbose")) printf("    I in [%d; %d) step %d Q = %d\n",
-                                            dc_i_start, dc_i_stop, dc_i_step, best_dc_q);
-
-            dc_q_prop.set(best_dc_q);
-            for (int dc_i = dc_i_start; dc_i < dc_i_stop; dc_i += dc_i_step){
-                if (vm.count("verbose")) printf("      dc_i = %d", dc_i);
+            for (int rand_search_no = 0; rand_search_no < bound_i/4; rand_search_no++) //how many random points to inspect
+            {
+                int dc_i = uniform_rand(std::max(0, best_dc_i-bound_i/2), std::min(256, best_dc_i+bound_i/2));
+                int dc_q = uniform_rand(std::max(0, best_dc_q-bound_i/2), std::min(256, best_dc_q+bound_i/2));
 
                 dc_i_prop.set(dc_i);
-
-                //receive some samples
-                capture_samples(usrp, rx_stream, buff, nsamps);
-
-                const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
-                if (vm.count("verbose")) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
-
-                if (dc_dbrms < lowest_offset){
-                    lowest_offset = dc_dbrms;
-                    best_dc_i = dc_i;
-                    has_improvement = true;
-                    if (vm.count("verbose")) printf("    *");
-                    if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
-                }
-                if (vm.count("verbose")) printf("\n");
-
-            }
-
-            if (vm.count("verbose")) printf("    I = %d Q in [%d; %d) step %d\n",
-                                            best_dc_i, dc_q_start, dc_q_stop, dc_q_step);
-
-            dc_i_prop.set(best_dc_i);
-            for (int dc_q = dc_q_start; dc_q < dc_q_stop; dc_q += dc_q_step){
-                if (vm.count("verbose")) printf("      dc_q = %d", dc_q);
-
                 dc_q_prop.set(dc_q);
 
                 //receive some samples
@@ -257,17 +212,17 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
                 if (dc_dbrms < lowest_offset){
                     lowest_offset = dc_dbrms;
+                    best_dc_i = dc_i;
                     best_dc_q = dc_q;
                     has_improvement = true;
                     if (vm.count("verbose")) printf("    *");
                     if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
                 }
                 if (vm.count("verbose")) printf("\n");
-
             }
 
             // Stop iterating if no imprevement, but do at least 3 iterations
-            if (!has_improvement && i>1) break;
+            if (!has_improvement and bound_i < 64) break;
         }
 
         if (vm.count("verbose")) printf("  best_dc_i = %d best_dc_q = %d", best_dc_i, best_dc_q);
