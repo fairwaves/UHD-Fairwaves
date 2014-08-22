@@ -154,11 +154,12 @@ static void store_results(
     const std::vector<result_t> &results,
     const std::string &XX,
     const std::string &xx,
-    const std::string &what
+    const std::string &what,
+    const std::string &which
 ){
     //extract eeprom serial
     uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-    const uhd::fs_path db_path = "/mboards/0/dboards/A/" + xx + "_eeprom";
+    const uhd::fs_path db_path = "/mboards/0/dboards/"+which+"/" + xx + "_eeprom";
     const uhd::usrp::dboard_eeprom_t db_eeprom = tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
     if (db_eeprom.serial.empty()) throw std::runtime_error(XX + " dboard has empty serial!");
 

@@ -105,6 +105,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     double freq_start, freq_stop, freq_step;
     size_t nsamps;
     size_t ntrials;
+    std::string which;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -120,6 +121,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
         ("nsamps", po::value<size_t>(&nsamps)->default_value(default_num_samps), "Samples per data capture")
         ("ntrials", po::value<size_t>(&ntrials)->default_value(1), "Num trials per TX LO")
+        ("which", po::value<std::string>(&which)->default_value("A"), "Which chain A or B?")
     ;
 
     po::variables_map vm;
@@ -139,6 +141,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
+    //set subdev spec
+    usrp->set_rx_subdev_spec(which+":0");
+    usrp->set_tx_subdev_spec(which+":0");
 
     //set the antennas to cal
     if (not uhd::has(usrp->get_rx_antennas(), "CAL") or not uhd::has(usrp->get_tx_antennas(), "CAL")){
@@ -164,7 +170,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //store the results here
     std::vector<result_t> results;
 
-    const uhd::fs_path tx_fe_path = "/mboards/0/dboards/A/tx_frontends/0";
+    const uhd::fs_path tx_fe_path = "/mboards/0/dboards/"+which+"/tx_frontends/0";
     uhd::property<uint8_t> &dc_i_prop = usrp->get_device()->get_tree()->access<uint8_t>(tx_fe_path / "lms6002d/tx_dc_i/value");
     uhd::property<uint8_t> &dc_q_prop = usrp->get_device()->get_tree()->access<uint8_t>(tx_fe_path / "lms6002d/tx_dc_q/value");
 
@@ -259,7 +265,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     threads.interrupt_all();
     threads.join_all();
 
-    store_results(usrp, results, "TX", "tx", "lms_dc");
+    store_results(usrp, results, "TX", "tx", "lms_dc", which);
 
     return 0;
 }
