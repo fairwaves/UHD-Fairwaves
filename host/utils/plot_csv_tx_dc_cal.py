@@ -35,7 +35,7 @@ def plot_csv(file_path):
     plt.subplot(311)
     plt.plot(freq_vals, dc_i_vals, freq_vals, dc_q_vals,)
     plt.ylim(0, 250)
-    plt.title("Freq (GHz) vs IQ corrections")
+    plt.title("Freq (GHz) vs raw IQ corrections")
     #plt.xlabel('Freq (GHz)')
     plt.grid(True)
 
@@ -45,12 +45,13 @@ def plot_csv(file_path):
     dc_i_std = [np.std(dc_i_vals_per_freq[f]) for f in freqs]
     dc_q_std = [np.std(dc_q_vals_per_freq[f]) for f in freqs]
     plt.plot(freqs, dc_i_std, freqs, dc_q_std)
-    plt.ylim(0, 250)
+    plt.ylim(0, 150)
     plt.title("Freq (GHz) vs stddev IQ corrections")
     #plt.xlabel('Freq (GHz)')
     plt.grid(True)
 
     #plot of average values
+    """
     avg_len = 10
     def moving_average(a, n=avg_len) :
         ret = np.cumsum(a, dtype=float)
@@ -59,6 +60,16 @@ def plot_csv(file_path):
 
     plt.subplot(313)
     plt.plot(freq_vals[:-avg_len+1], moving_average(dc_i_vals), freq_vals[:-avg_len+1], moving_average(dc_q_vals),)
+    plt.ylim(0, 250)
+    plt.title("Freq (GHz) vs averaged IQ corrections")
+    #plt.xlabel('Freq (GHz)')
+    plt.grid(True)
+    """
+    plt.subplot(313)
+    freqs = sorted(dc_i_vals_per_freq.keys())
+    dc_i_avg = [np.mean(dc_i_vals_per_freq[f]) for f in freqs]
+    dc_q_avg = [np.mean(dc_q_vals_per_freq[f]) for f in freqs]
+    plt.plot(freqs, dc_i_avg, freqs, dc_q_avg)
     plt.ylim(0, 250)
     plt.title("Freq (GHz) vs averaged IQ corrections")
     #plt.xlabel('Freq (GHz)')

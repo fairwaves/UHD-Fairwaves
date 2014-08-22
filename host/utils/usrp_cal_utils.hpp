@@ -198,7 +198,6 @@ static void store_results(
  * Data capture routine
  **********************************************************************/
 static void capture_samples(
-    uhd::usrp::multi_usrp::sptr usrp,
     uhd::rx_streamer::sptr rx_stream,
     std::vector<samp_type > &buff,
     const size_t nsamps_requested

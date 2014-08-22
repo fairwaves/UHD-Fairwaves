@@ -193,7 +193,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             //capture initial uncorrected value
             dc_i_prop.set(best_dc_i);
             dc_q_prop.set(best_dc_q);
-            capture_samples(usrp, rx_stream, buff, nsamps);
+            capture_samples(rx_stream, buff, nsamps);
             const double initial_dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
             lowest_offset = initial_dc_dbrms;
             if (vm.count("verbose")) printf("initial_dc_dbrms = %2.0f dB\n", initial_dc_dbrms);
@@ -215,7 +215,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                     dc_q_prop.set(dc_q);
 
                     //receive some samples
-                    capture_samples(usrp, rx_stream, buff, nsamps);
+                    capture_samples(rx_stream, buff, nsamps);
 
                     const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
                     if (vm.count("verbose")) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
