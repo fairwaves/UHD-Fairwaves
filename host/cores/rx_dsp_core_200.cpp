@@ -59,7 +59,7 @@ public:
         const size_t dsp_base, const size_t ctrl_base,
         const boost::uint32_t sid, const bool lingering_packet
     ):
-        _iface(iface), _dsp_base(dsp_base), _ctrl_base(ctrl_base),  _sid(sid)
+        _iface(iface), _dsp_base(dsp_base), _ctrl_base(ctrl_base),  _sid(sid), _initialized(true)
     {
         // previously uninitialized - assuming zero for all
         _tick_rate = _link_rate = _host_extra_scaling = _fxpt_scalar_correction = 0.0;
@@ -79,6 +79,7 @@ public:
         }
 
         this->clear();
+        _initialized = false;
     }
 
     ~rx_dsp_core_200_impl(void)
@@ -103,9 +104,15 @@ public:
 
     void set_nsamps_per_packet(const size_t nsamps){
         _iface->poke32(REG_RX_CTRL_NSAMPS_PP, nsamps);
+        _initialized = true;
     }
 
     void issue_stream_command(const stream_cmd_t &stream_cmd){
+        if (not _initialized)
+        {
+            UHD_MSG(error) << "issue_stream_command called on uninitialized rx_dsp_core" << std::endl;
+            return;
+        }
         UHD_ASSERT_THROW(stream_cmd.num_samps <= 0x0fffffff);
         _continuous_streaming = stream_cmd.stream_mode == stream_cmd_t::STREAM_MODE_START_CONTINUOUS;
 
@@ -281,6 +288,7 @@ private:
     bool _continuous_streaming;
     double _scaling_adjustment, _dsp_extra_scaling, _host_extra_scaling, _fxpt_scalar_correction;
     const boost::uint32_t _sid;
+    bool _initialized;
 };
 
 rx_dsp_core_200::sptr rx_dsp_core_200::make(wb_iface::sptr iface, const size_t dsp_base, const size_t ctrl_base, const boost::uint32_t sid, const bool lingering_packet){

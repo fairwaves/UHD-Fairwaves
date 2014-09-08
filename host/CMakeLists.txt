@@ -136,14 +136,4 @@ install(
     DESTINATION lib${LIB_SUFFIX}/uhd/modules
 )
 
-########################################################################
-# Install the UmTRX utils
-########################################################################
-INSTALL(PROGRAMS
-    utils/umtrx_net_burner
-    DESTINATION bin
-)
-
-add_executable(umtrx_test_chains utils/umtrx_test_chains.cpp)
-target_link_libraries(umtrx_test_chains ${UMTRX_LIBRARIES})
-install(TARGETS umtrx_test_chains DESTINATION bin)
+add_subdirectory(utils)

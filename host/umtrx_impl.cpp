@@ -365,8 +365,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         const fs_path rx_rf_fe_path = mb_path / "dboards" / fe_name / "rx_frontends" / "0";
         const fs_path tx_rf_fe_path = mb_path / "dboards" / fe_name / "tx_frontends" / "0";
 
-        _tree->create<std::string>(rx_rf_fe_path / "name").set("LMS-RX-FE");
-        _tree->create<std::string>(tx_rf_fe_path / "name").set("LMS-TX-FE");
+        _tree->create<std::string>(rx_rf_fe_path / "name").set("LMS6002D");
+        _tree->create<std::string>(tx_rf_fe_path / "name").set("LMS6002D");
 
         // Different serial numbers for each LMS on a UmTRX.
         // This is required to properly correlate calibration files to LMS chips.
