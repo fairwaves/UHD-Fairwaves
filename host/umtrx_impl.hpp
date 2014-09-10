@@ -117,7 +117,7 @@ private:
 
     //helper routines
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
-    double get_master_clock_rate(void) const { return 26e6; }
+    double get_master_clock_rate(void) const { return 30.72e6; }
     double get_master_dsp_rate(void) const { return get_master_clock_rate()/2; }
     void update_tick_rate(const double rate);
     void update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &);
