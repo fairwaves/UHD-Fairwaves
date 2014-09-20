@@ -426,7 +426,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .publish(boost::bind(&lms6002d_ctrl::get_rx_antennas, ctrl));
         _tree->create<std::string>(rx_rf_fe_path / "antenna" / "value")
             .subscribe(boost::bind(&lms6002d_ctrl::set_rx_ant, ctrl, _1))
-            .set("RX1");
+            .set("RX3");
 
         //tx ant
         _tree->create<std::vector<std::string> >(tx_rf_fe_path / "antenna" / "options")
