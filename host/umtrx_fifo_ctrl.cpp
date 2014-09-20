@@ -39,7 +39,7 @@ static const boost::uint32_t MAX_SEQS_OUT = 15;
 #define SPI_CTRL SR_SPI_CORE + 1
 #define SPI_DATA SR_SPI_CORE + 2
 // spi clock rate = master_clock/(div+1)/2
-#define SPI_DIVIDER 4
+#define SPI_DIVIDER 16
 
 class umtrx_fifo_ctrl_impl : public umtrx_fifo_ctrl{
 public:
