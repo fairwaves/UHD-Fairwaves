@@ -56,10 +56,13 @@ static const std::vector<std::string> lms_tx_antennas = list_of("TX0")("TX1")("T
 static const std::vector<std::string> lms_rx_antennas = list_of("RX0")("RX1")("RX2")("RX3")("CAL");
 
 static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_of
+    // Use a single control to manually control how VGA1/VGA2 are set
+    ("VGA", gain_range_t(-35+0, -4+25, double(1.0)))
+;
+
+static const uhd::dict<std::string, gain_range_t> lms_tx_internal_gain_ranges = map_list_of
     ("VGA1", gain_range_t(-35, -4, double(1.0)))
     ("VGA2", gain_range_t(0, 25, double(1.0)))
-    // Use a single control to manually control how VGA1/VGA2 are set
-//    ("VGA", gain_range_t(-35+0, -4+25, double(1.0)))
 ;
 
 static const uhd::dict<std::string, gain_range_t> lms_rx_gain_ranges = map_list_of
@@ -203,9 +206,6 @@ public:
 
     double set_tx_gain(double gain, const std::string &name) {
         if (verbosity>0) printf("db_lms6002d::set_tx_gain(%f, %s)\n", gain, name.c_str());
-        //validate input
-        assert_has(lms_tx_gain_ranges.keys(), name, "LMS6002D tx gain name");
-
         if (name == "VGA") {
             // Calculate the best combination of VGA1 and VGA2 gains.
             // For simplicity we just try to use VGA2 as much as possible
@@ -542,6 +542,14 @@ db_lms6002d::db_lms6002d(ctor_args_t args) : xcvr_dboard_base(args),
             .set((lms_tx_gain_ranges[name].start()+lms_tx_gain_ranges[name].stop())/2.0);
         this->get_tx_subtree()->create<meta_range_t>("gains/"+name+"/range")
             .set(lms_tx_gain_ranges[name]);
+    }
+
+    BOOST_FOREACH(const std::string &name, lms_tx_internal_gain_ranges.keys()){
+        this->get_tx_subtree()->create<double>("internal_gains/"+name+"/value")
+            .coerce(boost::bind(&db_lms6002d::set_tx_gain, this, _1, name))
+            .set((lms_tx_internal_gain_ranges[name].start()+lms_tx_internal_gain_ranges[name].stop())/2.0);
+        this->get_tx_subtree()->create<meta_range_t>("internal_gains/"+name+"/range")
+            .set(lms_tx_internal_gain_ranges[name]);
     }
 
     this->get_tx_subtree()->create<double>("freq/value")
