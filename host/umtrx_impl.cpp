@@ -42,7 +42,11 @@ static device::sptr umtrx_make(const device_addr_t &device_addr){
 device_addrs_t umtrx_find(const device_addr_t &hint);
 
 UHD_STATIC_BLOCK(register_umtrx_device){
+    #ifdef UHD_HAS_DEVICE_FILTER
     device::register_device(&umtrx_find, &umtrx_make, device::USRP);
+    #else
+    device::register_device(&umtrx_find, &umtrx_make);
+    #endif
 }
 
 /***********************************************************************

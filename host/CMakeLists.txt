@@ -122,6 +122,20 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 ########################################################################
+# Look for device filter
+########################################################################
+message(STATUS "Checking uhd::device::register_device() API...")
+message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/device.hpp...")
+file(READ ${UHD_INCLUDE_DIRS}/uhd/device.hpp device_hpp)
+string(FIND "${device_hpp}" "device_filter_t" has_device_filter)
+if ("${has_device_filter}" STREQUAL "-1")
+    message(STATUS "  has original API")
+else()
+    add_definitions(-DUHD_HAS_DEVICE_FILTER)
+    message(STATUS "  has filter API")
+endif()
+
+########################################################################
 # Build the UmTRX module
 ########################################################################
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
