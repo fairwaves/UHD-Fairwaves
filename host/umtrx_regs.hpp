@@ -94,10 +94,9 @@ localparam SR_SPI_CORE = 185;   // 3
 // Readback regs
 ////////////////////////////////////////////////
 #define U2_REG_SPI_RB READBACK_BASE + 4*0
-#define U2_REG_ADC0 READBACK_BASE + 4*6
-#define U2_REG_ADC1 READBACK_BASE + 4*7
+#define U2_REG_NUM_DDC READBACK_BASE + 4*1
+#define U2_REG_NUM_DUC READBACK_BASE + 4*2
 #define U2_REG_STATUS READBACK_BASE + 4*8
-#define U2_REG_GPIO_RB READBACK_BASE + 4*9
 #define U2_REG_TIME64_HI_RB_IMM READBACK_BASE + 4*10
 #define U2_REG_TIME64_LO_RB_IMM READBACK_BASE + 4*11
 #define U2_REG_COMPAT_NUM_RB READBACK_BASE + 4*12

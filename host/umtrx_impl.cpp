@@ -269,9 +269,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////
     // create rx dsp control objects
     ////////////////////////////////////////////////////////////////
-    _rx_dsps.resize(2);
-    _rx_dsps[0] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP0), U2_REG_SR_ADDR(SR_RX_CTRL0), UMTRX_DSP_RX0_SID, true);
-    _rx_dsps[1] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_DSP_RX1_SID, true);
+    _rx_dsps.resize(_iface->peek32(U2_REG_NUM_DDC));
+    if (_rx_dsps.size() < 2) throw uhd::runtime_error(str(boost::format("umtrx rx_dsps %u -- (unsupported FPGA image?)") % _rx_dsps.size()));
+    if (_rx_dsps.size() > 0) _rx_dsps[0] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP0), U2_REG_SR_ADDR(SR_RX_CTRL0), UMTRX_DSP_RX0_SID, true);
+    if (_rx_dsps.size() > 1) _rx_dsps[1] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP1), U2_REG_SR_ADDR(SR_RX_CTRL1), UMTRX_DSP_RX1_SID, true);
+    if (_rx_dsps.size() > 2) _rx_dsps[2] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP2), U2_REG_SR_ADDR(SR_RX_CTRL2), UMTRX_DSP_RX2_SID, true);
+    if (_rx_dsps.size() > 3) _rx_dsps[3] = rx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_RX_DSP3), U2_REG_SR_ADDR(SR_RX_CTRL3), UMTRX_DSP_RX3_SID, true);
+    _tree->create<sensor_value_t>(mb_path / "rx_dsps"); //phony property so this dir exists
 
     for (size_t dspno = 0; dspno < _rx_dsps.size(); dspno++){
         _rx_dsps[dspno]->set_mux("IQ", false/*no swap*/);
@@ -298,9 +302,10 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////
     // create tx dsp control objects
     ////////////////////////////////////////////////////////////////
-    _tx_dsps.resize(2);
-    _tx_dsps[0] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_DSP_TX0_SID);
-    _tx_dsps[1] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_DSP_TX1_SID);
+    _tx_dsps.resize(_iface->peek32(U2_REG_NUM_DUC));
+    if (_tx_dsps.size() > 0) _tx_dsps[0] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_DSP_TX0_SID);
+    if (_tx_dsps.size() > 1) _tx_dsps[1] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_DSP_TX1_SID);
+    _tree->create<sensor_value_t>(mb_path / "tx_dsps"); //phony property so this dir exists
 
     for (size_t dspno = 0; dspno < _tx_dsps.size(); dspno++){
         _tx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
@@ -502,8 +507,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _rx_streamers.resize(_rx_dsps.size());
     _tx_streamers.resize(_tx_dsps.size());
 
-    _tree->access<subdev_spec_t>(mb_path / "rx_subdev_spec").set(subdev_spec_t("A:0 B:0"));
-    _tree->access<subdev_spec_t>(mb_path / "tx_subdev_spec").set(subdev_spec_t("A:0 B:0"));
+    subdev_spec_t rx_spec("A:0 B:0 A:0 B:0");
+    rx_spec.resize(_rx_dsps.size());
+    _tree->access<subdev_spec_t>(mb_path / "rx_subdev_spec").set(rx_spec);
+
+    subdev_spec_t tx_spec("A:0 B:0 A:0 B:0");
+    tx_spec.resize(_tx_dsps.size());
+    _tree->access<subdev_spec_t>(mb_path / "tx_subdev_spec").set(tx_spec);
+
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
 }

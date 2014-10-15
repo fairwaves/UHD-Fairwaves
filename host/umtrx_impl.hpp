@@ -76,6 +76,8 @@ static const boost::uint32_t UMTRX_DSP_TX1_SID = 3;
 //RX stream IDs -- random -- no relevance to FPGA config
 static const boost::uint32_t UMTRX_DSP_RX0_SID = 0x20;
 static const boost::uint32_t UMTRX_DSP_RX1_SID = 0x21;
+static const boost::uint32_t UMTRX_DSP_RX2_SID = 0x22;
+static const boost::uint32_t UMTRX_DSP_RX3_SID = 0x23;
 
 //! load and store for umtrx mboard eeprom map
 void load_umtrx_eeprom(uhd::usrp::mboard_eeprom_t &mb_eeprom, uhd::i2c_iface &iface);

@@ -176,28 +176,35 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::i2c_iface::sptr i2c = usrp->get_device()->get_tree()->access<uhd::i2c_iface::sptr>("/mboards/0/i2c_iface").get();
 
     //set the tx sample rate
-    std::cout << boost::format("Setting TX Rate: %f Msps...") % (tx_rate/1e6) << std::endl;
-    usrp->set_tx_rate(tx_rate);
-    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
+    if (usrp->get_tx_num_channels() > 0)
+    {
+        std::cout << boost::format("Setting TX Rate: %f Msps...") % (tx_rate/1e6) << std::endl;
+        usrp->set_tx_rate(tx_rate);
+        std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
+    }
 
     //set the rx sample rate
-    std::cout << boost::format("Setting RX Rate: %f Msps...") % (rx_rate/1e6) << std::endl;
-    usrp->set_rx_rate(rx_rate);
-    std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate()/1e6) << std::endl << std::endl;
+    if (usrp->get_rx_num_channels() > 0)
+    {
+        std::cout << boost::format("Setting RX Rate: %f Msps...") % (rx_rate/1e6) << std::endl;
+        usrp->set_rx_rate(rx_rate);
+        std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate()/1e6) << std::endl << std::endl;
+    }
 
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
     usrp->set_time_now(uhd::time_spec_t(0.0));
 
     //test tx chains
-    for (size_t i = 0; i < 2; i++)
+    for (size_t i = 0; i < usrp->get_tx_num_channels(); i++)
     {
-        std::cout << "TX test with DSP " << i << std::endl;
+        std::cout << "===> TX test with DSP " << i << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(i);
         test_tx_chain(usrp, stream_args, ampl, begin_delta, num_samps);
     }
+    if (usrp->get_tx_num_channels() >= 2)
     {
-        std::cout << "TX test dual DSP " << std::endl;
+        std::cout << "===> TX test dual DSP " << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(0);
         stream_args.channels.push_back(1);
@@ -205,15 +212,16 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     }
 
     //test rx chains
-    for (size_t i = 0; i < 2; i++)
+    for (size_t i = 0; i < usrp->get_rx_num_channels(); i++)
     {
-        std::cout << "RX test with DSP " << i << std::endl;
+        std::cout << "===> RX test with DSP " << i << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(i);
         test_rx_chain(usrp, stream_args, begin_delta, num_samps);
     }
+    if (usrp->get_rx_num_channels() >= 2)
     {
-        std::cout << "RX test dual DSP " << std::endl;
+        std::cout << "===> RX test dual DSP " << std::endl;
         uhd::stream_args_t stream_args("fc32");
         stream_args.channels.push_back(0);
         stream_args.channels.push_back(1);

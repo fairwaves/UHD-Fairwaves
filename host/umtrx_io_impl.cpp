@@ -73,7 +73,6 @@ void umtrx_impl::update_rx_subdev_spec(const uhd::usrp::subdev_spec_t &spec)
 
 void umtrx_impl::update_tx_subdev_spec(const uhd::usrp::subdev_spec_t &spec)
 {
-    //sanity checking
     validate_subdev_spec(_tree, spec, "tx");
     boost::uint32_t tx_fe_sw = 0;
     for (size_t i = 0; i < spec.size(); i++)

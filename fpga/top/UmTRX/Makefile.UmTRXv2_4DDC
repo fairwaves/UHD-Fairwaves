@@ -6,7 +6,7 @@
 # Project Setup
 ##################################################
 TOP_MODULE = u2plus_umtrx_v2
-BUILD_DIR = $(abspath build$(ISE)_UmTRXv2)
+BUILD_DIR = $(abspath build$(ISE)_UmTRXv2_4DDC)
 
 ##################################################
 # Include other makefiles
@@ -81,7 +81,7 @@ SYNTHESIZE_PROPERTIES = \
 "Use Clock Enable" Auto \
 "Use Synchronous Reset" Auto \
 "Use Synchronous Set" Auto \
-"Verilog Macros" "LVDS=1 | NO_SERDES=1 | UMTRX=1 | LMS602D_FRONTEND=1 | SPARTAN6=1 | LMS_DSP=1 | NUMDDC=2 | NUMDUC=2"
+"Verilog Macros" "LVDS=1 | NO_SERDES=1 | UMTRX=1 | LMS602D_FRONTEND=1 | SPARTAN6=1 | LMS_DSP=1 | NUMDDC=4 | NUMDUC=1"
 
 TRANSLATE_PROPERTIES = \
 "Macro Search Path" "$(shell pwd)/../../coregen/"

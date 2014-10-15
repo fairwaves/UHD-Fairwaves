@@ -451,7 +451,7 @@ module umtrx_core
      (.wb_clk_i(wb_clk), .wb_rst_i(wb_rst), .wb_stb_i(s5_stb),
       .wb_adr_i(s5_adr), .wb_dat_o(s5_dat_i), .wb_ack_o(s5_ack),
 
-      .word00(spi_readback),.word01(32'b0),.word02(32'b0),.word03(32'b0),
+      .word00(spi_readback),.word01(`NUMDDC),.word02(`NUMDUC),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
       .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
       .word11(vita_time[31:0]),.word12(compat_num),.word13(irq_readback),
@@ -693,7 +693,8 @@ module umtrx_core
     assign run_rx0 = |((~run_rx_dsp) & rx_fe_sw);
     assign run_rx1 = |(run_rx_dsp & rx_fe_sw);
 
-//*
+    generate
+    if (`NUMDDC > 0) begin
     umtrx_rx_chain
     #(
         .PROT_DEST(4),
@@ -717,7 +718,10 @@ module umtrx_core
         .vita_data_sys(dsp_rx0_data), .vita_valid_sys(dsp_rx0_valid), .vita_ready_sys(dsp_rx0_ready),
         .vita_time(vita_time)
     );
-
+    end else begin
+        assign dsp_rx0_valid = 0;
+    end
+    if (`NUMDDC > 1) begin
     umtrx_rx_chain
     #(
         .PROT_DEST(5),
@@ -740,12 +744,10 @@ module umtrx_core
         .vita_data_sys(dsp_rx1_data), .vita_valid_sys(dsp_rx1_valid), .vita_ready_sys(dsp_rx1_ready),
         .vita_time(vita_time)
     );
-//*/
-/*
-assign dsp_rx0_valid = 0;
-assign dsp_rx1_valid = 0;
-//*/
-/*
+    end else begin
+        assign dsp_rx1_valid = 0;
+    end
+    if (`NUMDDC > 2) begin
     umtrx_rx_chain
     #(
         .PROT_DEST(6),
@@ -768,7 +770,10 @@ assign dsp_rx1_valid = 0;
         .vita_data_sys(dsp_rx2_data), .vita_valid_sys(dsp_rx2_valid), .vita_ready_sys(dsp_rx2_ready),
         .vita_time(vita_time)
     );
-
+    end else begin
+        assign dsp_rx2_valid = 0;
+    end
+    if (`NUMDDC > 3) begin
     umtrx_rx_chain
     #(
         .PROT_DEST(7),
@@ -791,11 +796,10 @@ assign dsp_rx1_valid = 0;
         .vita_data_sys(dsp_rx3_data), .vita_valid_sys(dsp_rx3_valid), .vita_ready_sys(dsp_rx3_ready),
         .vita_time(vita_time)
     );
-//*/
-//*
-assign dsp_rx2_valid = 0;
-assign dsp_rx3_valid = 0;
-//*/
+    end else begin
+        assign dsp_rx3_valid = 0;
+    end
+    endgenerate
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
@@ -818,7 +822,8 @@ assign dsp_rx3_valid = 0;
     wire run_tx_dsp0, run_tx_dsp1;
     assign {run_tx0, run_tx1} = (tx_fe_sw == 0)? {run_tx_dsp0, run_tx_dsp1} : {run_tx_dsp1, run_tx_dsp0};
 
-//*
+    generate
+    if (`NUMDUC > 0) begin
     umtrx_tx_chain
     #(
         .PROT_DEST(0),
@@ -840,7 +845,11 @@ assign dsp_rx3_valid = 0;
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
     );
-
+    end else begin
+        assign sram0_ready = 1;
+        assign err_tx0_valid = 0;
+    end
+    if (`NUMDUC > 1) begin
     umtrx_tx_chain
     #(
         .PROT_DEST(1),
@@ -862,13 +871,11 @@ assign dsp_rx3_valid = 0;
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
     );
-//*/
-/*
-assign sram0_ready = 1;
-assign sram1_ready = 1;
-assign err_tx0_valid = 0;
-assign err_tx1_valid = 0;
-//*/
+    end else begin
+        assign sram1_ready = 1;
+        assign err_tx1_valid = 0;
+    end
+    endgenerate
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
