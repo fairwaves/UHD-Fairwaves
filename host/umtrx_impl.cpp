@@ -303,6 +303,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     // create tx dsp control objects
     ////////////////////////////////////////////////////////////////
     _tx_dsps.resize(_iface->peek32(U2_REG_NUM_DUC));
+    if (_tx_dsps.empty()) _tx_dsps.resize(1); //uhd cant support empty sides
     if (_tx_dsps.size() > 0) _tx_dsps[0] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), UMTRX_DSP_TX0_SID);
     if (_tx_dsps.size() > 1) _tx_dsps[1] = tx_dsp_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), UMTRX_DSP_TX1_SID);
     _tree->create<sensor_value_t>(mb_path / "tx_dsps"); //phony property so this dir exists

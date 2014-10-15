@@ -45,14 +45,14 @@ localparam SR_BUF_POOL =  16;   // 4
 
 localparam SR_RX_FRONT0 =  20;   // 5
 localparam SR_RX_FRONT1 =  25;   // 5
-localparam SR_RX_CTRL0 =  32;   // 9
-localparam SR_RX_DSP0  =  48;   // 7
-localparam SR_RX_CTRL1 =  80;   // 9
-localparam SR_RX_DSP1  =  96;   // 7
-localparam SR_RX_CTRL2 =  66;   // 9
-localparam SR_RX_DSP2  =  76;   // 7
-localparam SR_RX_CTRL3 =  83;   // 9
-localparam SR_RX_DSP3  =  93;   // 7
+localparam SR_RX_CTRL0 =  30;   // 9
+localparam SR_RX_DSP0  =  40;   // 7
+localparam SR_RX_CTRL1 =  50;   // 9
+localparam SR_RX_DSP1  =  60;   // 7
+localparam SR_RX_CTRL2 =  70;   // 9
+localparam SR_RX_DSP2  =  80;   // 7
+localparam SR_RX_CTRL3 =  90;   // 9
+localparam SR_RX_DSP3  =  100;   // 7
 
 localparam SR_TX_FRONT0 = 110;   // ?
 localparam SR_TX_CTRL0  = 126;   // 6
