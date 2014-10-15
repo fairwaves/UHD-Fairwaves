@@ -468,8 +468,10 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //bind frontend corrections to the dboard freq props
         _tree->access<double>(tx_rf_fe_path / "freq" / "value")
+            .set(0.0) //default value
             .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, "0", fe_name, _1));
         _tree->access<double>(rx_rf_fe_path / "freq" / "value")
+            .set(0.0) //default value
             .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, "0", fe_name, _1));
 
         //tx cal props
@@ -504,6 +506,17 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<double>(mb_path / "dsp_rate")
         .set(this->get_master_dsp_rate());
     this->time64_self_test();
+
+    //reset cordic rates and their properties to zero
+    BOOST_FOREACH(const std::string &name, _tree->list(mb_path / "rx_dsps"))
+    {
+        _tree->access<double>(mb_path / "rx_dsps" / name / "freq" / "value").set(0.0);
+    }
+    BOOST_FOREACH(const std::string &name, _tree->list(mb_path / "tx_dsps"))
+    {
+        _tree->access<double>(mb_path / "tx_dsps" / name / "freq" / "value").set(0.0);
+    }
+
     _rx_streamers.resize(_rx_dsps.size());
     _tx_streamers.resize(_tx_dsps.size());
 
