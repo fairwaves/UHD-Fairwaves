@@ -184,6 +184,7 @@ uhd::transport::zero_copy_if::sptr umtrx_impl::make_xport(const size_t which, co
  **********************************************************************/
 uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_)
 {
+    boost::mutex::scoped_lock l(_setupMutex);
     stream_args_t args = args_;
 
     //setup defaults for unspecified values
@@ -411,6 +412,7 @@ static void handle_tx_async_msgs(
  **********************************************************************/
 uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_)
 {
+    boost::mutex::scoped_lock l(_setupMutex);
     stream_args_t args = args_;
 
     //setup defaults for unspecified values

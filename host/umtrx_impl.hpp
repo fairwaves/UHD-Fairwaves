@@ -53,6 +53,7 @@
 #include <uhd/usrp/subdev_spec.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
 static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
@@ -138,6 +139,7 @@ private:
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
     std::vector<boost::weak_ptr<uhd::tx_streamer> > _tx_streamers;
+    boost::mutex _setupMutex;
 };
 
 #endif /* INCLUDED_UMTRX_IMPL_HPP */
