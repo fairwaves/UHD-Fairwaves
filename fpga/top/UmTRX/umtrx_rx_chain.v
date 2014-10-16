@@ -104,11 +104,22 @@ module umtrx_rx_chain
     /*******************************************************************
      * Cross clock fifo from sys to dsp clock domain
      ******************************************************************/
-    axi_fifo_2clk #(.WIDTH(36), .SIZE(FIFOSIZE)) fifo_2clock_vita
+    wire [35:0] vita_data_sys0;
+    wire vita_valid_sys0;
+    wire vita_ready_sys0;
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_vita
     (
         .i_aclk(dsp_clk), .i_tdata(vita_data_dsp), .i_tvalid(vita_valid_dsp), .i_tready(vita_ready_dsp),
-        .o_aclk(sys_clk), .o_tdata(vita_data_sys), .o_tvalid(vita_valid_sys), .o_tready(vita_ready_sys),
+        .o_aclk(sys_clk), .o_tdata(vita_data_sys0), .o_tvalid(vita_valid_sys0), .o_tready(vita_ready_sys0),
         .reset(dsp_rst | sys_rst)
+    );
+
+    axi_packet_gate #(.WIDTH(36), .SIZE(FIFOSIZE)) fully_buffer_sys_domain
+    (
+        .clk(sys_clk), .reset(sys_rst), .clear(0),
+        .i_tdata(vita_data_sys0), .i_tvalid(vita_valid_sys0), .i_tready(vita_ready_sys0), .i_tlast(vita_data_sys0[33]), .i_terror(0),
+        .o_tdata(vita_data_sys), .o_tvalid(vita_valid_sys), .o_tready(vita_ready_sys), .o_tlast()
     );
 
     /*******************************************************************
