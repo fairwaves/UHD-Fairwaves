@@ -107,6 +107,8 @@ static zero_copy_if::sptr make_xport(
 umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
     : _mcr(26e6/2) // sample rate = ref_clk / 2
 {
+    _notx = version_4xddc ? true : false;
+
     UHD_MSG(status) << "Opening a UmTRX device..." << std::endl;
     device_addr_t device_addr = _device_addr;
     //setup the dsp transport hints (default to a large recv buff)
@@ -212,19 +214,22 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             ));
             UHD_LOG << "Making transport for RX DSP1_2..." << std::endl;
             _mbc[mb].rx_dsp_xports.push_back(make_xport(
-			    addr, BOOST_STRINGIZE(USRP2_UDP_RX_DSP1_2_PORT), device_args_i, "recv"
+                addr, BOOST_STRINGIZE(USRP2_UDP_RX_DSP1_2_PORT), device_args_i, "recv"
             ));
         }
-        UHD_LOG << "Making transport for TX DSP0..." << std::endl;
-        _mbc[mb].tx_dsp_xports.push_back(make_xport(
-            addr, BOOST_STRINGIZE(USRP2_UDP_TX_DSP0_PORT), device_args_i, "send"
-        ));
-        UHD_LOG << "Making transport for TX DSP1..." << std::endl;
-        _mbc[mb].tx_dsp_xports.push_back(make_xport(
-            addr, BOOST_STRINGIZE(USRP2_UDP_TX_DSP1_PORT), device_args_i, "send"
-        ));
-        //set the filter on the router to take dsp data from these ports
-        _mbc[mb].iface->poke32(U2_REG_ROUTER_CTRL_PORTS, ((uint32_t)USRP2_UDP_TX_DSP1_PORT)<<16 | USRP2_UDP_TX_DSP0_PORT);
+
+        if (!_notx) {
+            UHD_LOG << "Making transport for TX DSP0..." << std::endl;
+            _mbc[mb].tx_dsp_xports.push_back(make_xport(
+                                                 addr, BOOST_STRINGIZE(USRP2_UDP_TX_DSP0_PORT), device_args_i, "send"
+                                                 ));
+            UHD_LOG << "Making transport for TX DSP1..." << std::endl;
+            _mbc[mb].tx_dsp_xports.push_back(make_xport(
+                                                 addr, BOOST_STRINGIZE(USRP2_UDP_TX_DSP1_PORT), device_args_i, "send"
+                                                 ));
+            //set the filter on the router to take dsp data from these ports
+            _mbc[mb].iface->poke32(U2_REG_ROUTER_CTRL_PORTS, ((uint32_t)USRP2_UDP_TX_DSP1_PORT)<<16 | USRP2_UDP_TX_DSP0_PORT);
+        }
 
         ////////////////////////////////////////////////////////////////
         // setup the mboard eeprom
@@ -232,6 +237,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         _tree->create<mboard_eeprom_t>(mb_path / "eeprom")
             .set(_mbc[mb].iface->mb_eeprom)
             .subscribe(boost::bind(&umtrx_impl::set_mb_eeprom, this, mb, _1));
+
+        _tree->create<uhd::i2c_iface::sptr>(mb_path / "i2c")
+            .set(static_cast<uhd::i2c_iface::sptr>(_mbc[mb].iface));
 
         ////////////////////////////////////////////////////////////////
         // create clock control objects
@@ -311,8 +319,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 
         _tree->create<subdev_spec_t>(mb_path / "rx_subdev_spec")
             .subscribe(boost::bind(&umtrx_impl::update_rx_subdev_spec, this, mb, _1));
-        _tree->create<subdev_spec_t>(mb_path / "tx_subdev_spec")
-            .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, mb, _1));
+        if (!_notx) {
+            _tree->create<subdev_spec_t>(mb_path / "tx_subdev_spec")
+                    .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, mb, _1));
+        } else {
+            _tree->create<subdev_spec_t>(mb_path / "tx_subdev_spec"); // otherwise rx_multi_samples crashes
+        }
 
         BOOST_FOREACH(const std::string &db, _mbc[mb].dbc.keys()){
             const fs_path rx_fe_path = mb_path / "rx_frontends" / db;
@@ -329,12 +341,15 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
             _tree->create<std::complex<double> >(rx_fe_path / "iq_balance" / "value")
                 .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
                 .set(std::polar<double>(1.0, 0.0));
-            _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
-                .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
-                .set(std::complex<double>(0.0, 0.0));
-            _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
-                .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
-                .set(std::polar<double>(1.0, 0.0));
+
+            if (!_notx) {
+                _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
+                        .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+                        .set(std::complex<double>(0.0, 0.0));
+                _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
+                        .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
+                        .set(std::polar<double>(1.0, 0.0));
+            }
         }
 
         ////////////////////////////////////////////////////////////////
@@ -376,42 +391,45 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         ////////////////////////////////////////////////////////////////
         // create tx dsp control objects
         ////////////////////////////////////////////////////////////////
-        _mbc[mb].tx_dsps.push_back(tx_dsp_core_200::make(
-            _mbc[mb].iface, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), USRP2_TX_ASYNC_SID_BASE+0
-        ));
-        _mbc[mb].tx_dsps.push_back(tx_dsp_core_200::make(
-            _mbc[mb].iface, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), USRP2_TX_ASYNC_SID_BASE+1
-        ));
-        for (size_t dspno = 0; dspno < _mbc[mb].tx_dsps.size(); dspno++){
-            _mbc[mb].tx_dsps[dspno]->set_link_rate(USRP2_LINK_RATE_BPS);
-            _tree->access<double>(mb_path / "tick_rate")
-                .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsps[dspno], _1));
-            fs_path tx_dsp_path = mb_path / str(boost::format("tx_dsps/%u") % dspno);
-            _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
-                .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsps[dspno]));
-            _tree->create<double>(tx_dsp_path / "rate/value")
-                .set(_mcr/12) //some default
-                .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsps[dspno], _1))
-                .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, dspno, _1));
-            _tree->create<double>(tx_dsp_path / "freq/value")
-                .coerce(boost::bind(&tx_dsp_core_200::set_freq, _mbc[mb].tx_dsps[dspno], _1));
-            _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
-                .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _mbc[mb].tx_dsps[dspno]));
+        if (!_notx) {
+            _mbc[mb].tx_dsps.push_back(tx_dsp_core_200::make(
+                                           _mbc[mb].iface, U2_REG_SR_ADDR(SR_TX_DSP0), U2_REG_SR_ADDR(SR_TX_CTRL0), USRP2_TX_ASYNC_SID_BASE+0
+                                           ));
+            _mbc[mb].tx_dsps.push_back(tx_dsp_core_200::make(
+                                           _mbc[mb].iface, U2_REG_SR_ADDR(SR_TX_DSP1), U2_REG_SR_ADDR(SR_TX_CTRL1), USRP2_TX_ASYNC_SID_BASE+1
+                                           ));
+            for (size_t dspno = 0; dspno < _mbc[mb].tx_dsps.size(); dspno++){
+                _mbc[mb].tx_dsps[dspno]->set_link_rate(USRP2_LINK_RATE_BPS);
+                _tree->access<double>(mb_path / "tick_rate")
+                        .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _mbc[mb].tx_dsps[dspno], _1));
+                fs_path tx_dsp_path = mb_path / str(boost::format("tx_dsps/%u") % dspno);
+                _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
+                        .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _mbc[mb].tx_dsps[dspno]));
+                _tree->create<double>(tx_dsp_path / "rate/value")
+                        .set(_mcr/12) //some default
+                        .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _mbc[mb].tx_dsps[dspno], _1))
+                        .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, mb, dspno, _1));
+                _tree->create<double>(tx_dsp_path / "freq/value")
+                        .coerce(boost::bind(&tx_dsp_core_200::set_freq, _mbc[mb].tx_dsps[dspno], _1));
+                _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
+                        .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _mbc[mb].tx_dsps[dspno]));
+            }
+
+            //setup dsp flow control
+            const double ups_per_sec = device_args_i.cast<double>("ups_per_sec", 20);
+            const size_t send_frame_size = _mbc[mb].tx_dsp_xports[0]->get_send_frame_size();
+            const double ups_per_fifo = device_args_i.cast<double>("ups_per_fifo", 8.0);
+            _mbc[mb].tx_dsps[0]->set_updates(
+                        (ups_per_sec > 0.0)? size_t(get_master_clock_rate()/*approx tick rate*//ups_per_sec) : 0,
+                        (ups_per_fifo > 0.0)? size_t(UMTRX_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
+                                              );
+            _mbc[mb].tx_dsps[1]->set_updates(
+                        (ups_per_sec > 0.0)? size_t(get_master_clock_rate()/*approx tick rate*//ups_per_sec) : 0,
+                        (ups_per_fifo > 0.0)? size_t(UMTRX_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
+                                              );
+        } else {
+            _tree->create<int>(mb_path / "tx_dsps"); // Dummy node to work uhd_usrp_probe
         }
-
-        //setup dsp flow control
-        const double ups_per_sec = device_args_i.cast<double>("ups_per_sec", 20);
-        const size_t send_frame_size = _mbc[mb].tx_dsp_xports[0]->get_send_frame_size();
-        const double ups_per_fifo = device_args_i.cast<double>("ups_per_fifo", 8.0);
-        _mbc[mb].tx_dsps[0]->set_updates(
-            (ups_per_sec > 0.0)? size_t(get_master_clock_rate()/*approx tick rate*//ups_per_sec) : 0,
-            (ups_per_fifo > 0.0)? size_t(UMTRX_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
-        );
-        _mbc[mb].tx_dsps[1]->set_updates(
-            (ups_per_sec > 0.0)? size_t(get_master_clock_rate()/*approx tick rate*//ups_per_sec) : 0,
-            (ups_per_fifo > 0.0)? size_t(UMTRX_SRAM_BYTES/ups_per_fifo/send_frame_size) : 0
-        );
-
         ////////////////////////////////////////////////////////////////
         // create time control objects
         ////////////////////////////////////////////////////////////////
@@ -483,33 +501,37 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 
             _tree->create<dboard_eeprom_t>(mb_path / "dboards" / board / "gdb_eeprom")
                 .set(gdb_eeprom);
-            
+
             _tree->create<dboard_iface::sptr>(mb_path / "dboards" / board / "iface").set(_mbc[mb].dbc[board].dboard_iface);
 
-            //bind frontend corrections to the dboard freq props
-            const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
-            BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-                _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
-                    .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, board, _1));
+            if (!_notx) {
+                //bind frontend corrections to the dboard freq props
+                const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
+                BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                    _tree->access<double>(db_tx_fe_path / name / "freq" / "value")
+                            .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, mb, board, _1));
+                }
             }
             const fs_path db_rx_fe_path = mb_path / "dboards" / board / "rx_frontends";
             BOOST_FOREACH(const std::string &name, _tree->list(db_rx_fe_path)){
                 _tree->access<double>(db_rx_fe_path / name / "freq" / "value")
-                    .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, board, _1));
+                        .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, mb, board, _1));
             }
-
-            //set Tx DC calibration values, which are read from mboard EEPROM
-            std::string tx_name = (board=="A")?"tx1":"tx2";
-            if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"].empty()) {
-                BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-                    _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_i/value")
-                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"]));
+            if (!_notx) {
+                const fs_path db_tx_fe_path = mb_path / "dboards" / board / "tx_frontends";
+                //set Tx DC calibration values, which are read from mboard EEPROM
+                std::string tx_name = (board=="A")?"tx1":"tx2";
+                if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-i") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"].empty()) {
+                    BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                        _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_i/value")
+                                .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-i"]));
+                    }
                 }
-            }
-            if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"].empty()) {
-                BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
-                    _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_q/value")
-                        .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"]));
+                if (_mbc[mb].iface->mb_eeprom.has_key(tx_name+"-vga1-dc-q") and not _mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"].empty()) {
+                    BOOST_FOREACH(const std::string &name, _tree->list(db_tx_fe_path)){
+                        _tree->access<uint8_t>(db_tx_fe_path / name / "lms6002d/tx_dc_q/value")
+                                .set(boost::lexical_cast<int>(_mbc[mb].iface->mb_eeprom[tx_name+"-vga1-dc-q"]));
+                    }
                 }
             }
         }
@@ -531,7 +553,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
         fs_path root = "/mboards/" + mb;
 
         _tree->access<subdev_spec_t>(root / "rx_subdev_spec").set(subdev_spec_t("A:" + _tree->list(root / "dboards/A/rx_frontends").at(0)));
-        _tree->access<subdev_spec_t>(root / "tx_subdev_spec").set(subdev_spec_t("A:" + _tree->list(root / "dboards/A/tx_frontends").at(0)));
+
+        if (!_notx)
+            _tree->access<subdev_spec_t>(root / "tx_subdev_spec").set(subdev_spec_t("A:" + _tree->list(root / "dboards/A/tx_frontends").at(0)));
+        else
+            _tree->access<subdev_spec_t>(root / "tx_subdev_spec").set(subdev_spec_t(""));
+
         _tree->access<std::string>(root / "clock_source/value").set("internal");
         _tree->access<std::string>(root / "time_source/value").set("none");
 
@@ -547,10 +574,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &_device_addr)
 }
 
 umtrx_impl::~umtrx_impl(void){UHD_SAFE_CALL(
+                if (!_notx) {
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         _mbc[mb].tx_dsps[0]->set_updates(0, 0);
         _mbc[mb].tx_dsps[1]->set_updates(0, 0);
     }
+                }
 )}
 
 void umtrx_impl::set_mb_eeprom(const std::string &mb, const uhd::usrp::mboard_eeprom_t &mb_eeprom){
@@ -562,7 +591,8 @@ void umtrx_impl::set_rx_fe_corrections(const std::string &mb, const std::string 
 }
 
 void umtrx_impl::set_tx_fe_corrections(const std::string &mb, const std::string &board, const double lo_freq){
-    apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
+    if (!_notx)
+        apply_tx_fe_corrections(this->get_tree()->subtree("/mboards/" + mb), board, lo_freq);
 }
 
 void umtrx_impl::set_tcxo_dac(const std::string &mb, const uint16_t val){

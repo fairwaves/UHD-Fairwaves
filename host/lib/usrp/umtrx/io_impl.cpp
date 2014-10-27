@@ -169,37 +169,42 @@ void umtrx_impl::io_init(void) {
     //create new io impl
     _io_impl = UHD_PIMPL_MAKE(io_impl, ());
 
-    //init first so we dont have an access race
-    BOOST_FOREACH(const std::string &mb, _mbc.keys()){
-        //init the tx xport and flow control monitor
-        _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[0]);
-        _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[1]);
-        _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
-            UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[0]->get_send_frame_size()
-        )));
-        _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
-            UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[1]->get_send_frame_size()
-        )));
+    if (!_notx) {
+        //init first so we dont have an access race
+        BOOST_FOREACH(const std::string &mb, _mbc.keys()){
+            //init the tx xport and flow control monitor
+            _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[0]);
+            _io_impl->tx_xports.push_back(_mbc[mb].tx_dsp_xports[1]);
+            _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
+                UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[0]->get_send_frame_size()
+            )));
+            _io_impl->fc_mons.push_back(flow_control_monitor::sptr(new flow_control_monitor(
+                UMTRX_SRAM_BYTES/_mbc[mb].tx_dsp_xports[1]->get_send_frame_size()
+            )));
+        }
     }
 
     //allocate streamer weak ptrs containers
     BOOST_FOREACH(const std::string &mb, _mbc.keys()){
         _mbc[mb].rx_streamers.resize(_mbc[mb].rx_dsps.size());
-        _mbc[mb].tx_streamers.resize(_mbc[mb].tx_dsps.size());
+        if (!_notx)
+            _mbc[mb].tx_streamers.resize(_mbc[mb].tx_dsps.size());
     }
 
-    //create a new pirate thread for each zc if (yarr!!)
-    size_t index = 0;
-    BOOST_FOREACH(const std::string &mb, _mbc.keys()){
-        //spawn a new pirate to plunder the recv booty
-        _io_impl->pirate_tasks.push_back(task::make(boost::bind(
-            &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
-            _mbc[mb].tx_dsp_xports[0], index++
-        )));
-        _io_impl->pirate_tasks.push_back(task::make(boost::bind(
-            &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
-            _mbc[mb].tx_dsp_xports[1], index++
-        )));
+    if (!_notx) {
+        //create a new pirate thread for each zc if (yarr!!)
+        size_t index = 0;
+        BOOST_FOREACH(const std::string &mb, _mbc.keys()){
+            //spawn a new pirate to plunder the recv booty
+            _io_impl->pirate_tasks.push_back(task::make(boost::bind(
+                &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
+                _mbc[mb].tx_dsp_xports[0], index++
+            )));
+            _io_impl->pirate_tasks.push_back(task::make(boost::bind(
+                &umtrx_impl::io_impl::recv_pirate_loop, _io_impl.get(),
+                _mbc[mb].tx_dsp_xports[1], index++
+            )));
+        }
     }
 }
 
@@ -234,6 +239,9 @@ void umtrx_impl::update_rx_samp_rate(const std::string &mb, const size_t dsp, co
 }
 
 void umtrx_impl::update_tx_samp_rate(const std::string &mb, const size_t dsp, const double rate){
+    if (_notx)
+        return;
+
     boost::shared_ptr<sph::send_packet_streamer> my_streamer =
         boost::dynamic_pointer_cast<sph::send_packet_streamer>(_mbc[mb].tx_streamers[dsp].lock());
     if (my_streamer.get() == NULL) return;
@@ -250,8 +258,10 @@ void umtrx_impl::update_rates(void){
         BOOST_FOREACH(const std::string &name, _tree->list(root / "rx_dsps")){
             _tree->access<double>(root / "rx_dsps" / name / "rate" / "value").update();
         }
-        BOOST_FOREACH(const std::string &name, _tree->list(root / "tx_dsps")){
-            _tree->access<double>(root / "tx_dsps" / name / "rate" / "value").update();
+        if (!_notx) {
+            BOOST_FOREACH(const std::string &name, _tree->list(root / "tx_dsps")){
+                _tree->access<double>(root / "tx_dsps" / name / "rate" / "value").update();
+            }
         }
     }
 }
@@ -291,6 +301,9 @@ void umtrx_impl::update_rx_subdev_spec(const std::string &which_mb, const subdev
 }
 
 void umtrx_impl::update_tx_subdev_spec(const std::string &which_mb, const subdev_spec_t &spec){
+    if (_notx)
+        return;
+
     fs_path root = "/mboards/" + which_mb + "/dboards";
 
     //sanity checking
@@ -395,6 +408,9 @@ rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_){
  * Transmit streamer
  **********************************************************************/
 tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_){
+    if (_notx)
+        return tx_streamer::sptr();
+
     stream_args_t args = args_;
 
     //setup defaults for unspecified values

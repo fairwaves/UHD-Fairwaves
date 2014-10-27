@@ -80,6 +80,7 @@ public:
     bool recv_async_msg(uhd::async_metadata_t &, double);
 
 private:
+    bool _notx; /**< Disable TX DSPs */
     uhd::property_tree::sptr _tree;
     struct mb_container_type{
         usrp2_iface::sptr iface;
