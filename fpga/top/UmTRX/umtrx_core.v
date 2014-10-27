@@ -881,7 +881,7 @@ module umtrx_core
     generate
     if (`NUMDUC == 0) begin
         //no tx case? -- each RX DSP gets a LED
-        assign {LEDC, LEDA, LEDB, LEDE} = run_rx_dsp;
+        assign {LEDE, LEDB, LEDA, LEDC} = run_rx_dsp;
     end else begin
         //default -- map active frontends to LED based on which DSP is active and how they are mapped
         assign LEDC = |(run_rx_dsp & (~rx_fe_sw));
