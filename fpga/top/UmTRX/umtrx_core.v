@@ -189,8 +189,6 @@ module umtrx_core
 	
    wire [31:0] 	irq;
    wire [63:0] 	vita_time, vita_time_pps;
-   
-   wire 	 run_rx0, run_rx1, run_tx0, run_tx1;
 
     //generate sync reset signals for dsp and sys domains
     reset_sync sys_rst_sync(.clk(sys_clk), .reset_in(wb_rst), .reset_out(sys_rst));
@@ -579,7 +577,8 @@ module umtrx_core
    //    In Rev3 there are only 6 leds, and the highest one is on the ETH connector
 
    wire [7:0] 	 led_src, led_sw;
-   wire [7:0] 	 led_hw = {run_tx0, run_rx0, run_tx1, run_rx1, 1'b0};
+   wire LEDA, LEDB, LEDC, LEDE;
+   wire [7:0] 	 led_hw = {LEDA, LEDC, LEDE, LEDB, 1'b0};
    
    setting_reg #(.my_addr(SR_MISC+3),.width(8)) sr_led
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(led_sw),.changed());
@@ -684,14 +683,10 @@ module umtrx_core
    // RX chains
 
     //switch to select frontend used per DSP
+    wire [3:0] run_rx_dsp;
     wire [3:0] rx_fe_sw;
     setting_reg #(.my_addr(SR_RX_FE_SW),.width(4)) sr_rx_fe_sw
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(rx_fe_sw),.changed());
-
-    //run logic to map running DSPs to active frontends
-    wire [3:0] run_rx_dsp;
-    assign run_rx0 = |((~run_rx_dsp) & rx_fe_sw);
-    assign run_rx1 = |(run_rx_dsp & rx_fe_sw);
 
     generate
     if (`NUMDDC > 0) begin
@@ -720,6 +715,7 @@ module umtrx_core
     );
     end else begin
         assign dsp_rx0_valid = 0;
+        assign run_rx_dsp[0] = 0;
     end
     if (`NUMDDC > 1) begin
     umtrx_rx_chain
@@ -746,6 +742,7 @@ module umtrx_core
     );
     end else begin
         assign dsp_rx1_valid = 0;
+        assign run_rx_dsp[1] = 0;
     end
     if (`NUMDDC > 2) begin
     umtrx_rx_chain
@@ -772,6 +769,7 @@ module umtrx_core
     );
     end else begin
         assign dsp_rx2_valid = 0;
+        assign run_rx_dsp[2] = 0;
     end
     if (`NUMDDC > 3) begin
     umtrx_rx_chain
@@ -798,6 +796,7 @@ module umtrx_core
     );
     end else begin
         assign dsp_rx3_valid = 0;
+        assign run_rx_dsp[3] = 0;
     end
     endgenerate
 
@@ -806,6 +805,7 @@ module umtrx_core
     wire [35:0] sram0_data, sram1_data;
     wire sram0_valid, sram1_valid;
     wire sram0_ready, sram1_ready;
+    wire run_tx_dsp0, run_tx_dsp1;
 
     //switch to select frontend used per DSP
     wire tx_fe_sw;
@@ -817,10 +817,6 @@ module umtrx_core
     wire [11:0] dac1_a_int, dac1_b_int;
     assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
     assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
-
-    //assign leds
-    wire run_tx_dsp0, run_tx_dsp1;
-    assign {run_tx0, run_tx1} = (tx_fe_sw == 0)? {run_tx_dsp0, run_tx_dsp1} : {run_tx_dsp1, run_tx_dsp0};
 
     generate
     if (`NUMDUC > 0) begin
@@ -848,6 +844,7 @@ module umtrx_core
     end else begin
         assign sram0_ready = 1;
         assign err_tx0_valid = 0;
+        assign run_tx_dsp0 = 0;
     end
     if (`NUMDUC > 1) begin
     umtrx_tx_chain
@@ -874,8 +871,25 @@ module umtrx_core
     end else begin
         assign sram1_ready = 1;
         assign err_tx1_valid = 0;
+        assign run_tx_dsp1 = 0;
     end
     endgenerate
+
+   // /////////////////////////////////////////////////////////////////////////
+   // configuration specific LED mapping
+
+    generate
+    if (`NUMDUC == 0) begin
+        //no tx case? -- each RX DSP gets a LED
+        assign {LEDC, LEDA, LEDB, LEDE} = run_rx_dsp;
+    end else begin
+        //default -- map active frontends to LED based on which DSP is active and how they are mapped
+        assign LEDC = |(run_rx_dsp & (~rx_fe_sw));
+        assign LEDB = |(run_rx_dsp & rx_fe_sw);
+        assign {LEDA, LEDE} = (tx_fe_sw == 0)? {run_tx_dsp0, run_tx_dsp1} : {run_tx_dsp1, run_tx_dsp0};
+    end
+    endgenerate
+
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
