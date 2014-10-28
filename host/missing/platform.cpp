@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <uhd/utils/platform.hpp>
+#include "platform.hpp"
 #include <uhd/config.hpp>
 #include <boost/functional/hash.hpp>
 #ifdef UHD_PLATFORM_WIN32

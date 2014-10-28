@@ -21,7 +21,7 @@
 #include "umtrx_iface.hpp"
 #include <uhd/exception.hpp>
 #include <uhd/utils/msg.hpp>
-#include <uhd/utils/platform.hpp>
+#include "missing/platform.hpp"
 #include <uhd/utils/tasks.hpp>
 #include <uhd/utils/safe_call.hpp>
 #include <uhd/types/dict.hpp>
