@@ -131,7 +131,7 @@ module umtrx_core
    output spiflash_cs, output spiflash_clk, input spiflash_miso, output spiflash_mosi
    );
 
-   localparam SR_MISC     =   0;   // 7 regs
+   localparam SR_MISC     =   0;   // 8 regs
    localparam SR_TIME64   =  10;   // 6
    localparam SR_BUF_POOL =  16;   // 4
 
@@ -171,6 +171,7 @@ module umtrx_core
    
    reg 		wb_rst;
    wire 	dsp_rst, sys_rst, fe_rst;
+   wire     net_clr;
 
    wire [31:0] 	status;
    wire 	bus_error, spi_int, i2c_int, aux_i2c_int, pps_int, onetime_int, periodic_int;
@@ -383,7 +384,7 @@ module umtrx_core
         .set_stb(set_stb_sys), .set_addr(set_addr_sys), .set_data(set_data_sys),
         .set_stb_udp(set_stb_udp_sys), .set_addr_udp(set_addr_udp_sys), .set_data_udp(set_data_udp_sys),
 
-        .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(1'b0),
+        .stream_clk(sys_clk), .stream_rst(sys_rst), .stream_clr(net_clr),
 
         .status(status),
 
@@ -461,7 +462,7 @@ module umtrx_core
 
    simple_gemac_wrapper #(.RXFIFOSIZE(ETH_RX_FIFOSIZE), 
 			  .TXFIFOSIZE(ETH_TX_FIFOSIZE)) simple_gemac_wrapper
-     (.clk125(clk_to_mac),  .reset(wb_rst),
+     (.clk125(clk_to_mac),  .reset(wb_rst | net_clr),
       .GMII_GTX_CLK(GMII_GTX_CLK), .GMII_TX_EN(GMII_TX_EN),  
       .GMII_TX_ER(GMII_TX_ER), .GMII_TXD(GMII_TXD),
       .GMII_RX_CLK(GMII_RX_CLK), .GMII_RX_DV(GMII_RX_DV),  
@@ -562,6 +563,9 @@ module umtrx_core
 
    setting_reg #(.my_addr(SR_MISC+5),.width(1)) sr_bld
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(bldr_done),.changed());
+
+   setting_reg #(.my_addr(SR_MISC+7),.width(1)) net_reset_sr
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(net_clr),.changed());
 
    // Diversity switches
    setting_reg #(.my_addr(SR_DIVSW+0),.width(1), .at_reset(32'd1)) sr_divsw1

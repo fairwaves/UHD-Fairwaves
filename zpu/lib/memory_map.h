@@ -241,7 +241,7 @@ typedef struct {
 ////////////////////////////////////////////////////
 #define localparam static const int
 
-localparam SR_MISC     =   0;   // 7 regs
+localparam SR_MISC     =   0;   // 8 regs
 localparam SR_TIME64   =  10;   // 6
 localparam SR_BUF_POOL =  16;   // 4
 

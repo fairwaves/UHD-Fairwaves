@@ -333,6 +333,9 @@ main(void)
 #endif
 
 #ifdef UMTRX
+  //cause net reset...
+  wb_poke32(_SR_ADDR(7), 1);
+  wb_poke32(_SR_ADDR(7), 0);
   umtrx_init();
 #endif
 
