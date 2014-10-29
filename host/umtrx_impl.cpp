@@ -226,7 +226,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     {
         config_temp_c(std::string(1, name));
         _tree->create<sensor_value_t>(mb_path / "sensors" / "temp"+std::string(1, name))
-            .subscribe(boost::bind(&umtrx_impl::read_temp_c, this, std::string(1, name)));
+            .publish(boost::bind(&umtrx_impl::read_temp_c, this, std::string(1, name)));
     }
 
     ////////////////////////////////////////////////////////////////
