@@ -20,10 +20,10 @@
 #include "cores/apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/msg.hpp>
-#include <uhd/types/sensors.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp> //sleep
 #include <boost/assign/list_of.hpp>
+#include <boost/utility.hpp>
 
 static int verbosity = 0;
 
@@ -222,7 +222,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////
     // sensors on the mboard
     ////////////////////////////////////////////////////////////////
-    _tree->create<sensor_value_t>(mb_path / "sensors"); //phony property so this dir exists
+    for (char name = 'A'; name <= 'B'; name++)
+    {
+        config_temp_c(std::string(1, name));
+        _tree->create<sensor_value_t>(mb_path / "sensors" / "temp"+std::string(1, name))
+            .subscribe(boost::bind(&umtrx_impl::read_temp_c, this, std::string(1, name)));
+    }
 
     ////////////////////////////////////////////////////////////////
     // create frontend control objects
@@ -531,6 +536,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
+
+    UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
+    UHD_MSG(status) << this->read_temp_c("B").to_pp_string() << std::endl;
 }
 
 umtrx_impl::~umtrx_impl(void){
@@ -577,4 +585,27 @@ uint16_t umtrx_impl::get_tcxo_dac(const umtrx_iface::sptr &iface){
     uint16_t val = iface->send_zpu_action(UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC, 0);
     if (verbosity>0) printf("umtrx_impl::get_tcxo_dac(): %d\n", val);
     return (uint16_t)val;
+}
+
+void umtrx_impl::config_temp_c(const std::string &which)
+{
+    const int addr = (which == "A")? BOOST_BINARY( 1001010 ) : BOOST_BINARY( 1001011 );
+    uhd::byte_vector_t cmd;
+    cmd.push_back(0x01); //config
+    cmd.push_back((1 << 6) | (1 << 5)); //max resolution
+    _iface->write_i2c(addr, cmd);
+}
+
+uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
+{
+    const int addr = (which == "A")? BOOST_BINARY( 1001010 ) : BOOST_BINARY( 1001011 );
+    uhd::byte_vector_t cmd;
+    cmd.push_back(0); //temp register
+    _iface->write_i2c(addr, cmd);
+
+    uhd::byte_vector_t result = _iface->read_i2c(addr, 2); //12 bit result
+    int temp_int = (int(result[0]) << 8) | (int(result[1]) << 0);
+    double temp = temp_int/256.0;
+
+    return uhd::sensor_value_t("Temp"+which, temp, "C");
 }

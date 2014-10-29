@@ -35,6 +35,7 @@
 #include <uhd/utils/byteswap.hpp>
 #include <uhd/types/dict.hpp>
 #include <uhd/types/stream_cmd.hpp>
+#include <uhd/types/sensors.hpp>
 #include <uhd/types/clock_config.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/shared_ptr.hpp>
@@ -135,6 +136,10 @@ private:
     void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
+
+    //temp sensors read values in degC
+    void config_temp_c(const std::string &which);
+    uhd::sensor_value_t read_temp_c(const std::string &which);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
