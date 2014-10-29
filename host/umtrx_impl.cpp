@@ -264,7 +264,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
             .set(std::polar<double>(0.0, 0.0));
         _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
-            .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+            //.coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+            .publish(boost::bind(&umtrx_impl::get_dc_offset_correction, this, fe_name))
+            .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, _1))
             .set(std::complex<double>(0.0, 0.0));
         _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
             .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
@@ -594,6 +596,19 @@ uint16_t umtrx_impl::get_tcxo_dac(const umtrx_iface::sptr &iface){
     uint16_t val = iface->send_zpu_action(UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC, 0);
     if (verbosity>0) printf("umtrx_impl::get_tcxo_dac(): %d\n", val);
     return (uint16_t)val;
+}
+
+std::complex<double> umtrx_impl::get_dc_offset_correction(const std::string &which) const
+{
+    return std::complex<double>(
+        (int(_lms_ctrl[which]->get_tx_vga1dc_i_int())-128)/128.0,
+        (int(_lms_ctrl[which]->get_tx_vga1dc_q_int())-128)/128.0);
+}
+
+void umtrx_impl::set_dc_offset_correction(const std::string &which, const std::complex<double> &corr)
+{
+    _lms_ctrl[which]->_set_tx_vga1dc_i_int(uint8_t((corr.real()*128) + 128.5));
+    _lms_ctrl[which]->_set_tx_vga1dc_q_int(uint8_t((corr.imag()*128) + 128.5));
 }
 
 void umtrx_impl::config_temp_c(const std::string &which)
