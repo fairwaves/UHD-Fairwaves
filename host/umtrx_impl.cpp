@@ -541,15 +541,24 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     UHD_MSG(status) << this->read_temp_c("B").to_pp_string() << std::endl;
 }
 
-umtrx_impl::~umtrx_impl(void){
-    //TODO
+umtrx_impl::~umtrx_impl(void)
+{
+    BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
+    {
+        lms6002d_ctrl::sptr ctrl = _lms_ctrl[fe_name];
+        try
+        {
+            ctrl->set_rx_enabled(false);
+            ctrl->set_tx_enabled(false);
+        }
+        catch (...){}
+    }
 }
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
 {
     store_umtrx_eeprom(eeprom, *iface);
 }
-
 
 void umtrx_impl::time64_self_test(void)
 {
