@@ -9,27 +9,30 @@ import random
 SAMP_RATE = 13e6/4
 FREQ_OFFSET = 0.3e6
 FREQ_START = 700e6
-FREQ_STOP = 1000e6
+FREQ_STOP = 2000e6
 FREQ_CORRECTION_STEP = 7e6
-FREQ_VALIDATION_STEP = 1e6
+FREQ_VALIDATION_STEP = 2e6
+NUM_AVG_POINTS = 5
 
 import numpy as np
 def find_nearest(array,value):
     idx = (np.abs(array-value)).argmin()
     return array[idx]
 
-def calcAvgPs(umtrx, rxStream, fftSize = 4096, numFFT = 25, numSkips=2):
+def calcAvgPs(umtrx, rxStream, fftSize = 4096, numFFT = 10, numSkips=2):
+    samps = numpy.array([0]*fftSize, numpy.complex64)
     avgFFT = numpy.array([0]*fftSize, numpy.complex64)
+
+    while umtrx.readStream(rxStream, [samps], fftSize, 0, 1000).ret != SOAPY_SDR_TIMEOUT: pass #read until timeout
     umtrx.activateStream(rxStream, SOAPY_SDR_END_BURST, 0, fftSize*(numFFT+numSkips))
 
     numActualFFTs = 0
     for i in range(numFFT+numSkips):
-        samps = numpy.array([0]*fftSize, numpy.complex64)
         if umtrx.readStream(rxStream, [samps], fftSize).ret != fftSize:
             print 'D'
-            continue
+            return calcAvgPs(umtrx, rxStream, fftSize, numFFT, numSkips)
         if i < numSkips: continue #skip first for transients
-        samps *= numpy.blackman(fftSize)
+        samps *= signal.flattop(fftSize)
         avgFFT += numpy.fft.fft(samps)
         numActualFFTs += 1
     avgFFT /= numActualFFTs
@@ -48,6 +51,13 @@ def measureToneFromPs(ps_freqs, toneFreq, BW=SAMP_RATE/25):
             tonePower = max(ps[idx], tonePower)
     return tonePower
 
+def validateWithMeasurements(umtrx, rxStream, toneFreq, numAvgPts=5):
+    powers = list()
+    for i in range(NUM_AVG_POINTS):
+        ps, freqs = calcAvgPs(umtrx, rxStream)
+        powers.append(measureToneFromPs((ps, freqs), toneFreq))
+    return 10*numpy.log(numpy.average(numpy.exp(numpy.array(powers)/10))), numpy.std(powers)
+
 umtrx = SoapySDR.Device(dict(driver='uhd', type='umtrx'))
 
 #frontend map selects side A on ch0
@@ -64,6 +74,7 @@ umtrx.setSampleRate(SOAPY_SDR_TX, 0, SAMP_RATE)
 
 rxStream = umtrx.setupStream(SOAPY_SDR_RX, "CF32")
 
+#calibrate out dc offset at select frequencies
 best_correction_per_freq = dict()
 best_dc_power_per_freq = dict()
 stddev_dc_power_per_freq = dict()
@@ -81,10 +92,10 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
     best_correction = 0.0
     best_dc_power = None
 
-    for bound in (0.2, 0.1, 0.05, 0.01):
+    for bound in (0.1, 0.05, 0.01):
         this_correction = best_correction
 
-        for searchNo in range(int(-50*math.log10(bound))):
+        for searchNo in range(50):
 
             #print 'searchNo',searchNo
 
@@ -105,13 +116,8 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
     print 'best_dc_power', best_dc_power, ' best_correction', best_correction
 
     #prove that its really the best...
-    powers = list()
     umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
-    for i in range(5):
-        ps, freqs = calcAvgPs(umtrx, rxStream)
-        powers.append(measureToneFromPs((ps, freqs), -FREQ_OFFSET))
-    stddevPowers = numpy.std(powers)
-    averagePowers = numpy.average(powers)
+    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
     print 'averagePowers', averagePowers
     print 'stddevPowers', stddevPowers
 
@@ -121,9 +127,9 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
     average_dc_power_per_freq[freq] = averagePowers
 
 #recollect dc offsets with corrections applied:
-
 validation_average_dc_offsets_per_freq = dict()
 validation_stddev_dc_offsets_per_freq = dict()
+original_dc_power_per_freq = dict()
 
 for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_VALIDATION_STEP):
 
@@ -132,28 +138,28 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_VALIDATION_STEP):
     umtrx.setFrequency(SOAPY_SDR_RX, 0, freq + FREQ_OFFSET)
     umtrx.getHardwareTime() #readback so commands are processed
 
+    umtrx.setDCOffset(SOAPY_SDR_TX, 0, 0.0)
+
+    #get the original value before corrections
+    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+    original_dc_power_per_freq[freq] = averagePowers
+
+    #pick the correction to use (closest in freq)
     correction_freq = find_nearest(best_correction_per_freq.keys(), freq)
     correction = best_correction_per_freq[correction_freq]
 
-    powers = list()
+    #perform the measurements again
     umtrx.setDCOffset(SOAPY_SDR_TX, 0, correction)
-    for i in range(5):
-        ps, freqs = calcAvgPs(umtrx, rxStream)
-        powers.append(measureToneFromPs((ps, freqs), -FREQ_OFFSET))
-    stddevPowers = numpy.std(powers)
-    averagePowers = numpy.average(powers)
+    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
 
     validation_average_dc_offsets_per_freq[freq] = averagePowers
     validation_stddev_dc_offsets_per_freq[freq] = stddevPowers
 
-    #idx = numpy.argsort(freqs)
-    #plt.plot(freqs[idx]/1e6, ps[idx])
-    #plt.show()
-
 umtrx.closeStream(rxStream)
 
 plt.figure(1)
-plt.subplot(211)
+
+plt.subplot(311)
 freqs = sorted(average_dc_power_per_freq.keys())
 vals = [average_dc_power_per_freq[f] for f in freqs]
 cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
@@ -161,10 +167,10 @@ freqs = sorted(validation_average_dc_offsets_per_freq.keys())
 vals = [validation_average_dc_offsets_per_freq[f] for f in freqs]
 val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
 legend = plt.legend(loc='upper right', shadow=True)
-plt.title("Freq (MHz) vs average power")
+plt.title("Freq (MHz) vs average power (dB)")
 plt.grid(True)
 
-plt.subplot(212)
+plt.subplot(312)
 freqs = sorted(stddev_dc_power_per_freq.keys())
 vals = [stddev_dc_power_per_freq[f] for f in freqs]
 cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
@@ -172,7 +178,14 @@ freqs = sorted(validation_stddev_dc_offsets_per_freq.keys())
 vals = [validation_stddev_dc_offsets_per_freq[f] for f in freqs]
 val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
 legend = plt.legend(loc='upper right', shadow=True)
-plt.title("Freq (MHz) vs stddev power")
+plt.title("Freq (MHz) vs stddev power (dB)")
+plt.grid(True)
+
+plt.subplot(313)
+freqs = sorted(original_dc_power_per_freq.keys())
+vals = [abs(original_dc_power_per_freq[f]-validation_average_dc_offsets_per_freq[f]) for f in freqs]
+plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
+plt.title("Freq (MHz) vs correction (dB)")
 plt.grid(True)
 
 plt.show()
