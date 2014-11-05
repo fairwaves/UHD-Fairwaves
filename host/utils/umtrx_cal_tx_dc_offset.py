@@ -5,11 +5,13 @@ import numpy
 import matplotlib.pyplot as plt
 from scipy import signal
 import random
+import time
+import os
 
 SAMP_RATE = 13e6/4
 FREQ_OFFSET = 0.3e6
 FREQ_START = 700e6
-FREQ_STOP = 2000e6
+FREQ_STOP = 1200e6
 FREQ_CORRECTION_STEP = 7e6
 FREQ_VALIDATION_STEP = 2e6
 NUM_AVG_POINTS = 5
@@ -77,6 +79,7 @@ rxStream = umtrx.setupStream(SOAPY_SDR_RX, "CF32")
 #calibrate out dc offset at select frequencies
 best_correction_per_freq = dict()
 best_dc_power_per_freq = dict()
+initial_dc_power_per_freq = dict()
 stddev_dc_power_per_freq = dict()
 average_dc_power_per_freq = dict()
 
@@ -91,6 +94,11 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
 
     best_correction = 0.0
     best_dc_power = None
+
+    #grab values before correction
+    umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
+    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+    initial_dc_power_per_freq[freq] = averagePowers
 
     for bound in (0.1, 0.05, 0.01):
         this_correction = best_correction
@@ -126,6 +134,30 @@ for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
     stddev_dc_power_per_freq[freq] = stddevPowers
     average_dc_power_per_freq[freq] = averagePowers
 
+########################################################################
+## produce tx cal serial format
+########################################################################
+serial = umtrx.getHardwareInfo()['tx0_serial']
+cal_dest = os.path.join(os.path.expanduser("~"), '.uhd', 'cal', "tx_dc_cal_v0.2_%s.csv"%serial)
+print 'cal_dest', cal_dest
+cal_data = open(cal_dest, 'w')
+
+cal_data.write("name, TX Frontend Calibration\n")
+cal_data.write("serial, %s\n"%serial)
+cal_data.write("timestamp, %d\n"%int(time.time()))
+cal_data.write("version, 0, 1\n")
+cal_data.write("DATA STARTS HERE\n")
+cal_data.write("lo_frequency, correction_real, correction_imag, measured, delta\n")
+for freq in sorted(best_correction_per_freq.keys()):
+    cal_data.write(', '.join(map(str, [
+        freq,
+        best_correction_per_freq[freq].real,
+        best_correction_per_freq[freq].imag,
+        best_dc_power_per_freq[freq],
+        initial_dc_power_per_freq[freq]-best_dc_power_per_freq[freq],
+    ])) + '\n')
+
+"""
 #recollect dc offsets with corrections applied:
 validation_average_dc_offsets_per_freq = dict()
 validation_stddev_dc_offsets_per_freq = dict()
@@ -189,3 +221,4 @@ plt.title("Freq (MHz) vs correction (dB)")
 plt.grid(True)
 
 plt.show()
+"""
