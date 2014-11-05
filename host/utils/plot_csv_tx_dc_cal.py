@@ -20,8 +20,8 @@ def plot_csv(file_path):
             if not i: continue #skip titles
             tx_lo, icor, qcor, meadured, delta = row
             tx_lo = float(tx_lo)/1e9
-            icor = int(icor)
-            qcor = int(qcor)
+            icor = float(icor)
+            qcor = float(qcor)
             freq_vals.append(tx_lo)
             dc_i_vals.append(icor)
             dc_q_vals.append(qcor)
@@ -34,7 +34,7 @@ def plot_csv(file_path):
     plt.figure(1)
     plt.subplot(311)
     plt.plot(freq_vals, dc_i_vals, freq_vals, dc_q_vals,)
-    plt.ylim(0, 250)
+    #plt.ylim(0, 250)
     plt.title("Freq (GHz) vs raw IQ corrections")
     #plt.xlabel('Freq (GHz)')
     plt.grid(True)
@@ -45,7 +45,7 @@ def plot_csv(file_path):
     dc_i_std = [np.std(dc_i_vals_per_freq[f]) for f in freqs]
     dc_q_std = [np.std(dc_q_vals_per_freq[f]) for f in freqs]
     plt.plot(freqs, dc_i_std, freqs, dc_q_std)
-    plt.ylim(0, 150)
+    #plt.ylim(0, 150)
     plt.title("Freq (GHz) vs stddev IQ corrections")
     #plt.xlabel('Freq (GHz)')
     plt.grid(True)
@@ -70,7 +70,7 @@ def plot_csv(file_path):
     dc_i_avg = [np.mean(dc_i_vals_per_freq[f]) for f in freqs]
     dc_q_avg = [np.mean(dc_q_vals_per_freq[f]) for f in freqs]
     plt.plot(freqs, dc_i_avg, freqs, dc_q_avg)
-    plt.ylim(0, 250)
+    #plt.ylim(0, 250)
     plt.title("Freq (GHz) vs averaged IQ corrections")
     #plt.xlabel('Freq (GHz)')
     plt.grid(True)

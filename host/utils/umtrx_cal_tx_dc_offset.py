@@ -7,14 +7,15 @@ from scipy import signal
 import random
 import time
 import os
+from optparse import OptionParser
 
 SAMP_RATE = 13e6/4
 FREQ_OFFSET = 0.3e6
 FREQ_START = 700e6
 FREQ_STOP = 1200e6
-FREQ_CORRECTION_STEP = 7e6
+FREQ_STEP = 7e6
 FREQ_VALIDATION_STEP = 2e6
-NUM_AVG_POINTS = 5
+SIDE = "A"
 
 import numpy as np
 def find_nearest(array,value):
@@ -55,170 +56,188 @@ def measureToneFromPs(ps_freqs, toneFreq, BW=SAMP_RATE/25):
 
 def validateWithMeasurements(umtrx, rxStream, toneFreq, numAvgPts=5):
     powers = list()
-    for i in range(NUM_AVG_POINTS):
+    for i in range(numAvgPts):
         ps, freqs = calcAvgPs(umtrx, rxStream)
         powers.append(measureToneFromPs((ps, freqs), toneFreq))
     return 10*numpy.log(numpy.average(numpy.exp(numpy.array(powers)/10))), numpy.std(powers)
 
-umtrx = SoapySDR.Device(dict(driver='uhd', type='umtrx'))
+def main():
+    umtrx = SoapySDR.Device(dict(driver='uhd', type='umtrx'))
 
-#frontend map selects side A on ch0
-umtrx.setFrontendMapping(SOAPY_SDR_RX, "A:0")
-umtrx.setFrontendMapping(SOAPY_SDR_TX, "A:0")
+    #frontend map selects side on ch0
+    umtrx.setFrontendMapping(SOAPY_SDR_RX, SIDE+":0")
+    umtrx.setFrontendMapping(SOAPY_SDR_TX, SIDE+":0")
 
-#cal antennas for loopback
-umtrx.setAntenna(SOAPY_SDR_RX, 0, "CAL")
-umtrx.setAntenna(SOAPY_SDR_TX, 0, "CAL")
+    #print cal file we will use
+    serial = umtrx.getHardwareInfo()['tx0_serial']
+    cal_dest = os.path.join(os.path.expanduser("~"), '.uhd', 'cal', "tx_dc_cal_v0.2_%s.csv"%serial)
+    print 'going to write calibration data to:', cal_dest
 
-#set a low sample rate
-umtrx.setSampleRate(SOAPY_SDR_RX, 0, SAMP_RATE)
-umtrx.setSampleRate(SOAPY_SDR_TX, 0, SAMP_RATE)
+    #cal antennas for loopback
+    umtrx.setAntenna(SOAPY_SDR_RX, 0, "CAL")
+    umtrx.setAntenna(SOAPY_SDR_TX, 0, "CAL")
 
-rxStream = umtrx.setupStream(SOAPY_SDR_RX, "CF32")
+    #set a low sample rate
+    umtrx.setSampleRate(SOAPY_SDR_RX, 0, SAMP_RATE)
+    umtrx.setSampleRate(SOAPY_SDR_TX, 0, SAMP_RATE)
 
-#calibrate out dc offset at select frequencies
-best_correction_per_freq = dict()
-best_dc_power_per_freq = dict()
-initial_dc_power_per_freq = dict()
-stddev_dc_power_per_freq = dict()
-average_dc_power_per_freq = dict()
+    rxStream = umtrx.setupStream(SOAPY_SDR_RX, "CF32")
 
-for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_CORRECTION_STEP):
+    #calibrate out dc offset at select frequencies
+    best_correction_per_freq = dict()
+    best_dc_power_per_freq = dict()
+    initial_dc_power_per_freq = dict()
+    stddev_dc_power_per_freq = dict()
+    average_dc_power_per_freq = dict()
 
-    print 'Doing freq:', freq/1e6, 'MHz'
+    for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_STEP):
 
-    #tune rx with offset so we can see tx DC
-    umtrx.setFrequency(SOAPY_SDR_TX, 0, freq)
-    umtrx.setFrequency(SOAPY_SDR_RX, 0, freq + FREQ_OFFSET)
-    umtrx.getHardwareTime() #readback so commands are processed
+        print 'Doing freq:', freq/1e6, 'MHz'
 
-    best_correction = 0.0
-    best_dc_power = None
+        #tune rx with offset so we can see tx DC
+        umtrx.setFrequency(SOAPY_SDR_TX, 0, freq)
+        umtrx.setFrequency(SOAPY_SDR_RX, 0, freq + FREQ_OFFSET)
+        umtrx.getHardwareTime() #readback so commands are processed
 
-    #grab values before correction
-    umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
-    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
-    initial_dc_power_per_freq[freq] = averagePowers
+        best_correction = 0.0
+        best_dc_power = None
 
-    for bound in (0.1, 0.05, 0.01):
-        this_correction = best_correction
+        #grab values before correction
+        umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
+        averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+        initial_dc_power_per_freq[freq] = averagePowers
 
-        for searchNo in range(50):
+        for bound in (0.1, 0.05, 0.01):
+            this_correction = best_correction
 
-            #print 'searchNo',searchNo
+            for searchNo in range(50):
 
-            corr_i = random.uniform(this_correction.real-bound, this_correction.real+bound)
-            corr_q = random.uniform(this_correction.imag-bound, this_correction.imag+bound)
+                #print 'searchNo',searchNo
 
-            correction = complex(min(max(corr_i, -1), 1), min(max(corr_q, -1), 1))
+                corr_i = random.uniform(this_correction.real-bound, this_correction.real+bound)
+                corr_q = random.uniform(this_correction.imag-bound, this_correction.imag+bound)
 
-            umtrx.setDCOffset(SOAPY_SDR_TX, 0, correction)
+                correction = complex(min(max(corr_i, -1), 1), min(max(corr_q, -1), 1))
 
-            ps, freqs = calcAvgPs(umtrx, rxStream)
-            dc_power = measureToneFromPs((ps, freqs), -FREQ_OFFSET)
+                umtrx.setDCOffset(SOAPY_SDR_TX, 0, correction)
 
-            if best_dc_power is None or best_dc_power > dc_power:
-                best_dc_power = dc_power
-                best_correction = correction
+                ps, freqs = calcAvgPs(umtrx, rxStream)
+                dc_power = measureToneFromPs((ps, freqs), -FREQ_OFFSET)
 
-    print 'best_dc_power', best_dc_power, ' best_correction', best_correction
+                if best_dc_power is None or best_dc_power > dc_power:
+                    best_dc_power = dc_power
+                    best_correction = correction
 
-    #prove that its really the best...
-    umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
-    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
-    print 'averagePowers', averagePowers
-    print 'stddevPowers', stddevPowers
+        print 'best_dc_power', best_dc_power, ' best_correction', best_correction
 
-    best_correction_per_freq[freq] = best_correction
-    best_dc_power_per_freq[freq] = best_dc_power
-    stddev_dc_power_per_freq[freq] = stddevPowers
-    average_dc_power_per_freq[freq] = averagePowers
+        #prove that its really the best...
+        umtrx.setDCOffset(SOAPY_SDR_TX, 0, best_correction)
+        averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+        print 'averagePowers', averagePowers
+        print 'stddevPowers', stddevPowers
 
-########################################################################
-## produce tx cal serial format
-########################################################################
-serial = umtrx.getHardwareInfo()['tx0_serial']
-cal_dest = os.path.join(os.path.expanduser("~"), '.uhd', 'cal', "tx_dc_cal_v0.2_%s.csv"%serial)
-print 'cal_dest', cal_dest
-cal_data = open(cal_dest, 'w')
+        best_correction_per_freq[freq] = best_correction
+        best_dc_power_per_freq[freq] = best_dc_power
+        stddev_dc_power_per_freq[freq] = stddevPowers
+        average_dc_power_per_freq[freq] = averagePowers
 
-cal_data.write("name, TX Frontend Calibration\n")
-cal_data.write("serial, %s\n"%serial)
-cal_data.write("timestamp, %d\n"%int(time.time()))
-cal_data.write("version, 0, 1\n")
-cal_data.write("DATA STARTS HERE\n")
-cal_data.write("lo_frequency, correction_real, correction_imag, measured, delta\n")
-for freq in sorted(best_correction_per_freq.keys()):
-    cal_data.write(', '.join(map(str, [
-        freq,
-        best_correction_per_freq[freq].real,
-        best_correction_per_freq[freq].imag,
-        best_dc_power_per_freq[freq],
-        initial_dc_power_per_freq[freq]-best_dc_power_per_freq[freq],
-    ])) + '\n')
+    ########################################################################
+    ## produce tx cal serial format
+    ########################################################################
+    cal_data = open(cal_dest, 'w')
 
-"""
-#recollect dc offsets with corrections applied:
-validation_average_dc_offsets_per_freq = dict()
-validation_stddev_dc_offsets_per_freq = dict()
-original_dc_power_per_freq = dict()
+    cal_data.write("name, TX Frontend Calibration\n")
+    cal_data.write("serial, %s\n"%serial)
+    cal_data.write("timestamp, %d\n"%int(time.time()))
+    cal_data.write("version, 0, 1\n")
+    cal_data.write("DATA STARTS HERE\n")
+    cal_data.write("lo_frequency, correction_real, correction_imag, measured, delta\n")
+    for freq in sorted(best_correction_per_freq.keys()):
+        cal_data.write(', '.join(map(str, [
+            freq,
+            best_correction_per_freq[freq].real,
+            best_correction_per_freq[freq].imag,
+            best_dc_power_per_freq[freq],
+            initial_dc_power_per_freq[freq]-best_dc_power_per_freq[freq],
+        ])) + '\n')
+    print ('wrote cal data to %s'%cal_dest)
 
-for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_VALIDATION_STEP):
+    """
+    #recollect dc offsets with corrections applied:
+    validation_average_dc_offsets_per_freq = dict()
+    validation_stddev_dc_offsets_per_freq = dict()
+    original_dc_power_per_freq = dict()
 
-    #tune rx with offset so we can see tx DC
-    umtrx.setFrequency(SOAPY_SDR_TX, 0, freq)
-    umtrx.setFrequency(SOAPY_SDR_RX, 0, freq + FREQ_OFFSET)
-    umtrx.getHardwareTime() #readback so commands are processed
+    for freq in numpy.arange(FREQ_START, FREQ_STOP, FREQ_VALIDATION_STEP):
 
-    umtrx.setDCOffset(SOAPY_SDR_TX, 0, 0.0)
+        #tune rx with offset so we can see tx DC
+        umtrx.setFrequency(SOAPY_SDR_TX, 0, freq)
+        umtrx.setFrequency(SOAPY_SDR_RX, 0, freq + FREQ_OFFSET)
+        umtrx.getHardwareTime() #readback so commands are processed
 
-    #get the original value before corrections
-    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
-    original_dc_power_per_freq[freq] = averagePowers
+        umtrx.setDCOffset(SOAPY_SDR_TX, 0, 0.0)
 
-    #pick the correction to use (closest in freq)
-    correction_freq = find_nearest(best_correction_per_freq.keys(), freq)
-    correction = best_correction_per_freq[correction_freq]
+        #get the original value before corrections
+        averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+        original_dc_power_per_freq[freq] = averagePowers
 
-    #perform the measurements again
-    umtrx.setDCOffset(SOAPY_SDR_TX, 0, correction)
-    averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
+        #pick the correction to use (closest in freq)
+        correction_freq = find_nearest(best_correction_per_freq.keys(), freq)
+        correction = best_correction_per_freq[correction_freq]
 
-    validation_average_dc_offsets_per_freq[freq] = averagePowers
-    validation_stddev_dc_offsets_per_freq[freq] = stddevPowers
+        #perform the measurements again
+        umtrx.setDCOffset(SOAPY_SDR_TX, 0, correction)
+        averagePowers, stddevPowers = validateWithMeasurements(umtrx, rxStream, -FREQ_OFFSET)
 
-umtrx.closeStream(rxStream)
+        validation_average_dc_offsets_per_freq[freq] = averagePowers
+        validation_stddev_dc_offsets_per_freq[freq] = stddevPowers
 
-plt.figure(1)
+    umtrx.closeStream(rxStream)
 
-plt.subplot(311)
-freqs = sorted(average_dc_power_per_freq.keys())
-vals = [average_dc_power_per_freq[f] for f in freqs]
-cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
-freqs = sorted(validation_average_dc_offsets_per_freq.keys())
-vals = [validation_average_dc_offsets_per_freq[f] for f in freqs]
-val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
-legend = plt.legend(loc='upper right', shadow=True)
-plt.title("Freq (MHz) vs average power (dB)")
-plt.grid(True)
+    plt.figure(1)
 
-plt.subplot(312)
-freqs = sorted(stddev_dc_power_per_freq.keys())
-vals = [stddev_dc_power_per_freq[f] for f in freqs]
-cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
-freqs = sorted(validation_stddev_dc_offsets_per_freq.keys())
-vals = [validation_stddev_dc_offsets_per_freq[f] for f in freqs]
-val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
-legend = plt.legend(loc='upper right', shadow=True)
-plt.title("Freq (MHz) vs stddev power (dB)")
-plt.grid(True)
+    plt.subplot(311)
+    freqs = sorted(average_dc_power_per_freq.keys())
+    vals = [average_dc_power_per_freq[f] for f in freqs]
+    cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
+    freqs = sorted(validation_average_dc_offsets_per_freq.keys())
+    vals = [validation_average_dc_offsets_per_freq[f] for f in freqs]
+    val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
+    legend = plt.legend(loc='upper right', shadow=True)
+    plt.title("Freq (MHz) vs average power (dB)")
+    plt.grid(True)
 
-plt.subplot(313)
-freqs = sorted(original_dc_power_per_freq.keys())
-vals = [abs(original_dc_power_per_freq[f]-validation_average_dc_offsets_per_freq[f]) for f in freqs]
-plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
-plt.title("Freq (MHz) vs correction (dB)")
-plt.grid(True)
+    plt.subplot(312)
+    freqs = sorted(stddev_dc_power_per_freq.keys())
+    vals = [stddev_dc_power_per_freq[f] for f in freqs]
+    cor_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
+    freqs = sorted(validation_stddev_dc_offsets_per_freq.keys())
+    vals = [validation_stddev_dc_offsets_per_freq[f] for f in freqs]
+    val_data = plt.plot(numpy.array(freqs)/1e6, vals, label='Validation')
+    legend = plt.legend(loc='upper right', shadow=True)
+    plt.title("Freq (MHz) vs stddev power (dB)")
+    plt.grid(True)
 
-plt.show()
-"""
+    plt.subplot(313)
+    freqs = sorted(original_dc_power_per_freq.keys())
+    vals = [abs(original_dc_power_per_freq[f]-validation_average_dc_offsets_per_freq[f]) for f in freqs]
+    plt.plot(numpy.array(freqs)/1e6, vals, label='Correction')
+    plt.title("Freq (MHz) vs correction (dB)")
+    plt.grid(True)
+
+    plt.show()
+    """
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("--side", dest="side", default=SIDE, help="A or B [default: %default]")
+    parser.add_option("--freq-start", dest="freq_start", default=FREQ_START, type="float", help="frequency start point in Hz [default: %default]")
+    parser.add_option("--freq-stop", dest="freq_stop", default=FREQ_STOP, type="float", help="frequency stop point in Hz [default: %default]")
+    parser.add_option("--freq-step", dest="freq_step", default=FREQ_STEP, type="float", help="frequency step size in Hz [default: %default]")
+    (options, args) = parser.parse_args()
+    SIDE = options.side
+    FREQ_START = options.freq_start
+    FREQ_STOP = options.freq_stop
+    FREQ_STEP = options.freq_step
+
+    main()
