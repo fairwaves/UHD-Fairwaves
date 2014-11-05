@@ -209,12 +209,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             for (int bound = 256; bound >= 8; bound /= 2) //how many bits of precision to care about for the search
             {
                 if (vm.count("verbose")) printf("  iteration %du\n", bound);
+                int this_dc_i = best_dc_i, this_dc_q = best_dc_q;
 
                 bool has_improvement = false;
                 for (int rand_search_no = 0; rand_search_no < bound/4; rand_search_no++) //how many random points to inspect
                 {
-                    int dc_i = uniform_rand(std::max(0, best_dc_i-bound/2), std::min(256, best_dc_i+bound/2));
-                    int dc_q = uniform_rand(std::max(0, best_dc_q-bound/2), std::min(256, best_dc_q+bound/2));
+                    int dc_i = uniform_rand(std::max(0, this_dc_i-bound/2), std::min(256, this_dc_i+bound/2));
+                    int dc_q = uniform_rand(std::max(0, this_dc_q-bound/2), std::min(256, this_dc_q+bound/2));
                     if (vm.count("verbose")) std::cout << "bound " << bound << " dc_i " << dc_i << " dc_q " << dc_q << std::endl;
 
                     dc_i_prop.set(dc_i);
