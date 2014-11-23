@@ -28,6 +28,8 @@
 #include "cores/rx_dsp_core_200.hpp"
 #include "cores/tx_dsp_core_200.hpp"
 #include "cores/time64_core_200.hpp"
+#include "ads1015_ctrl.hpp"
+#include "tmp102_ctrl.hpp"
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/device.hpp>
@@ -55,6 +57,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
 static const size_t UMTRX_SRAM_BYTES = size_t(1 << 19);
@@ -103,11 +106,28 @@ public:
     boost::shared_ptr<async_md_type> _old_async_queue;
 
 private:
+    enum umtrx_hw_rev {
+        UMTRX_VER_2_0,
+        UMTRX_VER_2_1,
+        UMTRX_VER_2_2,
+        UMTRX_VER_2_3_0,
+        UMTRX_VER_2_3_1
+    };
+
+    // hardware revision
+    umtrx_hw_rev _hw_rev;
+    unsigned _pll_div;
+    const char* get_hw_rev() const;
 
     //communication interfaces
     std::string _device_ip_addr;
     umtrx_iface::sptr _iface;
     umtrx_fifo_ctrl::sptr _ctrl;
+
+    ads1015_ctrl _sense_pwr;
+    ads1015_ctrl _sense_dc;
+    tmp102_ctrl  _temp_side_a;
+    tmp102_ctrl  _temp_side_b;
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
@@ -134,12 +154,14 @@ private:
     void set_rx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
+    void detect_hw_rev(const uhd::fs_path &mb_path);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
 
     //temp sensors read values in degC
-    void config_temp_c(const std::string &which);
     uhd::sensor_value_t read_temp_c(const std::string &which);
+    uhd::sensor_value_t read_pa_v(const std::string &which);
+    uhd::sensor_value_t read_dc_v(const std::string &which);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;

@@ -56,6 +56,12 @@ struct mtu_result_t{
     size_t recv_mtu, send_mtu;
 };
 
+static std::vector<std::string> power_sensors =
+        boost::assign::list_of("PR1")("PF1")("PR2")("PF2");
+
+static std::vector<std::string> dc_sensors =
+        boost::assign::list_of("zero")("Vin")("VinPA")("DCOUT");
+
 static mtu_result_t determine_mtu(const std::string &addr, const mtu_result_t &user_mtu){
     udp_simple::sptr udp_sock = udp_simple::make_connected(
         addr, BOOST_STRINGIZE(USRP2_UDP_CTRL_PORT)
@@ -205,6 +211,16 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _iface->poke32(U2_REG_MISC_LMS_RES, 0);
     _iface->poke32(U2_REG_MISC_LMS_RES, LMS1_RESET | LMS2_RESET);
 
+    ////////////////////////////////////////////////////////////////////////
+    // autodetect umtrx hardware rev and initialize rev. specific sensors
+    ////////////////////////////////////////////////////////////////////////
+    detect_hw_rev(mb_path);
+    _tree->create<std::string>(mb_path / "hwrev").set(get_hw_rev());
+    UHD_MSG(status) << "Detected UmTRX " << get_hw_rev() << std::endl;
+
+    // TODO: Add EEPROM cell to manually override this
+    _pll_div = 1;
+
     ////////////////////////////////////////////////////////////////////
     // create codec control objects
     ////////////////////////////////////////////////////////////////////
@@ -217,16 +233,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         const fs_path tx_codec_path = mb_path / ("tx_codecs") / std::string(1, name);
         _tree->create<std::string>(tx_codec_path / "name").set("TX LMS DAC");
         _tree->create<int>(tx_codec_path / "gains"); //empty cuz gains are in frontend
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // sensors on the mboard
-    ////////////////////////////////////////////////////////////////
-    for (char name = 'A'; name <= 'B'; name++)
-    {
-        config_temp_c(std::string(1, name));
-        _tree->create<sensor_value_t>(mb_path / "sensors" / "temp"+std::string(1, name))
-            .publish(boost::bind(&umtrx_impl::read_temp_c, this, std::string(1, name)));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -363,8 +369,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing
     ////////////////////////////////////////////////////////////////////
-    _lms_ctrl["A"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate());
-    _lms_ctrl["B"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate());
+    _lms_ctrl["A"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate() / _pll_div);
+    _lms_ctrl["B"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate() / _pll_div);
 
     // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
     dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_db_eeprom;
@@ -536,9 +542,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
-
-    UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
-    UHD_MSG(status) << this->read_temp_c("B").to_pp_string() << std::endl;
 }
 
 umtrx_impl::~umtrx_impl(void)
@@ -596,25 +599,113 @@ uint16_t umtrx_impl::get_tcxo_dac(const umtrx_iface::sptr &iface){
     return (uint16_t)val;
 }
 
-void umtrx_impl::config_temp_c(const std::string &which)
-{
-    const int addr = (which == "A")? BOOST_BINARY( 1001010 ) : BOOST_BINARY( 1001011 );
-    uhd::byte_vector_t cmd;
-    cmd.push_back(0x01); //config
-    cmd.push_back((1 << 6) | (1 << 5)); //max resolution
-    _iface->write_i2c(addr, cmd);
-}
-
 uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
 {
-    const int addr = (which == "A")? BOOST_BINARY( 1001010 ) : BOOST_BINARY( 1001011 );
-    uhd::byte_vector_t cmd;
-    cmd.push_back(0); //temp register
-    _iface->write_i2c(addr, cmd);
-
-    uhd::byte_vector_t result = _iface->read_i2c(addr, 2); //12 bit result
-    int temp_int = (int(result[0]) << 8) | (int(result[1]) << 0);
-    double temp = temp_int/256.0;
-
+    double temp = (which == "A") ? _temp_side_a.get_temp() :
+                                   _temp_side_b.get_temp();
     return uhd::sensor_value_t("Temp"+which, temp, "C");
 }
+
+uhd::sensor_value_t umtrx_impl::read_pa_v(const std::string &which)
+{
+    unsigned i;
+    for (i = 0; i < 4; i++) {
+        if (which == power_sensors[i])
+            break;
+    }
+    UHD_ASSERT_THROW(i < 4);
+
+    _sense_pwr.set_input((ads1015_ctrl::ads1015_input)
+                         (ads1015_ctrl::ADS1015_CONF_AIN0_GND + i));
+    double val = _sense_pwr.get_value() * 10;
+    return uhd::sensor_value_t("Voltage"+which, val, "V");
+}
+
+uhd::sensor_value_t umtrx_impl::read_dc_v(const std::string &which)
+{
+    unsigned i;
+    for (i = 0; i < 4; i++) {
+        if (which == dc_sensors[i])
+            break;
+    }
+    UHD_ASSERT_THROW(i < 4);
+
+    _sense_dc.set_input((ads1015_ctrl::ads1015_input)
+                         (ads1015_ctrl::ADS1015_CONF_AIN0_GND + i));
+    double val = _sense_dc.get_value() * 40;
+    return uhd::sensor_value_t("Voltage"+which, val, "V");
+}
+
+void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
+{
+    //UmTRX v2.0 doesn't have temp sensors
+    //UmTRX v2.1 has a temp sensor only on A side
+    //UmTRX v2.2 has both temp sensor
+    //UmTRX v2.3.0 has power sensors ADC
+    //UmTRX v2.3.1 has power supply ADC & programmed resistor array
+
+    if (!tmp102_ctrl::check(_iface, tmp102_ctrl::TMP102_SDA)) {
+        _hw_rev = UMTRX_VER_2_0;
+        return;
+    }
+    // Initialize side A temp sensor
+    _temp_side_a.init(_iface, tmp102_ctrl::TMP102_SDA);
+    _temp_side_a.set_ex_mode(true);
+    _tree->create<sensor_value_t>(mb_path / "sensors" / "tempA")
+        .publish(boost::bind(&umtrx_impl::read_temp_c, this, "A"));
+    UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
+
+    if (!tmp102_ctrl::check(_iface, tmp102_ctrl::TMP102_SCL)) {
+        _hw_rev = UMTRX_VER_2_1;
+        return;
+    }
+    // Initialize side B temp sensor
+    _temp_side_b.init(_iface, tmp102_ctrl::TMP102_SCL);
+    _temp_side_b.set_ex_mode(true);
+    _tree->create<sensor_value_t>(mb_path / "sensors" / "tempB")
+        .publish(boost::bind(&umtrx_impl::read_temp_c, this, "B"));
+    UHD_MSG(status) << this->read_temp_c("B").to_pp_string() << std::endl;
+
+    if (!ads1015_ctrl::check(_iface, ads1015_ctrl::ADS1015_ADDR_VDD)) {
+        _hw_rev = UMTRX_VER_2_2;
+        return;
+    }
+    //Initialize PA sense ADC
+    _sense_pwr.init(_iface, ads1015_ctrl::ADS1015_ADDR_VDD);
+    _sense_pwr.set_mode(true);
+    _sense_pwr.set_pga(ads1015_ctrl::ADS1015_PGA_2_048V);
+    for (unsigned i = 0; i < power_sensors.size(); i++) {
+        _tree->create<sensor_value_t>(mb_path / "sensors" / "voltage"+power_sensors[i])
+            .publish(boost::bind(&umtrx_impl::read_pa_v, this, power_sensors[i]));
+        UHD_MSG(status) << this->read_pa_v(power_sensors[i]).to_pp_string() << std::endl;
+    }
+
+    if (!ads1015_ctrl::check(_iface, ads1015_ctrl::ADS1015_ADDR_GROUND)) {
+        _hw_rev = UMTRX_VER_2_3_0;
+        return;
+    }
+    _sense_dc.init(_iface, ads1015_ctrl::ADS1015_ADDR_GROUND);
+    _sense_dc.set_mode(true);
+    _sense_dc.set_pga(ads1015_ctrl::ADS1015_PGA_1_024V);
+    for (unsigned i = 0; i < power_sensors.size(); i++) {
+        _tree->create<sensor_value_t>(mb_path / "sensors" / "voltage"+dc_sensors[i])
+            .publish(boost::bind(&umtrx_impl::read_dc_v, this, dc_sensors[i]));
+        UHD_MSG(status) << this->read_dc_v(dc_sensors[i]).to_pp_string() << std::endl;
+    }
+
+
+    _hw_rev = UMTRX_VER_2_3_1;
+}
+
+const char* umtrx_impl::get_hw_rev() const
+{
+    switch (_hw_rev) {
+    case UMTRX_VER_2_0:    return "2.0";
+    case UMTRX_VER_2_1:    return "2.1";
+    case UMTRX_VER_2_2:    return "2.2";
+    case UMTRX_VER_2_3_0:  return "2.3.0";
+    case UMTRX_VER_2_3_1:  return "2.3.1";
+    default:               return "[unknown]";
+    }
+}
+
