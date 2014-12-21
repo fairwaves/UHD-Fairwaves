@@ -77,6 +77,11 @@ module u2plus_umtrx_v2
    inout AUX_SCL,
    inout AUX_SDA,
 
+   //PA control
+   output ENPA2,
+   output ENPA1,
+   output LOWPA,
+
    // PPS
    input PPS_IN,
    output GPS_ON,
@@ -305,7 +310,11 @@ wire DivSw1, DivSw2;
    assign GPS_ON = 1'b1;
    assign pps = PPS_IN;
 
-   
+   wire enpa2_o, enpa1_o, lowpa_o;
+   OBUF enpa2_pin (.I(enpa2_o),.O(ENPA2));
+   OBUF enpa1_pin (.I(enpa1_o),.O(ENPA1));
+   OBUF lowpa_pin (.I(lowpa_o),.O(LOWPA));
+
    umtrx_core u2p_c(
 		     .sys_clk           (dsp_clk),
 		     .dsp_clk           (lms_clk),
@@ -370,6 +379,10 @@ wire DivSw1, DivSw2;
 //Diversity switches
 		     .DivSw1(DivSw1),
 		     .DivSw2(DivSw2),
+//PA control
+		     .enpa2(enpa2_o),
+		     .enpa1(enpa1_o),
+		     .lowpa(lowpa_o),
 `ifndef NO_EXT_FIFO
 		     .RAM_D_po          (RAM_D_po),
 		     .RAM_D_pi          (RAM_D_pi),

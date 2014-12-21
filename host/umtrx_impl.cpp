@@ -558,6 +558,13 @@ umtrx_impl::~umtrx_impl(void)
     }
 }
 
+void umtrx_impl::set_pa_dcdc_r(uint8_t val)
+{
+    // AD5245 control
+    if (_hw_rev >= UMTRX_VER_2_3_1)
+        _iface->write_i2c(BOOST_BINARY(0101100), boost::assign::list_of(0)(val));
+}
+
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
 {
     store_umtrx_eeprom(eeprom, *iface);
@@ -693,8 +700,60 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
         UHD_MSG(status) << this->read_dc_v(dc_sensors[i]).to_pp_string() << std::endl;
     }
 
-
     _hw_rev = UMTRX_VER_2_3_1;
+    _tree->create<uint8_t>(mb_path / "pa_dcdc_r")
+            .subscribe(boost::bind(&umtrx_impl::set_pa_dcdc_r, this, _1));
+
+    const std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_low", "");
+    if (pa_dcdc_r.empty())
+        set_pa_dcdc_r(0);
+    else
+        set_pa_dcdc_r(boost::lexical_cast<unsigned>(pa_dcdc_r));
+
+    _pa_en1 = false;
+    _pa_en2 = false;
+
+    const std::string pa_low = _iface->mb_eeprom.get("pa_low", "");
+    if (pa_low.empty())
+        _pa_nlow = false;
+    else
+        _pa_nlow = (boost::lexical_cast<int>(pa_low) == 0);
+
+    _tree->create<bool>(mb_path / "pa_en1")
+            .subscribe(boost::bind(&umtrx_impl::set_enpa1, this, _1));
+    _tree->create<bool>(mb_path / "pa_en2")
+            .subscribe(boost::bind(&umtrx_impl::set_enpa2, this, _1));
+    _tree->create<bool>(mb_path / "pa_nlow")
+            .subscribe(boost::bind(&umtrx_impl::set_nlow, this, _1));
+
+    commit_pa_state();
+    UHD_MSG(status) << "PA low=`" << pa_low.c_str()
+                    << "` PA dcdc_r=`" << pa_dcdc_r.c_str()
+                    << "`" << std::endl;
+}
+
+void umtrx_impl::commit_pa_state()
+{
+    if (_hw_rev >= UMTRX_VER_2_3_1)
+        _iface->poke32(U2_REG_MISC_LMS_RES, LMS1_RESET | LMS2_RESET
+                   | ((_pa_nlow) ? PAREG_NLOW_PA : 0)
+                   | ((_pa_en1)  ? PAREG_ENPA1 : 0)
+                   | ((_pa_en2)  ? PAREG_ENPA2 : 0));
+}
+
+void umtrx_impl::set_enpa1(bool en)
+{
+    _pa_en1 = en; commit_pa_state();
+}
+
+void umtrx_impl::set_enpa2(bool en)
+{
+    _pa_en2 = en; commit_pa_state();
+}
+
+void umtrx_impl::set_nlow(bool en)
+{
+    _pa_nlow = en; commit_pa_state();
 }
 
 const char* umtrx_impl::get_hw_rev() const

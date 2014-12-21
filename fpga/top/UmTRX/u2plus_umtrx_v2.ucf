@@ -227,6 +227,13 @@ NET "AUX_XX" LOC = AA6; // empty awhile
 NET "AUX_SCL" LOC = AB7;//  I2C clock (teperature sensor etc.)
 NET "AUX_SDA" LOC = AB10;//  I2C data (teperature sensor etc.)
 
+## PA control
+NET "ENPA2"   LOC = AB21;
+NET "ENPA1"   LOC = AA21;
+NET "LOWPA"   LOC = Y12;
+#NET "DC_SYNC" LOC = AA6;
+
+
 ## LEDS
 NET "leds[1]" LOC = Y3;
 NET "leds[2]" LOC = W4;
@@ -234,7 +241,7 @@ NET "leds[3]" LOC = AB2;
 NET "leds[4]" LOC = Y4;
 NET "leds[5]" LOC = AA2;
 NET "led_stat" LOC = AB3; // output for clock status (or something else) front panel LED !!!
-                          // was stupid "master clock" LED indicator
+			  // was stupid "master clock" LED indicator
 
 ### Debug  // a lot changes !!!
 NET "debug[0]" LOC = D22;
@@ -274,7 +281,7 @@ NET "debug_clk_n" LOC = L19;// was "debug_clk[1]" LOC = N16; !!!
 
 
 // #NET "CLK_FPGA_N" IOSTANDARD = LVPECL_25;//  LVCMOS25 - UNUSED  !!!
-#NET "CLK_FPGA" IOSTANDARD = LVCMOS25;// !!! 
+#NET "CLK_FPGA" IOSTANDARD = LVCMOS25;// !!!
 
 NET "FPGA_RESET" IOSTANDARD = LVCMOS33;
 NET "ETH_LED" IOSTANDARD = LVCMOS33;
@@ -313,6 +320,11 @@ NET "RXD[3]" IOSTANDARD = LVCMOS33;
 NET "TXD[1]" IOSTANDARD = LVCMOS33;// FPGA input <- FTDI input  !!! in v1a was output  !!!
 NET "TXD[2]" IOSTANDARD = LVCMOS33;// FPGA input <- GPS input  !!! in v1a was output  !!!
 NET "TXD[3]" IOSTANDARD = LVCMOS33;
+
+NET "enpa2"   IOSTANDARD = LVCMOS33;
+NET "enpa1"   IOSTANDARD = LVCMOS33;
+NET "lowpa"   IOSTANDARD = LVCMOS33;
+#NET "DC_SYNC" IOSTANDARD = LVCMOS33;
 
 NET "DivSw1_N" IOSTANDARD = LVCMOS25;
 NET "DivSw1_P" IOSTANDARD = LVCMOS25;

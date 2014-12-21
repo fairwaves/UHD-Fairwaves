@@ -129,6 +129,11 @@ private:
     tmp102_ctrl  _temp_side_a;
     tmp102_ctrl  _temp_side_b;
 
+    //PA control
+    bool _pa_nlow;
+    bool _pa_en1;
+    bool _pa_en2;
+
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
 
@@ -140,6 +145,7 @@ private:
     time64_core_200::sptr _time64;
 
     //helper routines
+    void set_pa_dcdc_r(uint8_t val);
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
     double get_master_clock_rate(void) const { return 26e6; }
     double get_master_dsp_rate(void) const { return get_master_clock_rate()/2; }
@@ -155,6 +161,10 @@ private:
     void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
     void detect_hw_rev(const uhd::fs_path &mb_path);
+    void commit_pa_state();
+    void set_enpa1(bool en);
+    void set_enpa2(bool en);
+    void set_nlow(bool en);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
 

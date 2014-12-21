@@ -39,7 +39,7 @@
 ////////////////////////////////////////////////////////////////////////
 // Setting register offsets
 ////////////////////////////////////////////////////////////////////////
-localparam SR_MISC     =   0;   // 7 regs
+localparam SR_MISC     =   0;   // 9 regs
 localparam SR_TIME64   =  10;   // 6
 localparam SR_BUF_POOL =  16;   // 4
 
@@ -122,5 +122,10 @@ localparam SR_SPI_CORE = 185;   // 3
 // Defined for the U2_REG_MISC_LMS_CLOCK register
 #define LMS1_RESET  (1<<0)
 #define LMS2_RESET  (1<<1)
+
+// Defined for the U2_REG_MISC_LMS_RES register
+#define PAREG_NLOW_PA  (1<<2)
+#define PAREG_ENPA1    (1<<3)
+#define PAREG_ENPA2    (1<<4)
 
 #endif
