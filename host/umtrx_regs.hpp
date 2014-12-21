@@ -127,5 +127,6 @@ localparam SR_SPI_CORE = 185;   // 3
 #define PAREG_NLOW_PA  (1<<2)
 #define PAREG_ENPA1    (1<<3)
 #define PAREG_ENPA2    (1<<4)
+#define PAREG_ENDCSYNC (1<<5)
 
 #endif

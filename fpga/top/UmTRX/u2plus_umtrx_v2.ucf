@@ -223,7 +223,6 @@ NET "AUX_SEN1" LOC = AA8; // ch1 ADF4350 load/enable
 NET "AUX_SEN2" LOC = AB11; // ch2 ADF4350 load/enable
 NET "AUX_LD1" LOC = AB6; // ch1 ADF4350 lock detect input
 NET "AUX_LD2" LOC = AB9; // ch2 ADF4350 lock detect input
-NET "AUX_XX" LOC = AA6; // empty awhile
 NET "AUX_SCL" LOC = AB7;//  I2C clock (teperature sensor etc.)
 NET "AUX_SDA" LOC = AB10;//  I2C data (teperature sensor etc.)
 
@@ -231,7 +230,7 @@ NET "AUX_SDA" LOC = AB10;//  I2C data (teperature sensor etc.)
 NET "ENPA2"   LOC = AB21;
 NET "ENPA1"   LOC = AA21;
 NET "LOWPA"   LOC = Y12;
-#NET "DC_SYNC" LOC = AA6;
+NET "DCSYNC"  LOC = AA6;
 
 
 ## LEDS
@@ -321,10 +320,10 @@ NET "TXD[1]" IOSTANDARD = LVCMOS33;// FPGA input <- FTDI input  !!! in v1a was o
 NET "TXD[2]" IOSTANDARD = LVCMOS33;// FPGA input <- GPS input  !!! in v1a was output  !!!
 NET "TXD[3]" IOSTANDARD = LVCMOS33;
 
-NET "enpa2"   IOSTANDARD = LVCMOS33;
-NET "enpa1"   IOSTANDARD = LVCMOS33;
-NET "lowpa"   IOSTANDARD = LVCMOS33;
-#NET "DC_SYNC" IOSTANDARD = LVCMOS33;
+NET "ENPA2"   IOSTANDARD = LVCMOS33;
+NET "ENPA1"   IOSTANDARD = LVCMOS33;
+NET "LOWPA"   IOSTANDARD = LVCMOS33;
+NET "DCSYNC"  IOSTANDARD = LVCMOS33;
 
 NET "DivSw1_N" IOSTANDARD = LVCMOS25;
 NET "DivSw1_P" IOSTANDARD = LVCMOS25;
@@ -340,7 +339,6 @@ NET "AUX_LD1" IOSTANDARD = LVCMOS33;// FPGA input !!!
 NET "AUX_LD2" IOSTANDARD = LVCMOS33;// FPGA input !!!
 NET "AUX_SDA" IOSTANDARD = LVCMOS33;// FPGA input !!!
 NET "AUX_SCL" IOSTANDARD = LVCMOS33;// FPGA input !!!
-NET "AUX_XX" IOSTANDARD = LVCMOS33;// FPGA input !!!
 
 NET "CLK_FPGA_P" TNM_NET = "CLK_FPGA_P";
 TIMESPEC TS_clk_fpga_p = PERIOD "CLK_FPGA_P" 38 ns HIGH 50 %;

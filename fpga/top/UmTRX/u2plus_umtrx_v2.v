@@ -73,7 +73,7 @@ module u2plus_umtrx_v2
    output AUX_SEN2,
    input AUX_LD1,
    input AUX_LD2,
-   input AUX_XX,
+   //input AUX_XX,
    inout AUX_SCL,
    inout AUX_SDA,
 
@@ -81,6 +81,7 @@ module u2plus_umtrx_v2
    output ENPA2,
    output ENPA1,
    output LOWPA,
+   output DCSYNC,
 
    // PPS
    input PPS_IN,
@@ -315,6 +316,24 @@ wire DivSw1, DivSw2;
    OBUF enpa1_pin (.I(enpa1_o),.O(ENPA1));
    OBUF lowpa_pin (.I(lowpa_o),.O(LOWPA));
 
+   reg dcsync_o;
+   wire en_dc_sync_o;
+   
+   IOBUF DCSYNC_pin (.O(), .IO(DCSYNC), .I(dcsync_o), .T(~en_dc_sync_o));
+   reg [5:0] dc_count;
+   always @(posedge lms_clk) begin
+       if (en_dc_sync_o == 1'b1) begin
+           if (dc_count == 24) begin
+               dcsync_o <= ~dcsync_o;
+               dc_count <= 0;
+           end else
+               dc_count <= dc_count + 1;
+       end else begin
+           dc_count <= 0;
+           dcsync_o <= 1'b0;
+       end
+   end
+
    umtrx_core u2p_c(
 		     .sys_clk           (dsp_clk),
 		     .dsp_clk           (lms_clk),
@@ -383,6 +402,7 @@ wire DivSw1, DivSw2;
 		     .enpa2(enpa2_o),
 		     .enpa1(enpa1_o),
 		     .lowpa(lowpa_o),
+		     .en_dc_sync(en_dc_sync_o),
 `ifndef NO_EXT_FIFO
 		     .RAM_D_po          (RAM_D_po),
 		     .RAM_D_pi          (RAM_D_pi),

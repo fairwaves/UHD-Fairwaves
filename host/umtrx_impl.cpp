@@ -736,6 +736,7 @@ void umtrx_impl::commit_pa_state()
 {
     if (_hw_rev >= UMTRX_VER_2_3_1)
         _iface->poke32(U2_REG_MISC_LMS_RES, LMS1_RESET | LMS2_RESET
+                   | PAREG_ENDCSYNC
                    | ((_pa_nlow) ? PAREG_NLOW_PA : 0)
                    | ((_pa_en1)  ? PAREG_ENPA1 : 0)
                    | ((_pa_en2)  ? PAREG_ENPA2 : 0));

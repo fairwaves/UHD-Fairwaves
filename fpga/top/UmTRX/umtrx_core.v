@@ -111,6 +111,7 @@ module umtrx_core
    output enpa2,
    output enpa1,
    output lowpa,
+   output en_dc_sync,
 
 `ifndef NO_EXT_FIFO
    // External RAM
@@ -553,8 +554,8 @@ module umtrx_core
    wire 	 phy_reset;
    assign 	 PHY_RESETn = ~phy_reset;
 
-   setting_reg #(.my_addr(SR_MISC+0),.width(2)) sr_lms_res
-     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out({enpa2, enpa1, lowpa, lms_res}),.changed());
+   setting_reg #(.my_addr(SR_MISC+0),.width(6)) sr_lms_res
+     (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out({en_dc_sync, enpa2, enpa1, lowpa, lms_res}),.changed());
 
    setting_reg #(.my_addr(SR_MISC+1),.width(1)) sr_clear_sfc
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.changed(sfc_clear));
