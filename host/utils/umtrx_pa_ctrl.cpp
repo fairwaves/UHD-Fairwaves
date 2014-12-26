@@ -98,6 +98,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         unsigned i;
         for (i = 0; i < 256; i++) {
             tree->access<uint8_t>(mb_path / "pa_dcdc_r").set(i);
+            if (i == 0) {
+                sleep(1);
+            }
+
             usleep(100 * 1000); // Wait for value to settle
 
             std::cout << "[" << std::setw(3) << i << "]="

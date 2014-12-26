@@ -132,7 +132,7 @@ void store_umtrx_eeprom(const mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
     );
 
     if (mb_eeprom.has_key("pa_low")) iface.write_eeprom(
-        N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_dcdc_r"],
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_low"],
         byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["pa_low"]))
     );
 }
