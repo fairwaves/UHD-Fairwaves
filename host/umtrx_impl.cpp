@@ -704,7 +704,14 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
     _tree->create<uint8_t>(mb_path / "pa_dcdc_r")
             .subscribe(boost::bind(&umtrx_impl::set_pa_dcdc_r, this, _1));
 
-    const std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_dcdc_r", "");
+    std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_dcdc_r", "");
+    char* pa_dcdc_r_env = getenv("UMTRX_PA_DCDC_R");
+    if (pa_dcdc_r_env) {
+        UHD_MSG(status) << "EEPROM value of pa_dcdc_r:" << pa_dcdc_r.c_str()
+                        << " is overriden with env UMTRX_PA_DCDC_R:"
+                        << pa_dcdc_r_env << std::endl;
+        pa_dcdc_r = pa_dcdc_r_env;
+    }
     if (pa_dcdc_r.empty())
         set_pa_dcdc_r(0);
     else
@@ -713,7 +720,14 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
     _pa_en1 = false;
     _pa_en2 = false;
 
-    const std::string pa_low = _iface->mb_eeprom.get("pa_low", "");
+    std::string pa_low = _iface->mb_eeprom.get("pa_low", "");
+    char* pa_low_env = getenv("UMTRX_PA_LOW");
+    if (pa_low_env) {
+        UHD_MSG(status) << "EEPROM value of pa_low:" << pa_low.c_str()
+                        << " is overriden with env UMTRX_PA_LOW:"
+                        << pa_low_env << std::endl;
+        pa_low = pa_low_env;
+    }
     if (pa_low.empty())
         _pa_nlow = false;
     else
