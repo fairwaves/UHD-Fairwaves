@@ -704,7 +704,7 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
     _tree->create<uint8_t>(mb_path / "pa_dcdc_r")
             .subscribe(boost::bind(&umtrx_impl::set_pa_dcdc_r, this, _1));
 
-    const std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_low", "");
+    const std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_dcdc_r", "");
     if (pa_dcdc_r.empty())
         set_pa_dcdc_r(0);
     else
