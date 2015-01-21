@@ -652,6 +652,7 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
     //UmTRX v2.3.1 has power supply ADC & programmed resistor array
 
     if (!tmp102_ctrl::check(_iface, tmp102_ctrl::TMP102_SDA)) {
+        _tree->create<sensor_value_t>(mb_path / "sensors"); //phony property so this dir exists
         _hw_rev = UMTRX_VER_2_0;
         return;
     }
