@@ -218,6 +218,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->create<std::string>(mb_path / "hwrev").set(get_hw_rev());
     UHD_MSG(status) << "Detected UmTRX " << get_hw_rev() << std::endl;
 
+
+    _tree->create<bool>(mb_path / "divsw1")
+            .subscribe(boost::bind(&umtrx_impl::set_divsw1, this, _1));
+    _tree->create<bool>(mb_path / "divsw2")
+            .subscribe(boost::bind(&umtrx_impl::set_divsw2, this, _1));
+
+
     // TODO: Add EEPROM cell to manually override this
     _pll_div = 1;
 
@@ -770,6 +777,16 @@ void umtrx_impl::set_enpa2(bool en)
 void umtrx_impl::set_nlow(bool en)
 {
     _pa_nlow = en; commit_pa_state();
+}
+
+void umtrx_impl::set_divsw1(bool en)
+{
+    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+0), (en) ? 1 : 0);
+}
+
+void umtrx_impl::set_divsw2(bool en)
+{
+    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+1), (en) ? 1 : 0);
 }
 
 const char* umtrx_impl::get_hw_rev() const

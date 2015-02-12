@@ -165,6 +165,8 @@ private:
     void set_enpa1(bool en);
     void set_enpa2(bool en);
     void set_nlow(bool en);
+    void set_divsw1(bool en);
+    void set_divsw2(bool en);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
 

@@ -40,6 +40,8 @@ namespace po = boost::program_options;
 int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::string args;
     unsigned pa_dcdc_r = 0;
+    int divsw1 = -1;
+    int divsw2 = -1;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -52,6 +54,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("paen2",      "Enable PA2")
         ("padis1",     "Disable PA1")
         ("padis2",     "Disable PA2")
+        ("divsw1",  po::value<int>(&divsw1), "1 - Enable / 0 - Disable DivSW1")
+        ("divsw2",  po::value<int>(&divsw2), "1 - Enable / 0 - Disable DivSW2")
         ("palow",      "Turn off internal DC/DC")
         ("pa_dcdc_r",  po::value<unsigned>(&pa_dcdc_r),"Turn on internal DC/DC")
     ;
@@ -108,6 +112,12 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                       << tree->access<uhd::sensor_value_t>(mb_path / "sensors" / "voltageDCOUT").get().to_pp_string().c_str()
                       << std::endl;
         }
+    }
+    if (vm.count("divsw1")) {
+        tree->access<bool>(mb_path / "divsw1").set(divsw1 ? 1 : 0);
+    }
+    if (vm.count("divsw2")) {
+        tree->access<bool>(mb_path / "divsw2").set(divsw2 ? 1 : 0);
     }
 
     return 0;
