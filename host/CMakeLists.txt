@@ -19,7 +19,7 @@
 ## Build the UmTRX UHD module
 ########################################################################
 cmake_minimum_required(VERSION 2.8)
-project(UmTRX_UHD)
+project(UmTRX-UHD)
 
 set(UMTRX_VERSION 1.0.0)
 
@@ -180,4 +180,5 @@ set(CPACK_PACKAGE_VERSION ${UMTRX_VERSION})
 SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-all-dev, uhd")
 SET(CPACK_DEBIAN_PACKAGE_RECOMMENDS "python")
 SET(CPACK_PACKAGE_FILE_NAME "umtrx_${UMTRX_VERSION}_${CMAKE_SYSTEM_PROCESSOR}")
+SET(CPACK_SET_DESTDIR "ON")
 include(CPack) #include last
