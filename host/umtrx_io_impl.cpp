@@ -404,7 +404,12 @@ static void handle_tx_async_msgs(
     }
 
     stop_flow_control();
-    while (not xport->get_recv_buff()){};//flush after fc off
+    //flush after fc off, max time of 1s
+    size_t i = 0;
+    while (not xport->get_recv_buff(0.01))
+    {
+        if (i++ > 100) break;
+    }
 }
 
 /***********************************************************************
