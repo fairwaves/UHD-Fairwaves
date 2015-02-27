@@ -725,8 +725,11 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
     else
         set_pa_dcdc_r(boost::lexical_cast<unsigned>(pa_dcdc_r));
 
-    _pa_en1 = false;
-    _pa_en2 = false;
+    _pa_en1 = (boost::lexical_cast<int>(_iface->mb_eeprom.get("pa_en1", "1")) == 1);
+    _pa_en2 = (boost::lexical_cast<int>(_iface->mb_eeprom.get("pa_en2", "1")) == 1);
+
+    if (getenv("UMTRX_PA_EN1")) _pa_en1 = (boost::lexical_cast<int>(getenv("UMTRX_PA_EN1")) != 0);
+    if (getenv("UMTRX_PA_EN2")) _pa_en2 = (boost::lexical_cast<int>(getenv("UMTRX_PA_EN2")) != 0);
 
     std::string pa_low = _iface->mb_eeprom.get("pa_low", "");
     char* pa_low_env = getenv("UMTRX_PA_LOW");

@@ -57,6 +57,8 @@ static const uhd::dict<std::string, boost::uint8_t> UMTRX_OFFSETS = boost::assig
     ("tx2-vga1-dc-q", 0xFF-5)  // 1 byte
     ("pa_dcdc_r", 0xFF-6)      // 1 byte
     ("pa_low",    0xFF-7)      // 1 byte
+    ("pa_en1",    0xFF-8)      // 1 byte
+    ("pa_en2",    0xFF-9)      // 1 byte
 ;
 
 #if 0x18 + SERIAL_LEN + NAME_MAX_LEN >= 0xFF-7
@@ -97,6 +99,15 @@ void load_umtrx_eeprom(mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
         uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_low"], 1).at(0));
         mb_eeprom["pa_low"] = (val==255)?"":boost::lexical_cast<std::string>(int(val));
     }
+
+    {
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_en1"], 1).at(0));
+        mb_eeprom["pa_en1"] = (val != 0) ?"1":"0";
+    }
+    {
+        uint8_t val = int(iface.read_eeprom(N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_en2"], 1).at(0));
+        mb_eeprom["pa_en2"] = (val != 0) ?"1":"0";
+    }
 }
 
 void store_umtrx_eeprom(const mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
@@ -134,5 +145,15 @@ void store_umtrx_eeprom(const mboard_eeprom_t &mb_eeprom, i2c_iface &iface){
     if (mb_eeprom.has_key("pa_low")) iface.write_eeprom(
         N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_low"],
         byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["pa_low"]))
+    );
+
+    if (mb_eeprom.has_key("pa_en1")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_en1"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["pa_en1"]))
+    );
+
+    if (mb_eeprom.has_key("pa_en2")) iface.write_eeprom(
+        N100_EEPROM_ADDR, UMTRX_OFFSETS["pa_en2"],
+        byte_vector_t(1, boost::lexical_cast<int>(mb_eeprom["pa_en2"]))
     );
 }
