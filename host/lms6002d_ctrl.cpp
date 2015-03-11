@@ -61,13 +61,10 @@ static const std::vector<std::string> lms_tx_antennas = list_of("TX0")("TX1")("T
 static const std::vector<std::string> lms_rx_antennas = list_of("RX0")("RX1")("RX2")("RX3")("CAL");
 
 static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_of
+//    ("VGA1", gain_range_t(-35, -4, double(1.0)))
+//    ("VGA2", gain_range_t(0, 25, double(1.0)))
     // Use a single control to manually control how VGA1/VGA2 are set
     ("VGA", gain_range_t(-35+0, -4+25, double(1.0)))
-;
-
-static const uhd::dict<std::string, gain_range_t> lms_tx_internal_gain_ranges = map_list_of
-    ("VGA1", gain_range_t(-35, -4, double(1.0)))
-    ("VGA2", gain_range_t(0, 25, double(1.0)))
 ;
 
 static const uhd::dict<std::string, gain_range_t> lms_rx_gain_ranges = map_list_of
@@ -236,9 +233,9 @@ public:
     double set_rx_gain(double gain, const std::string &name) {
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_gain(%f, %s)\n", gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
-        if(name == "VGA1"){
+		if(name == "VGA1"){
             lms.set_rx_vga1gain(gain);
-        } else if(name == "VGA2"){
+		} else if(name == "VGA2"){
             lms.set_rx_vga2gain(gain);
         } else UHD_THROW_INVALID_CODE_PATH();
         return gain;
@@ -310,12 +307,6 @@ public:
             if (verbosity>1) printf("lms6002d_ctrl_impl::set_tx_gain() VGA1=%d VGA2=%d\n", tx_vga1gain, tx_vga2gain);
             lms.set_tx_vga1gain(tx_vga1gain);
             lms.set_tx_vga2gain(tx_vga2gain);
-        } else if (name == "VGA1") {
-            if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA1=%d\n", int(gain));
-            lms.set_tx_vga1gain(int(gain));
-        } else if (name == "VGA2") {
-            if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA2=%d\n", int(gain));
-            lms.set_tx_vga2gain(int(gain));
         } else {
             UHD_THROW_INVALID_CODE_PATH();
         }

@@ -164,27 +164,16 @@ void lms6002d_dev::init()
     write_reg(0x09, 0x00); // RXOUTSW (disabled), CLK_EN (all disabled)
     write_reg(0x17, 0xE0);
     write_reg(0x27, 0xE3);
+    write_reg(0x64, 0x32);
     write_reg(0x70, 0x01);
-
-    // FAQ v1.0r12, 5.27:
-    write_reg(0x47, 0x40); // Improving Tx spurious emission performance
-    write_reg(0x59, 0x29); // Improving ADC’s performance
-    write_reg(0x64, 0x36); // Common Mode Voltage For ADC’s
-    write_reg(0x79, 0x37); // Higher LNA Gain
-
-    // Power down DC comparators to improve the receiver linearity
-    // (see FAQ v1.0r12, 5.26)
-    lms_set_bits(0x6E, (0x3 << 6));
-    lms_set_bits(0x5F, (0x1 << 7));
+    write_reg(0x79, 0x37);
+    write_reg(0x59, 0x09);
+    write_reg(0x47, 0x40);
 
     // Disable AUX PA
     // PA_EN[0]:AUXPA = 0 (powered up) - for mask set v1
     // PD_DRVAUX = 0 (powered up) - for mask set v0,  test mode only
     lms_set_bits(0x44, (3 << 1));
-
-    // Icp=0.2mA
-    // This gives much better results for the GMSK modulation
-    lms_write_bits(0x16, 0x0f, 0x02);
 }
 
 void lms6002d_dev::set_txrx_polarity_and_interleaving(int rx_fsync_polarity,
@@ -252,10 +241,6 @@ int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibrati
 
 int lms6002d_dev::general_dc_calibration(uint8_t dc_addr, uint8_t calibration_reg_base)
 {
-    // Power up DC comparators
-    lms_clear_bits(0x6E, (0x3 << 6));
-    lms_clear_bits(0x5F, (0x1 << 7));
-
     // Set DC_REGVAL to 31
     write_reg(calibration_reg_base+0x00, 31);
     // Run the calibration first time
@@ -278,11 +263,6 @@ int lms6002d_dev::general_dc_calibration(uint8_t dc_addr, uint8_t calibration_re
             return -1;
         }
     }
-
-    // Power down DC comparators to improve the receiver linearity
-    // (see FAQ v1.0r12, 5.26)
-    lms_set_bits(0x6E, (0x3 << 6));
-    lms_set_bits(0x5F, (0x1 << 7));
 
     if (verbosity > 0) printf("Successful DC Offset Calibration for register bank 0x%X, DC addr %d. Result: 0x%X\n",
                               calibration_reg_base, dc_addr, DC_REGVAL);
