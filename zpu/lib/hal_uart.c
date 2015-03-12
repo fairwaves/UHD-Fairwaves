@@ -58,8 +58,8 @@ static char uart_mode[4] = {
 };
 
 static char uart_speeds[4] = {
-  [UART_DEBUG] = US_230400,
-  [UART_EXP] = US_230400,
+  [UART_DEBUG] = US_115200,
+  [UART_EXP] = US_115200,
   [UART_GPS] = US_9600
 };
 
