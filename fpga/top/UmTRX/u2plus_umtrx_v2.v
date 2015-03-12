@@ -323,7 +323,7 @@ wire DivSw1, DivSw2;
    reg [5:0] dc_count;
    always @(posedge lms_clk) begin
        if (en_dc_sync_o == 1'b1) begin
-           if (dc_count == 24) begin
+           if (dc_count == 23) begin
                dcsync_o <= ~dcsync_o;
                dc_count <= 0;
            end else
