@@ -64,7 +64,9 @@ void do_the_bootload_thing(void) {
 #else
 	spif_init(); //initialize SPI flash clock
 	
-    bool production_image = find_safe_booted_flag();
+	puts("SPI Flash has been initialized");
+
+	bool production_image = find_safe_booted_flag();
 	printf("Production image = %d\n", production_image);
 	set_safe_booted_flag(0); //haven't booted yet
 	

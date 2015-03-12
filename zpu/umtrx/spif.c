@@ -24,6 +24,9 @@
 #include "spi_flash.h"
 #include "memory_map.h"
 
+#define WATCHDOG   50000
+#include <nonstdio.h>
+
 void
 spif_init(void) 
 {
@@ -39,8 +42,11 @@ spif_init(void)
 inline void
 spif_wait(void) 
 {
-  while (spif_regs->ctrl & SPI_CTRL_GO_BSY)
-    ;
+  unsigned i = WATCHDOG;
+  while ((i != 0) && (spif_regs->ctrl & SPI_CTRL_GO_BSY))
+    --i;
+  if (i == 0)
+    puts("spif_wait WATCHDOG failed!"); 
 }
 
 uint32_t

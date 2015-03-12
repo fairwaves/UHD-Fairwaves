@@ -18,6 +18,7 @@
 #include "i2c.h"
 #include "mdelay.h"
 #include "usrp2/fw_common.h"
+#include "nonstdio.h"
 
 static const int EEPROM_PAGESIZE = 16;
 
@@ -26,7 +27,11 @@ bool find_safe_booted_flag(void) {
 	return 0;
 #else
 	unsigned char flag_byte;
-	eeprom_read(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_BOOTLOADER_FLAGS, &flag_byte, 1);
+	if (!eeprom_read(USRP2_I2C_ADDR_MBOARD, USRP2_EE_MBOARD_BOOTLOADER_FLAGS, &flag_byte, 1)) {
+		puts("Failed to read safe boot flag");
+		return false;
+	}
+	
 	return (flag_byte == 0x5E);
 #endif
 }

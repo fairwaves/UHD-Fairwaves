@@ -36,6 +36,8 @@ static uint16_t prescaler_values[MAX_WB_DIV+1] = {
   PRESCALER(4), // 4:  25 MHz
 };
 
+#define WATCHDOG   50000
+
 void
 i2c_init(void)
 {
@@ -58,8 +60,13 @@ i2c_init(void)
 static inline void
 wait_for_xfer(void)
 {
-  while (i2c_regs->cmd_status & I2C_ST_TIP)	// wait for xfer to complete
-    ;
+  unsigned i = WATCHDOG;
+  while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_TIP))	// wait for xfer to complete
+    --i;
+
+  if (i == 0) {
+    puts("wait_for_xfer WATCHDOG failed!"); 
+  }
 }
 
 static inline bool
@@ -79,8 +86,13 @@ i2c_read (unsigned char i2c_addr, unsigned char *buf, unsigned int len)
   if (len == 0)			// reading zero bytes always works
     return true;
 
-  while (i2c_regs->cmd_status & I2C_ST_BUSY)
-    ;
+  unsigned i = WATCHDOG;
+  while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_BUSY))
+    --i;
+  if (i == 0) {
+    puts("i2c_read WATCHDOG failed!"); 
+    return false;
+  }
 
   i2c_regs->data = (i2c_addr << 1) | 1;	 // 7 bit address and read bit (1)
   // generate START and write addr
@@ -104,8 +116,13 @@ i2c_read (unsigned char i2c_addr, unsigned char *buf, unsigned int len)
 bool 
 i2c_write(unsigned char i2c_addr, const unsigned char *buf, unsigned int len)
 {
-  while (i2c_regs->cmd_status & I2C_ST_BUSY)
-    ;
+    unsigned i = WATCHDOG;
+  while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_BUSY))
+    --i;
+  if (i == 0) {
+    puts("i2c_write WATCHDOG failed!");
+    return false;
+  }
 
   i2c_regs->data = (i2c_addr << 1) | 0;	 // 7 bit address and write bit (0)
 
