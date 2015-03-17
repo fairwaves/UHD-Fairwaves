@@ -224,7 +224,7 @@ module umtrx_core
    wb_1master #(.decode_w(8),
 		.s0_addr(8'b0000_0000),.s0_mask(8'b1100_0000),  // Main RAM (0-16K)
 		.s1_addr(8'b0100_0000),.s1_mask(8'b1111_0000),  // Packet Router (16-20K)
- 		.s2_addr(8'b0101_0000),.s2_mask(8'b1111_1100),  // SPI
+ 		.s2_addr(8'b0101_0000),.s2_mask(8'b1111_1100),  // Unused
 		.s3_addr(8'b0101_0100),.s3_mask(8'b1111_1100),  // I2C
 		.s4_addr(8'b0101_1000),.s4_mask(8'b1111_1100),  // GPSDO
 		.s5_addr(8'b0101_1100),.s5_mask(8'b1111_1100),  // Readback
