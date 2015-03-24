@@ -45,9 +45,9 @@ umtrx_init(void)
 
   // Check LMS presense
   res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPI_PUSH_FALL|SPI_LATCH_RISE);
-  printf("LMS1 chip version = 0x%x\n", res & 0xffff);
+  printf("LMS1 chip version = 0x%x\n", res);
   res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x04), 16, SPI_PUSH_FALL|SPI_LATCH_RISE);
-  printf("LMS2 chip version = 0x%x\n", res & 0xffff);
+  printf("LMS2 chip version = 0x%x\n", res);
 
   // Init GPSDO
   gpsdo_init();
