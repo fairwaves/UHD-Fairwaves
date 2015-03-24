@@ -37,17 +37,17 @@ umtrx_init(void)
   uint32_t res;
 
 //issue a reset to the LMS chips
-  output_regs->lms_res == (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
+  output_regs->lms_res = (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
   mdelay(100);
   output_regs->lms_res = 0; // reset pins of lms chips switched to 0
   mdelay(100);
-  output_regs->lms_res == (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
+  output_regs->lms_res = (LMS1_RESET | LMS2_RESET); // reset pins of lms chips switched to 1
 
   // Check LMS presense
   res = spi_transact(SPI_TXRX, SPI_SS_LMS1, LMS_RD_CMD(0x04), 16, SPI_PUSH_FALL|SPI_LATCH_RISE);
-  printf("LMS1 chip version = 0x%x\n", res);
+  printf("LMS1 chip version = 0x%x\n", res & 0xffff);
   res = spi_transact(SPI_TXRX, SPI_SS_LMS2, LMS_RD_CMD(0x04), 16, SPI_PUSH_FALL|SPI_LATCH_RISE);
-  printf("LMS2 chip version = 0x%x\n", res);
+  printf("LMS2 chip version = 0x%x\n", res & 0xffff);
 
   // Init GPSDO
   gpsdo_init();
