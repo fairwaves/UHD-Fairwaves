@@ -88,7 +88,7 @@ public:
         _task_barrier.resize(size);
         _task_handlers.resize(size);
         for (size_t i = 1/*skip 0*/; i < size; i++){
-            _task_handlers[i] = task::make(boost::bind(&send_packet_handler::converter_thread_task, this, i));
+            //_task_handlers[i] = task::make(boost::bind(&send_packet_handler::converter_thread_task, this, i));
         };
     }
 
@@ -377,7 +377,7 @@ private:
         _convert_if_packet_info = &if_packet_info;
 
         //perform N channels of conversion
-        converter_thread_task(0);
+        for (size_t i = 0; i < this->size(); i++) this->converter_thread_task(i);
 
         _next_packet_seq++; //increment sequence after commits
         return nsamps_per_buff;
@@ -390,7 +390,7 @@ private:
      ******************************************************************/
     UHD_INLINE void converter_thread_task(const size_t index)
     {
-        _task_barrier.wait();
+        //_task_barrier.wait();
 
         //shortcut references to local data structures
         managed_send_buffer::sptr &buff = _props[index].buff;
@@ -420,7 +420,7 @@ private:
         buff->commit(num_vita_words32*sizeof(boost::uint32_t));
         buff.reset(); //effectively a release
 
-        if (index == 0) _task_barrier.wait_others();
+        //if (index == 0) _task_barrier.wait_others();
     }
 
     //! Shared variables for the worker threads
