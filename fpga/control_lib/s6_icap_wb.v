@@ -23,6 +23,8 @@ module s6_icap_wb
    input cyc_i, input stb_i, input we_i, output reg ack_o,
    input [31:0] dat_i, output reg[31:0] dat_o);//, output [31:0] debug_out);
 
+    reg slow_clk_icap;
+    always @(posedge clk_icap) slow_clk_icap <= ~slow_clk_icap;
 	
 	wire 	BUSY, CE, WRITE;
 	wire[31:0] s1_dat_i;
@@ -36,7 +38,7 @@ module s6_icap_wb
    fifo_xlnx_16x40_2clk icap_fifo
      (.rst(reset),
       .wr_clk(clk), .din(dat_i), .wr_en(we_i & stb_i & ~ack_o & ~full), .full(full),
-      .rd_clk(clk_icap), .dout(s1_dat_i), .rd_en(~empty), .empty(empty));
+      .rd_clk(slow_clk_icap), .dout(s1_dat_i), .rd_en(~empty), .empty(empty));
 
    assign WRITE 	 = empty;
    assign CE 		 = empty;
@@ -45,7 +47,7 @@ module s6_icap_wb
      (.BUSY(BUSY),          // Busy output
       .O(s1_dat_o[15:0]),            // 16-bit data output
       .CE(CE),              // Clock enable input
-      .CLK(clk_icap),            // Clock input
+      .CLK(slow_clk_icap),            // Clock input
       .I(s1_dat_i[15:0]),            // 16-bit data input
       .WRITE(WRITE)         // Write input
       );
