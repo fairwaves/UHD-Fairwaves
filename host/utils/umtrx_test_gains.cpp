@@ -75,49 +75,54 @@ int UHD_SAFE_MAIN(int argc, char *argv[])
     //get the spi-interface to check gain values
     uhd::spi_iface::sptr spiface = tree->access<uhd::spi_iface::sptr>(mb_path / "spi_iface").get();
 
-    std::cout << std::endl << "Check RX gain ranges:" << std::endl;
-    CHECK(usrp->get_rx_gain_range("VGA1").start(), 0);
-    CHECK(usrp->get_rx_gain_range("VGA1").stop(), 126);
-    CHECK(usrp->get_rx_gain_range("VGA2").start(), 0);
-    CHECK(usrp->get_rx_gain_range("VGA2").stop(), 30);
-    CHECK(usrp->get_rx_gain_range().start(), 0);
-    CHECK(usrp->get_rx_gain_range().stop(), 156);
+    for (size_t ch = 0; ch <= 1; ch++)
+    {
+        std::cout << std::endl << "==== Testing channel: " << ch << std::endl;
 
-    std::cout << std::endl << "Check TX gain ranges:" << std::endl;
-    CHECK(usrp->get_tx_gain_range("VGA1").start(), -35);
-    CHECK(usrp->get_tx_gain_range("VGA1").stop(), -4);
-    CHECK(usrp->get_tx_gain_range("VGA2").start(), 0);
-    CHECK(usrp->get_tx_gain_range("VGA2").stop(), 25);
-    CHECK(usrp->get_tx_gain_range().start(), -35);
-    CHECK(usrp->get_tx_gain_range().stop(), 21);
+        std::cout << std::endl << "Check RX gain ranges:" << std::endl;
+        CHECK(usrp->get_rx_gain_range("VGA1", ch).start(), 0);
+        CHECK(usrp->get_rx_gain_range("VGA1", ch).stop(), 126);
+        CHECK(usrp->get_rx_gain_range("VGA2", ch).start(), 0);
+        CHECK(usrp->get_rx_gain_range("VGA2", ch).stop(), 30);
+        CHECK(usrp->get_rx_gain_range(ch).start(), 0);
+        CHECK(usrp->get_rx_gain_range(ch).stop(), 156);
 
-    std::cout << std::endl << "Test RX gain distribution:" << std::endl;
-    usrp->set_rx_gain(0);
-    CHECK(usrp->get_rx_gain(), 0);
-    CHECK(usrp->get_rx_gain("VGA1"), 0);
-    CHECK(usrp->get_rx_gain("VGA2"), 0);
-    usrp->set_rx_gain(15);
-    CHECK(usrp->get_rx_gain(), 15);
-    CHECK(usrp->get_rx_gain("VGA1"), 15);
-    CHECK(usrp->get_rx_gain("VGA2"), 0);
-    usrp->set_rx_gain(129);
-    CHECK(usrp->get_rx_gain(), 129);
-    CHECK(usrp->get_rx_gain("VGA1"), 126);
-    CHECK(usrp->get_rx_gain("VGA2"), 3);
+        std::cout << std::endl << "Check TX gain ranges:" << std::endl;
+        CHECK(usrp->get_tx_gain_range("VGA1", ch).start(), -35);
+        CHECK(usrp->get_tx_gain_range("VGA1", ch).stop(), -4);
+        CHECK(usrp->get_tx_gain_range("VGA2", ch).start(), 0);
+        CHECK(usrp->get_tx_gain_range("VGA2", ch).stop(), 25);
+        CHECK(usrp->get_tx_gain_range(ch).start(), -35);
+        CHECK(usrp->get_tx_gain_range(ch).stop(), 21);
 
-    std::cout << std::endl << "Test TX gain distribution:" << std::endl;
-    usrp->set_tx_gain(-35);
-    CHECK(usrp->get_tx_gain(), -35);
-    CHECK(usrp->get_tx_gain("VGA2"), 0);
-    CHECK(usrp->get_tx_gain("VGA1"), -35);
-    usrp->set_tx_gain(-10);
-    CHECK(usrp->get_tx_gain(), -10);
-    CHECK(usrp->get_tx_gain("VGA2"), 0);
-    CHECK(usrp->get_tx_gain("VGA1"), -10);
-    usrp->set_tx_gain(10);
-    CHECK(usrp->get_tx_gain(), 10);
-    CHECK(usrp->get_tx_gain("VGA2"), 14);
-    CHECK(usrp->get_tx_gain("VGA1"), -4);
+        std::cout << std::endl << "Test RX gain distribution:" << std::endl;
+        usrp->set_rx_gain(0, ch);
+        CHECK(usrp->get_rx_gain(ch), 0);
+        CHECK(usrp->get_rx_gain("VGA1", ch), 0);
+        CHECK(usrp->get_rx_gain("VGA2", ch), 0);
+        usrp->set_rx_gain(15, ch);
+        CHECK(usrp->get_rx_gain(ch), 15);
+        CHECK(usrp->get_rx_gain("VGA1", ch), 15);
+        CHECK(usrp->get_rx_gain("VGA2", ch), 0);
+        usrp->set_rx_gain(129, ch);
+        CHECK(usrp->get_rx_gain(ch), 129);
+        CHECK(usrp->get_rx_gain("VGA1", ch), 126);
+        CHECK(usrp->get_rx_gain("VGA2", ch), 3);
+
+        std::cout << std::endl << "Test TX gain distribution:" << std::endl;
+        usrp->set_tx_gain(-35, ch);
+        CHECK(usrp->get_tx_gain(ch), -35);
+        CHECK(usrp->get_tx_gain("VGA2", ch), 0);
+        CHECK(usrp->get_tx_gain("VGA1", ch), -35);
+        usrp->set_tx_gain(-10, ch);
+        CHECK(usrp->get_tx_gain(ch), -10);
+        CHECK(usrp->get_tx_gain("VGA2", ch), 0);
+        CHECK(usrp->get_tx_gain("VGA1", ch), -10);
+        usrp->set_tx_gain(10, ch);
+        CHECK(usrp->get_tx_gain(ch), 10);
+        CHECK(usrp->get_tx_gain("VGA2", ch), 14);
+        CHECK(usrp->get_tx_gain("VGA1", ch), -4);
+    }
 
     //print status
     std::cout << std::endl;
