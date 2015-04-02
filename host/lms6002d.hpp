@@ -124,9 +124,6 @@ public:
         //clip
         if (gain < -35) gain = -35;
         if (gain > -4) gain = -4;
-        /* Safety check */
-        if (not(-35 <= gain and gain <= -4))
-            gain = -35;
         int8_t old_bits = lms_write_bits(0x41, 0x1f, 35 + gain);
         return (old_bits & 0x1f) - 35;
     }
@@ -161,9 +158,6 @@ public:
         //clip
         if (gain < 0) gain = 0;
         if (gain > 25) gain = 25;
-        /* Safety check */
-        if (not(0 <= gain and gain <= 25))
-            gain = 0;
         int8_t old_bits = lms_write_bits(0x45, (0x1f << 3), (gain << 3));
         return old_bits >> 3;
     }
@@ -184,9 +178,6 @@ public:
         //clip
         if (gain < 0) gain = 0;
         if (gain > 60) gain = 60;
-        /* Safety check */
-        if (not (0 <= gain and gain <= 60))
-            gain = 0;
         int8_t old_bits = lms_write_bits(0x65, 0x1f, gain/3);
         return (old_bits & 0x1f) * 3;
     }
