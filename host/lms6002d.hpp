@@ -121,6 +121,9 @@ public:
         gain is in [-4 .. -35] dB range
         Returns the old gain value */
     int8_t set_tx_vga1gain(int8_t gain) {
+        //clip
+        if (gain < -35) gain = -35;
+        if (gain > -4) gain = -4;
         /* Safety check */
         if (not(-35 <= gain and gain <= -4))
             gain = -35;
@@ -155,6 +158,9 @@ public:
     gain is in dB [0 .. 25]
     Returns the old gain value */
     int8_t set_tx_vga2gain(int8_t gain) {
+        //clip
+        if (gain < 0) gain = 0;
+        if (gain > 25) gain = 25;
         /* Safety check */
         if (not(0 <= gain and gain <= 25))
             gain = 0;
@@ -175,6 +181,9 @@ public:
     gain is in dB [0 .. 60]
     Returns the old gain value */
     int8_t set_rx_vga2gain(int8_t gain) {
+        //clip
+        if (gain < 0) gain = 0;
+        if (gain > 60) gain = 60;
         /* Safety check */
         if (not (0 <= gain and gain <= 60))
             gain = 0;

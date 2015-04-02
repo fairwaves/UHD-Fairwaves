@@ -61,8 +61,9 @@ static const std::vector<std::string> lms_tx_antennas = list_of("TX0")("TX1")("T
 static const std::vector<std::string> lms_rx_antennas = list_of("RX0")("RX1")("RX2")("RX3")("CAL");
 
 static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_of
-    ("VGA1", gain_range_t(-35, -4, double(1.0)))
+    //listing VGA2 first means that overall gain is first distributed to VGA2
     ("VGA2", gain_range_t(0, 25, double(1.0)))
+    ("VGA1", gain_range_t(-35, -4, double(1.0)))
     // Use a single control to manually control how VGA1/VGA2 are set
 //    ("VGA", gain_range_t(-35+0, -4+25, double(1.0)))
 ;
@@ -235,8 +236,10 @@ public:
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
 		if(name == "VGA1"){
             lms.set_rx_vga1gain(gain);
+            return lms.get_rx_vga1gain();
 		} else if(name == "VGA2"){
             lms.set_rx_vga2gain(gain);
+            return lms.get_rx_vga2gain();
         } else UHD_THROW_INVALID_CODE_PATH();
         return gain;
     }
@@ -290,29 +293,14 @@ public:
         //validate input
         assert_has(lms_tx_gain_ranges.keys(), name, "LMS6002D tx gain name");
 
-        if (name == "VGA") {
-            // Calculate the best combination of VGA1 and VGA2 gains.
-            // For simplicity we just try to use VGA2 as much as possible
-            // and only then engage VGA1.
-            int desired_vga2 = int(gain) - tx_vga1gain;
-            if (desired_vga2 < 0)
-                tx_vga2gain = 0;
-            else if (desired_vga2 > 25)
-                tx_vga2gain = 25;
-            else
-                tx_vga2gain = desired_vga2;
-            tx_vga1gain = int(gain) - tx_vga2gain;
-
-            // Set the gains in hardware
-            if (verbosity>1) printf("lms6002d_ctrl_impl::set_tx_gain() VGA1=%d VGA2=%d\n", tx_vga1gain, tx_vga2gain);
-            lms.set_tx_vga1gain(tx_vga1gain);
-            lms.set_tx_vga2gain(tx_vga2gain);
-        } else if (name == "VGA1") {
+        if (name == "VGA1") {
             if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA1=%d\n", int(gain));
             lms.set_tx_vga1gain(int(gain));
+            return lms.get_tx_vga1gain();
         } else if (name == "VGA2") {
             if (verbosity>1) printf("db_lms6002d::set_tx_gain() VGA2=%d\n", int(gain));
             lms.set_tx_vga2gain(int(gain));
+            return lms.get_tx_vga2gain();
         } else {
             UHD_THROW_INVALID_CODE_PATH();
         }
