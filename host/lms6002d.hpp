@@ -121,9 +121,9 @@ public:
         gain is in [-4 .. -35] dB range
         Returns the old gain value */
     int8_t set_tx_vga1gain(int8_t gain) {
-        /* Safety check */
-        if (not(-35 <= gain and gain <= -4))
-            gain = -35;
+        //clip
+        if (gain < -35) gain = -35;
+        if (gain > -4) gain = -4;
         int8_t old_bits = lms_write_bits(0x41, 0x1f, 35 + gain);
         return (old_bits & 0x1f) - 35;
     }
@@ -155,9 +155,9 @@ public:
     gain is in dB [0 .. 25]
     Returns the old gain value */
     int8_t set_tx_vga2gain(int8_t gain) {
-        /* Safety check */
-        if (not(0 <= gain and gain <= 25))
-            gain = 0;
+        //clip
+        if (gain < 0) gain = 0;
+        if (gain > 25) gain = 25;
         int8_t old_bits = lms_write_bits(0x45, (0x1f << 3), (gain << 3));
         return old_bits >> 3;
     }
@@ -175,9 +175,9 @@ public:
     gain is in dB [0 .. 60]
     Returns the old gain value */
     int8_t set_rx_vga2gain(int8_t gain) {
-        /* Safety check */
-        if (not (0 <= gain and gain <= 60))
-            gain = 0;
+        //clip
+        if (gain < 0) gain = 0;
+        if (gain > 60) gain = 60;
         int8_t old_bits = lms_write_bits(0x65, 0x1f, gain/3);
         return (old_bits & 0x1f) * 3;
     }
