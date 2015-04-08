@@ -26,6 +26,14 @@ CMAKE_FORCE_C_COMPILER(zpu-elf-gcc GNU)
 PROJECT(USRP_NXXX_FW C)
 
 ########################################################################
+# extract the git hash
+########################################################################
+include(${PROJECT_SOURCE_DIR}/cmake/GetGitRevisionDescription.cmake)
+get_git_head_revision(GITREFSPEC GITHASH)
+string(SUBSTRING "${GITHASH}" 0 8 GITHASH)
+add_definitions(-DGITHASH=0x${GITHASH})
+
+########################################################################
 # lwIP header include dirs
 ########################################################################
 SET(LWIPDIR ${CMAKE_SOURCE_DIR}/lwip/lwip-1.3.1)
