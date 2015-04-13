@@ -32,7 +32,7 @@ extern "C" {
 //fpga and firmware compatibility numbers
 #define USRP2_FPGA_COMPAT_NUM 9
 #define USRP2_FW_COMPAT_NUM 12
-#define USRP2_FW_VER_MINOR 0
+#define USRP2_FW_VER_MINOR 1
 
 //used to differentiate control packets over data port
 #define USRP2_INVALID_VRT_HEADER 0
@@ -55,6 +55,7 @@ typedef struct{
 #define U2_FW_REG_LOCK_TIME 0
 #define U2_FW_REG_LOCK_GPID 1
 #define U2_FW_REG_VER_MINOR 7
+#define U2_FW_REG_GIT_HASH 6
 
 ////////////////////////////////////////////////////////////////////////
 // I2C addresses

@@ -354,7 +354,8 @@ public:
 
     const std::string get_fw_version_string(void){
         boost::uint32_t minor = this->get_reg<boost::uint32_t, USRP2_REG_ACTION_FW_PEEK32>(U2_FW_REG_VER_MINOR);
-        return str(boost::format("%u.%u") % _protocol_compat % minor);
+        boost::uint32_t githash = this->get_reg<boost::uint32_t, USRP2_REG_ACTION_FW_PEEK32>(U2_FW_REG_GIT_HASH);
+        return str(boost::format("%u.%u-g%x") % _protocol_compat % minor % githash);
     }
 
 private:

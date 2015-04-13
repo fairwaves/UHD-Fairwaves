@@ -323,6 +323,7 @@ main(void)
 
   //init readback for firmware minor version number
   fw_regs[U2_FW_REG_VER_MINOR] = USRP2_FW_VER_MINOR;
+  fw_regs[U2_FW_REG_GIT_HASH] = GITHASH;
 
 #ifdef BOOTLOADER
   //load the production FPGA image or firmware if appropriate
