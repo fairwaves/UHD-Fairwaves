@@ -82,7 +82,7 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
     //tune the receiver
     usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     return usrp->get_tx_freq();
 }
 
