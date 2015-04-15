@@ -108,6 +108,13 @@ MESSAGE(STATUS "Boost include directories: ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost library directories: ${Boost_LIBRARY_DIRS}")
 MESSAGE(STATUS "Boost libraries: ${Boost_LIBRARIES}")
 
+#additional pthread requirement that may not be automatically included by boost
+if (UNIX)
+    set(CMAKE_THREAD_PREFER_PTHREAD ON)
+    find_package(Threads)
+    list(APPEND UMTRX_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
 ########################################################################
 # Helpful compiler flags
 ########################################################################
