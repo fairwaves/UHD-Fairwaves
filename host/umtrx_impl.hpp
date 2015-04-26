@@ -119,10 +119,40 @@ private:
     unsigned _pll_div;
     const char* get_hw_rev() const;
 
-    //communication interfaces
-    std::string _device_ip_addr;
-    umtrx_iface::sptr _iface;
-    umtrx_fifo_ctrl::sptr _ctrl;
+    // Supported Power Amplifiers
+    enum pa_type {
+        PA_NONE,         // No PA connected
+        PA_EPA881F40A,   // EPA881F40A GSM850
+        PA_EPA942H40A,   // EPA942H40A EGSM900
+        PA_EPA1800F37A   // EPA1800F37A DCS1800
+    };
+    // Map PA types to string names
+    struct pa_type_map_pair_t {
+        pa_type type;
+        std::string name;
+    };
+    static const pa_type_map_pair_t _pa_type_map[];
+    typedef std::map<double,double> pa_curve_t;
+    static const pa_curve_t _EPA942H40A_v2w_curve;
+    static const pa_curve_t _EPA942H40A_w2v_curve;
+
+    // PA/LNA configuration
+    pa_type _pa_type;
+    pa_type get_pa_type() const {return _pa_type;}
+    std::string get_pa_type_str() const {return pa_type_to_str(_pa_type);}
+    static std::string pa_type_to_str(pa_type pa);
+    static pa_type pa_str_to_type(std::string pa_str);
+    static double pa_interpolate_curve(const pa_curve_t &curve, double v);
+    const pa_curve_t &get_pa_curve(bool w2v) const;
+
+    // Optimal VGA settings for GSM signal, according to our measurements.
+    static const int UMTRX_VGA1_DEF;
+    static const int UMTRX_VGA2_DEF;
+
+    // Conversion table for converting DCDC_R values to actual voltages.
+    static const std::vector<double> _dcdc_val_to_volt;
+    // Find a dcdc_r value to approximate requested Vout voltage
+    static int volt_to_dcdc_r(double v);
 
     ads1015_ctrl _sense_pwr;
     ads1015_ctrl _sense_dc;
@@ -133,6 +163,17 @@ private:
     bool _pa_nlow;
     bool _pa_en1;
     bool _pa_en2;
+    uint8_t _pa_dcdc_r;
+
+    void set_pa_dcdc_r(uint8_t val);
+    uint8_t get_pa_dcdc_r() const {return _pa_dcdc_r;}
+    uhd::gain_range_t get_pa_power_range() const;
+    double set_pa_power(double power);
+
+    //communication interfaces
+    std::string _device_ip_addr;
+    umtrx_iface::sptr _iface;
+    umtrx_fifo_ctrl::sptr _ctrl;
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
@@ -145,7 +186,6 @@ private:
     time64_core_200::sptr _time64;
 
     //helper routines
-    void set_pa_dcdc_r(uint8_t val);
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
     double get_master_clock_rate(void) const { return 26e6; }
     double get_master_dsp_rate(void) const { return get_master_clock_rate()/2; }

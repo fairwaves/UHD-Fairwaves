@@ -33,6 +33,107 @@ using namespace uhd::usrp;
 using namespace uhd::transport;
 namespace asio = boost::asio;
 
+const umtrx_impl::pa_type_map_pair_t umtrx_impl::_pa_type_map[] = {
+    {umtrx_impl::PA_NONE, "NONE"}, // Also serves as the default
+    {umtrx_impl::PA_EPA881F40A, "EPA881F40A"},
+    {umtrx_impl::PA_EPA942H40A, "EPA942H40A"},
+    {umtrx_impl::PA_EPA1800F37A, "EPA1800F37A"}
+};
+
+// Values recommended by Andrey Sviyazov
+const int umtrx_impl::UMTRX_VGA1_DEF = -20;
+const int umtrx_impl::UMTRX_VGA2_DEF = 22;
+
+static const double _dcdc_val_to_volt_init[256] =
+{
+     9.300000, 9.320000, 9.340000, 9.320000, 9.360000, 9.380000, 9.380000, 9.400000,
+     9.400000, 9.400000, 9.440000, 9.440000, 9.460000, 9.480000, 9.500000, 9.500000,
+     9.500000, 9.520000, 9.540000, 9.560000, 9.580000, 9.580000, 9.580000, 9.600000,
+     9.620000, 9.620000, 9.640000, 9.660000, 9.660000, 9.680000, 9.700000, 9.720000,
+     9.760000, 9.760000, 9.760000, 9.760000, 9.800000, 9.800000, 9.820000, 9.840000,
+     9.840000, 9.860000, 9.880000, 9.900000, 9.920000, 9.920000, 9.960000, 9.960000,
+     9.960000, 10.000000, 10.000000, 10.040000, 10.040000, 10.060000, 10.080000, 10.100000,
+    10.120000, 10.140000, 10.160000, 10.180000, 10.200000, 10.240000, 10.240000, 10.260000,
+    10.280000, 10.300000, 10.320000, 10.320000, 10.360000, 10.380000, 10.400000, 10.400000,
+    10.420000, 10.440000, 10.460000, 10.500000, 10.520000, 10.540000, 10.560000, 10.580000,
+    10.600000, 10.620000, 10.640000, 10.660000, 10.680000, 10.720000, 10.760000, 10.760000,
+    10.780000, 10.820000, 10.840000, 10.860000, 10.880000, 10.900000, 10.940000, 10.960000,
+    11.000000, 11.000000, 11.020000, 11.060000, 11.080000, 11.120000, 11.140000, 11.180000,
+    11.200000, 11.220000, 11.260000, 11.280000, 11.320000, 11.360000, 11.380000, 11.400000,
+    11.420000, 11.460000, 11.500000, 11.520000, 11.560000, 11.580000, 11.620000, 11.640000,
+    11.680000, 11.700000, 11.740000, 11.780000, 11.780000, 11.860000, 11.860000, 11.920000,
+    11.920000, 11.980000, 11.980000, 12.020000, 12.080000, 12.120000, 12.140000, 12.200000,
+    12.200000, 12.240000, 12.300000, 12.340000, 12.400000, 12.440000, 12.480000, 12.500000,
+    12.520000, 12.560000, 12.600000, 12.640000, 12.680000, 12.760000, 12.780000, 12.840000,
+    12.880000, 12.940000, 12.980000, 13.040000, 13.100000, 13.120000, 13.180000, 13.240000,
+    13.240000, 13.300000, 13.360000, 13.440000, 13.500000, 13.540000, 13.620000, 13.680000,
+    13.720000, 13.760000, 13.820000, 13.860000, 13.920000, 13.980000, 14.080000, 14.140000,
+    14.180000, 14.240000, 14.320000, 14.380000, 14.420000, 14.480000, 14.560000, 14.640000,
+    14.720000, 14.800000, 14.900000, 14.980000, 15.060000, 15.100000, 15.180000, 15.280000,
+    15.340000, 15.400000, 15.460000, 15.600000, 15.660000, 15.740000, 15.860000, 15.960000,
+    16.020000, 16.120000, 16.200000, 16.320000, 16.420000, 16.520000, 16.640000, 16.760000,
+    16.820000, 16.900000, 17.040000, 17.140000, 17.260000, 17.360000, 17.500000, 17.620000,
+    17.760000, 17.880000, 18.020000, 18.160000, 18.300000, 18.440000, 18.580000, 18.640000,
+    18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.640000,
+    18.640000, 18.640000, 18.640000, 18.640000, 18.640000, 18.640000, 18.620000, 18.640000,
+    18.620000, 18.640000, 18.620000, 18.640000, 18.640000, 18.620000, 18.640000, 18.620000,
+    18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.620000
+};
+const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
+
+template<typename map_t>
+static  map_t map_reverse(map_t curve)
+{
+    map_t reversed;
+
+    for (typename map_t::iterator i = curve.begin(); i != curve.end(); ++i)
+        reversed[i->second] = i->first;
+
+    return reversed;
+}
+
+const umtrx_impl::pa_curve_t umtrx_impl::_EPA942H40A_v2w_curve = boost::assign::map_list_of
+    (9.5,   1.15)
+    (10,    1.31)
+    (11,    1.6)
+    (12,    1.9)
+    (12.5,  2.1)
+    (13,    2.25)
+    (13.5,  2.44)
+    (14,    2.6)
+    (14.5,  2.8)
+    (15,    3.0)
+    (15.5,  3.2)
+    (16,    3.45)
+    (16.5,  3.7)
+    (17,    3.9)
+    (17.5,  4.1)
+    (18,    4.35)
+    (18.5,  4.6)
+    (19,    4.8)
+    (19.5,  5.1)
+    (20,    5.4)
+    (20.5,  5.65)
+    (21.1,  6.0)
+    (21.6,  6.2)
+    (22.1,  6.5)
+    (22.6,  6.8)
+    (23.1,  7.1)
+    (23.4,  7.25)
+    (23.7,  7.4)
+    (24,    7.55)
+    (24.2,  7.7)
+    (24.5,  7.9)
+    (24.8,  8.0)
+    (25.2,  8.25)
+    (25.5,  8.45)
+    (25.9,  8.65)
+    (26.2,  8.9)
+    (26.6,  9.1)
+    (28,   10.0);
+const umtrx_impl::pa_curve_t umtrx_impl::_EPA942H40A_w2v_curve = map_reverse(umtrx_impl::_EPA942H40A_v2w_curve);
+
+
 /***********************************************************************
  * Make
  **********************************************************************/
@@ -230,6 +331,18 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     // TODO: Add EEPROM cell to manually override this
     _pll_div = 1;
+
+    ////////////////////////////////////////////////////////////////////
+    // get the atached PA/LNA type
+    ////////////////////////////////////////////////////////////////////
+    _pa_type = pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
+    if (_hw_rev < UMTRX_VER_2_3_1 and get_pa_type() != PA_NONE)
+    {
+        UHD_MSG(error) << "PA type " << get_pa_type_str() << " is not supported for UmTRX "
+                       << get_hw_rev() << ". Setting PA type to NONE." << std::endl;
+        _pa_type = PA_NONE;
+    }
+    UHD_MSG(status) << "Installed PA: " << get_pa_type_str() << std::endl;
 
     ////////////////////////////////////////////////////////////////////
     // create codec control objects
@@ -430,14 +543,32 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         }
 
         //tx gains
-        BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
+        if (get_pa_type() == PA_NONE)
         {
-            _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / name / "range")
-                .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
+            // Use internal LMS gain control if we don't have a PA
+            BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
+            {
+                _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / name / "range")
+                    .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
 
-            _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
-                .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
-                .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
+                _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
+                    .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
+                    .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
+            }
+        } else {
+            // Set LMS internal VGA gains to optimal values
+            ctrl->set_tx_gain(UMTRX_VGA1_DEF, "VGA1");
+            ctrl->set_tx_gain(UMTRX_VGA2_DEF, "VGA2");
+
+            // Use PA control to control output power
+            _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / "PA" / "range")
+                .publish(boost::bind(&umtrx_impl::get_pa_power_range, this));
+
+            _tree->create<double>(tx_rf_fe_path / "gains" / "PA" / "value")
+                .coerce(boost::bind(&umtrx_impl::set_pa_power, this, _1))
+                // Set default output power to maximum
+                .set(get_pa_power_range().stop());
+
         }
 
         //rx freq
@@ -574,11 +705,114 @@ umtrx_impl::~umtrx_impl(void)
     }
 }
 
+int umtrx_impl::volt_to_dcdc_r(double v)
+{
+    if (v <= _dcdc_val_to_volt[0])
+        return 0;
+    else if (v >= _dcdc_val_to_volt[255])
+        return 255;
+    else
+        return std::lower_bound(_dcdc_val_to_volt.begin(), _dcdc_val_to_volt.end(), v) - _dcdc_val_to_volt.begin();
+}
+
+std::string umtrx_impl::pa_type_to_str(pa_type pa)
+{
+    BOOST_FOREACH(const umtrx_impl::pa_type_map_pair_t &pa_map_pair, _pa_type_map)
+    {
+        if (pa_map_pair.type == pa)
+            return pa_map_pair.name;
+    }
+    throw uhd::environment_error("Can't map PA type to a string.");
+    return "NONE";
+}
+
+umtrx_impl::pa_type umtrx_impl::pa_str_to_type(std::string pa_str)
+{
+    BOOST_FOREACH(const umtrx_impl::pa_type_map_pair_t &pa_map_pair, _pa_type_map)
+    {
+        if (pa_map_pair.name == pa_str)
+            return pa_map_pair.type;
+    }
+    UHD_MSG(error) << "PA name " << pa_str << " is not recognized. "
+                   << "Setting PA type to NONE." << std::endl;
+    return umtrx_impl::PA_NONE;
+}
+
 void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 {
     // AD5245 control
     if (_hw_rev >= UMTRX_VER_2_3_1)
+    {
+        _pa_dcdc_r = val;
         _iface->write_i2c(BOOST_BINARY(0101100), boost::assign::list_of(0)(val));
+    }
+}
+
+double umtrx_impl::pa_interpolate_curve(const pa_curve_t &curve, double v)
+{
+    pa_curve_t::const_iterator i = curve.upper_bound(v);
+    if (i == curve.end())
+    {
+        return (--i)->second;
+    }
+    if (i == curve.begin())
+    {
+        return i->second;
+    }
+    pa_curve_t::const_iterator l=i;
+    --l;
+
+    const double delta=(v - l->first) / (i->first - l->first);
+    return delta*i->second + (1-delta)*l->second;
+}
+
+const umtrx_impl::pa_curve_t &umtrx_impl::get_pa_curve(bool w2v) const
+{
+    switch (get_pa_type())
+    {
+    case PA_NONE:
+        throw uhd::key_error("umtrx_impl::get_pa_curve() must not be called with PA type NONE");
+    case PA_EPA881F40A:
+    case PA_EPA942H40A:
+    case PA_EPA1800F37A:
+        if (w2v)
+            return _EPA942H40A_w2v_curve;
+        else
+            return _EPA942H40A_v2w_curve;
+    default:
+        throw uhd::key_error("Unknown PA type in umtrx_impl::get_pa_curve()");
+    }
+}
+
+uhd::gain_range_t umtrx_impl::get_pa_power_range() const
+{
+    const umtrx_impl::pa_curve_t &curve = get_pa_curve(false);
+    return uhd::gain_range_t(curve.begin()->second, curve.rbegin()->second, 0.1);
+}
+
+double umtrx_impl::set_pa_power(double power)
+{
+    // TODO:: Use DCDC bypass for maximum output power
+    // TODO:: Limit output power for UmSITE-TM3
+
+    // Find voltage required for the requested output power
+    double v = pa_interpolate_curve(get_pa_curve(true), power);
+    uint8_t dcdc_val = volt_to_dcdc_r(v);
+    // Set the value
+    set_pa_dcdc_r(dcdc_val);
+
+    // Check what power do we actually have by reading the DCDC voltage
+    // and converting it to the PA power
+    double v_actual = read_dc_v("DCOUT").to_real();
+    double w_actual = pa_interpolate_curve(get_pa_curve(false), v_actual);
+
+    // TODO:: Check that power is actually there by reading VSWR sensor.
+
+    UHD_MSG(status) << "Setting PA power: Requested=" << power << "W "
+                    << "(" << v << "V dcdc_r=" << int(dcdc_val) << "). Actual=" << w_actual <<"W "
+                    << "(" << v_actual << "V)" << std::endl;
+
+    return w_actual;
 }
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
