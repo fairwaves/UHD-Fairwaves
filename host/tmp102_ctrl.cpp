@@ -20,6 +20,10 @@
 
 #include <iostream>
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1700)
+#define nan(arg) std::strtod("NAN()", (char**)NULL)
+#endif
+
 using namespace uhd;
 
 tmp102_ctrl::tmp102_ctrl()
