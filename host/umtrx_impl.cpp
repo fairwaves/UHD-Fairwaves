@@ -409,9 +409,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //sensors -- always say locked
         _tree->create<sensor_value_t>(rx_rf_fe_path / "sensors" / "lo_locked")
-            .set(sensor_value_t("LO", true, "locked", "unlocked"));
+            .publish(boost::bind(&lms6002d_ctrl::get_rx_pll_locked, ctrl));
         _tree->create<sensor_value_t>(tx_rf_fe_path / "sensors" / "lo_locked")
-            .set(sensor_value_t("LO", true, "locked", "unlocked"));
+            .publish(boost::bind(&lms6002d_ctrl::get_tx_pll_locked, ctrl));
 
         //rx gains
         BOOST_FOREACH(const std::string &name, ctrl->get_rx_gains())

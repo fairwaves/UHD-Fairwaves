@@ -125,6 +125,16 @@ public:
         return this->set_enabled(dboard_iface::UNIT_TX, enb);
     }
 
+    uhd::sensor_value_t get_rx_pll_locked()
+    {
+        return uhd::sensor_value_t("LO", lms.get_rx_pll_locked(), "locked", "unlocked");
+    }
+
+    uhd::sensor_value_t get_tx_pll_locked()
+    {
+        return uhd::sensor_value_t("LO", lms.get_tx_pll_locked(), "locked", "unlocked");
+    }
+
     uhd::freq_range_t get_rx_bw_range(void)
     {
         return lms_bandwidth_range;

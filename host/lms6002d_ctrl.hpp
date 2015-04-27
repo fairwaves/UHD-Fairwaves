@@ -3,6 +3,7 @@
 
 #include <uhd/types/ranges.hpp>
 #include <uhd/types/serial.hpp>
+#include <uhd/types/sensors.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
 #include <string>
@@ -21,6 +22,9 @@ public:
 
     virtual bool set_rx_enabled(const bool enb) = 0;
     virtual bool set_tx_enabled(const bool enb) = 0;
+
+    virtual uhd::sensor_value_t get_rx_pll_locked() = 0;
+    virtual uhd::sensor_value_t get_tx_pll_locked() = 0;
 
     virtual double set_rx_gain(const double gain, const std::string &name) = 0;
     virtual double set_tx_gain(const double gain, const std::string &name) = 0;

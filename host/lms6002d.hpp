@@ -91,6 +91,14 @@ public:
         lms_clear_bits(0x09, (1 << 2));
     }
 
+    bool get_tx_pll_locked() {
+        return get_txrx_pll_locked(0x10);
+    }
+
+    bool get_rx_pll_locked() {
+        return get_txrx_pll_locked(0x20);
+    }
+
     uint8_t get_tx_pa() {
         return lms_read_shift(0x44, (0x07 << 3), 3);
     }
@@ -471,6 +479,14 @@ public:
 
 protected:
     double txrx_pll_tune(uint8_t reg, double ref_clock, double out_freq);
+
+    bool get_txrx_pll_locked(uint8_t reg) {
+        int comp = read_reg(reg + 0x0a) >> 6;
+        if (comp == 0x00 || comp == 0x03)
+            return true;
+        else
+            return false;
+    }
 
     void lms_set_bits(uint8_t address, uint8_t mask) {
         write_reg(address, read_reg(address) | (mask));
