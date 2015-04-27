@@ -1,0 +1,1 @@
+#define UMTRX_VERSION "@UMTRX_VERSION@"
