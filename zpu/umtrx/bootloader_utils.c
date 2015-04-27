@@ -72,7 +72,7 @@ void do_the_bootload_thing(void) {
 	
 	if(BUTTON_PUSHED) { //see memory_map.h
 		puts("Starting USRP2+ in safe mode. Loading safe firmware.");
-        return;
+		return;
 	}
 	
 	if(!production_image) {
@@ -88,7 +88,7 @@ void do_the_bootload_thing(void) {
 #endif
 		}
 		puts("No valid production FPGA image found.\n");
-//		return;
+		return;
 	}
 	if(is_valid_fw_image(PROD_FW_IMAGE_LOCATION_ADDR)) {
 		puts("Valid production firmware found. Loading...");
@@ -107,22 +107,5 @@ void do_the_bootload_thing(void) {
 		return;
 	}
 	puts("No valid production firmware found. Falling through to built-in firmware.");
-	/*
-	if(is_valid_fw_image(SAFE_FW_IMAGE_LOCATION_ADDR)) {
-		spi_flash_read(SAFE_FW_IMAGE_LOCATION_ADDR, FW_IMAGE_SIZE_BYTES, (void *)RAM_BASE);
-		puts("Finished loading. Starting image.");
-		mdelay(300);
-		start_program();
-		puts("ERROR: return from main program! This should never happen!");
-		mdelay(300);
-#ifdef SPARTAN6
-		icap_s6_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR, SAFE_FPGA_IMAGE_LOCATION_ADDR);
-#else
-		icap_s3_reload_fpga(SAFE_FPGA_IMAGE_LOCATION_ADDR);
-#endif
-		return;
-	}
-    puts("ERROR: no safe firmware image available. Falling through to built-in firmware.");
-    */
 #endif
 }
