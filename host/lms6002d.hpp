@@ -482,7 +482,7 @@ protected:
 
     bool get_txrx_pll_locked(uint8_t reg) {
         int comp = read_reg(reg + 0x0a) >> 6;
-        if (comp == 0x00 || comp == 0x03)
+        if (comp == 0x00)
             return true;
         else
             return false;
