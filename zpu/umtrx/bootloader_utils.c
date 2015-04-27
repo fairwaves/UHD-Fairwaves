@@ -59,7 +59,7 @@ void start_program(void)
 
 void do_the_bootload_thing(void) {
 #ifdef NO_FLASH
-	puts("Starting USRP2+ without flash.");
+	puts("Starting UmTRX without flash.");
 	return;
 #else
 	spif_init(); //initialize SPI flash clock
@@ -71,7 +71,7 @@ void do_the_bootload_thing(void) {
 	set_safe_booted_flag(0); //haven't booted yet
 	
 	if(BUTTON_PUSHED) { //see memory_map.h
-		puts("Starting USRP2+ in safe mode. Loading safe firmware.");
+		puts("Starting UmTRX in safe mode. Loading safe firmware.");
 		return;
 	}
 	
