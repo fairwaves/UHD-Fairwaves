@@ -87,14 +87,14 @@ public:
     umtrx_lms6002d_dev(uhd::spi_iface::sptr spiface, const int slaveno) : _spiface(spiface), _slaveno(slaveno) {};
 
     virtual void write_reg(uint8_t addr, uint8_t data) {
-        if (verbosity>2) printf("lms6002d_ctrl_impl::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
+        if (verbosity>2) printf("umtrx_lms6002d_dev::write_reg(addr=0x%x, data=0x%x)\n", addr, data);
         uint16_t command = (((uint16_t)0x80 | (uint16_t)addr) << 8) | (uint16_t)data;
         _spiface->write_spi(_slaveno, spi_config_t::EDGE_RISE, command, 16);
     }
     virtual uint8_t read_reg(uint8_t addr) {
         if(addr > 127) return 0; // incorrect address, 7 bit long expected
         uint8_t data = _spiface->read_spi(_slaveno, spi_config_t::EDGE_RISE, addr << 8, 16);
-        if (verbosity>2) printf("lms6002d_ctrl_impl::read_reg(addr=0x%x) data=0x%x\n", addr, data);
+        if (verbosity>2) printf("umtrx_lms6002d_dev::read_reg(addr=0x%x) data=0x%x\n", addr, data);
         return data;
     }
 };
