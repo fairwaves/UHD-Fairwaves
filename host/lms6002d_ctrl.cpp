@@ -195,6 +195,8 @@ public:
         return lms.get_tx_vga1dc_i_int();
     }
 
+protected:
+
     double set_freq(dboard_iface::unit_t unit, double f) {
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq(%f)\n", f);
         unsigned ref_freq = _clock_rate;
