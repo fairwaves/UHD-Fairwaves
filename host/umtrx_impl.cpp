@@ -294,6 +294,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     if (_pa["A"])
     {
         _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power());
+        if (_pa_power_limit != _pa["A"]->max_power())
+            UHD_MSG(status) << "Limiting PA output power to: " << _pa_power_limit << std::endl;
     }
 
     ////////////////////////////////////////////////////////////////////
