@@ -21,7 +21,17 @@
 cmake_minimum_required(VERSION 2.8)
 project(UmTRX-UHD)
 
-set(UMTRX_VERSION 1.0.0)
+########################################################################
+# extract version info from git
+########################################################################
+include(${PROJECT_SOURCE_DIR}/cmake/GetGitRevisionDescription.cmake)
+git_describe(UMTRX_VERSION)
+message(STATUS "UMTRX_VERSION: ${UMTRX_VERSION}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/umtrx_version.in.hpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/umtrx_version.hpp"
+    IMMEDIATE @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ########################################################################
 ## Create a list of module sources
