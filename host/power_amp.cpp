@@ -18,7 +18,7 @@ public:
     // Voltage to Watts curves
     typedef std::map<double,double> pa_curve_t;
 
-    power_amp_impl(pa_type_t pa_type, pa_curve_t v2w, pa_curve_t w2v);
+    power_amp_impl(pa_type_t pa_type, const pa_curve_t &v2w, const pa_curve_t &w2v);
     ~power_amp_impl();
 
     // Get the PA type
@@ -183,7 +183,7 @@ power_amp::pa_type_t power_amp::pa_str_to_type(std::string pa_str)
  * power_amp_impl methods
  **********************************************************************/
 
-power_amp_impl::power_amp_impl(pa_type_t pa_type, pa_curve_t v2w, pa_curve_t w2v)
+power_amp_impl::power_amp_impl(pa_type_t pa_type, const pa_curve_t &v2w, const pa_curve_t &w2v)
     : _pa_type(pa_type)
     , _v2w_curve(v2w)
     , _w2v_curve(w2v)

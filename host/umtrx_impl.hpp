@@ -142,8 +142,6 @@ private:
 
     void set_pa_dcdc_r(uint8_t val);
     uint8_t get_pa_dcdc_r() const {return _pa_dcdc_r;}
-    uhd::gain_range_t get_pa_power_range(const std::string &which) const;
-    double set_pa_power(double power, const std::string &which);
 
     //communication interfaces
     std::string _device_ip_addr;
@@ -183,6 +181,8 @@ private:
     void set_nlow(bool en);
     void set_divsw1(bool en);
     void set_divsw2(bool en);
+    uhd::gain_range_t get_pa_power_range(const std::string &which) const;
+    double set_pa_power(double power, const std::string &which);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
     std::complex<double> get_dc_offset_correction(const std::string &which) const;
