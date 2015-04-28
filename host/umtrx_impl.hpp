@@ -169,6 +169,8 @@ private:
     void set_divsw2(bool en);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
+    std::complex<double> get_dc_offset_correction(const std::string &which) const;
+    void set_dc_offset_correction(const std::string &which, const std::complex<double> &corr);
 
     //temp sensors read values in degC
     uhd::sensor_value_t read_temp_c(const std::string &which);
