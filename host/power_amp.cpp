@@ -202,7 +202,7 @@ double power_amp_impl::min_power() const
 
 double power_amp_impl::max_power() const
 {
-    return _w2v_curve.begin()->first;
+    return _w2v_curve.rbegin()->first;
 }
 
 double power_amp_impl::watts_for(double v) const
