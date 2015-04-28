@@ -30,6 +30,7 @@
 #include "cores/time64_core_200.hpp"
 #include "ads1015_ctrl.hpp"
 #include "tmp102_ctrl.hpp"
+#include "power_amp.hpp"
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/device.hpp>
@@ -119,32 +120,6 @@ private:
     unsigned _pll_div;
     const char* get_hw_rev() const;
 
-    // Supported Power Amplifiers
-    enum pa_type {
-        PA_NONE,         // No PA connected
-        PA_EPA881F40A,   // EPA881F40A GSM850
-        PA_EPA942H40A,   // EPA942H40A EGSM900
-        PA_EPA1800F37A   // EPA1800F37A DCS1800
-    };
-    // Map PA types to string names
-    struct pa_type_map_pair_t {
-        pa_type type;
-        std::string name;
-    };
-    static const pa_type_map_pair_t _pa_type_map[];
-    typedef std::map<double,double> pa_curve_t;
-    static const pa_curve_t _EPA942H40A_v2w_curve;
-    static const pa_curve_t _EPA942H40A_w2v_curve;
-
-    // PA/LNA configuration
-    pa_type _pa_type;
-    pa_type get_pa_type() const {return _pa_type;}
-    std::string get_pa_type_str() const {return pa_type_to_str(_pa_type);}
-    static std::string pa_type_to_str(pa_type pa);
-    static pa_type pa_str_to_type(std::string pa_str);
-    static double pa_interpolate_curve(const pa_curve_t &curve, double v);
-    const pa_curve_t &get_pa_curve(bool w2v) const;
-
     // Optimal VGA settings for GSM signal, according to our measurements.
     static const int UMTRX_VGA1_DEF;
     static const int UMTRX_VGA2_DEF;
@@ -167,8 +142,8 @@ private:
 
     void set_pa_dcdc_r(uint8_t val);
     uint8_t get_pa_dcdc_r() const {return _pa_dcdc_r;}
-    uhd::gain_range_t get_pa_power_range() const;
-    double set_pa_power(double power);
+    uhd::gain_range_t get_pa_power_range(const std::string &which) const;
+    double set_pa_power(double power, const std::string &which);
 
     //communication interfaces
     std::string _device_ip_addr;
@@ -177,6 +152,7 @@ private:
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
+    uhd::dict<std::string, uhd::power_amp::sptr> _pa;
 
     //control for FPGA cores
     std::vector<rx_frontend_core_200::sptr> _rx_fes;

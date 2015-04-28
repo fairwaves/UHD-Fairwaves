@@ -46,6 +46,7 @@ list(APPEND UMTRX_SOURCES
     lms6002d_ctrl.cpp
     tmp102_ctrl.cpp
     ads1015_ctrl.cpp
+    power_amp.cpp
     umtrx_fifo_ctrl.cpp
     missing/platform.cpp #not properly exported from uhd, so we had to copy it
     cores/rx_frontend_core_200.cpp

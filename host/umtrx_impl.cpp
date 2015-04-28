@@ -33,13 +33,6 @@ using namespace uhd::usrp;
 using namespace uhd::transport;
 namespace asio = boost::asio;
 
-const umtrx_impl::pa_type_map_pair_t umtrx_impl::_pa_type_map[] = {
-    {umtrx_impl::PA_NONE, "NONE"}, // Also serves as the default
-    {umtrx_impl::PA_EPA881F40A, "EPA881F40A"},
-    {umtrx_impl::PA_EPA942H40A, "EPA942H40A"},
-    {umtrx_impl::PA_EPA1800F37A, "EPA1800F37A"}
-};
-
 // Values recommended by Andrey Sviyazov
 const int umtrx_impl::UMTRX_VGA1_DEF = -20;
 const int umtrx_impl::UMTRX_VGA2_DEF = 22;
@@ -80,58 +73,6 @@ static const double _dcdc_val_to_volt_init[256] =
     18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.620000, 18.640000, 18.620000
 };
 const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
-
-template<typename map_t>
-static  map_t map_reverse(map_t curve)
-{
-    map_t reversed;
-
-    for (typename map_t::iterator i = curve.begin(); i != curve.end(); ++i)
-        reversed[i->second] = i->first;
-
-    return reversed;
-}
-
-const umtrx_impl::pa_curve_t umtrx_impl::_EPA942H40A_v2w_curve = boost::assign::map_list_of
-    (9.5,   1.15)
-    (10,    1.31)
-    (11,    1.6)
-    (12,    1.9)
-    (12.5,  2.1)
-    (13,    2.25)
-    (13.5,  2.44)
-    (14,    2.6)
-    (14.5,  2.8)
-    (15,    3.0)
-    (15.5,  3.2)
-    (16,    3.45)
-    (16.5,  3.7)
-    (17,    3.9)
-    (17.5,  4.1)
-    (18,    4.35)
-    (18.5,  4.6)
-    (19,    4.8)
-    (19.5,  5.1)
-    (20,    5.4)
-    (20.5,  5.65)
-    (21.1,  6.0)
-    (21.6,  6.2)
-    (22.1,  6.5)
-    (22.6,  6.8)
-    (23.1,  7.1)
-    (23.4,  7.25)
-    (23.7,  7.4)
-    (24,    7.55)
-    (24.2,  7.7)
-    (24.5,  7.9)
-    (24.8,  8.0)
-    (25.2,  8.25)
-    (25.5,  8.45)
-    (25.9,  8.65)
-    (26.2,  8.9)
-    (26.6,  9.1)
-    (28,   10.0);
-const umtrx_impl::pa_curve_t umtrx_impl::_EPA942H40A_w2v_curve = map_reverse(umtrx_impl::_EPA942H40A_v2w_curve);
 
 
 /***********************************************************************
@@ -335,14 +276,20 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // get the atached PA/LNA type
     ////////////////////////////////////////////////////////////////////
-    _pa_type = pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
-    if (_hw_rev < UMTRX_VER_2_3_1 and get_pa_type() != PA_NONE)
+    power_amp::pa_type_t pa_type = power_amp::pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
+    if (_hw_rev < UMTRX_VER_2_3_1 and pa_type != power_amp::PA_NONE)
     {
-        UHD_MSG(error) << "PA type " << get_pa_type_str() << " is not supported for UmTRX "
+        UHD_MSG(error) << "PA type " << power_amp::pa_type_to_str(pa_type) << " is not supported for UmTRX "
                        << get_hw_rev() << ". Setting PA type to NONE." << std::endl;
-        _pa_type = PA_NONE;
+        pa_type = power_amp::PA_NONE;
     }
-    UHD_MSG(status) << "Installed PA: " << get_pa_type_str() << std::endl;
+
+    for (char name = 'A'; name <= 'B'; name++)
+    {
+        std::string name_str = std::string(1, name);
+        _pa[name_str] = power_amp::make(pa_type);
+        UHD_MSG(status) << "Installed PA for side" << name_str << ": " << power_amp::pa_type_to_str(pa_type) << std::endl;
+    }
 
     ////////////////////////////////////////////////////////////////////
     // create codec control objects
@@ -543,7 +490,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         }
 
         //tx gains
-        if (get_pa_type() == PA_NONE)
+        if (!_pa[fe_name])
         {
             // Use internal LMS gain control if we don't have a PA
             BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
@@ -562,12 +509,12 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
             // Use PA control to control output power
             _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / "PA" / "range")
-                .publish(boost::bind(&umtrx_impl::get_pa_power_range, this));
+                .publish(boost::bind(&umtrx_impl::get_pa_power_range, this, fe_name));
 
             _tree->create<double>(tx_rf_fe_path / "gains" / "PA" / "value")
-                .coerce(boost::bind(&umtrx_impl::set_pa_power, this, _1))
+                .coerce(boost::bind(&umtrx_impl::set_pa_power, this, _1, fe_name))
                 // Set default output power to maximum
-                .set(get_pa_power_range().stop());
+                .set(get_pa_power_range(fe_name).stop());
 
         }
 
@@ -715,29 +662,6 @@ int umtrx_impl::volt_to_dcdc_r(double v)
         return std::lower_bound(_dcdc_val_to_volt.begin(), _dcdc_val_to_volt.end(), v) - _dcdc_val_to_volt.begin();
 }
 
-std::string umtrx_impl::pa_type_to_str(pa_type pa)
-{
-    BOOST_FOREACH(const umtrx_impl::pa_type_map_pair_t &pa_map_pair, _pa_type_map)
-    {
-        if (pa_map_pair.type == pa)
-            return pa_map_pair.name;
-    }
-    throw uhd::environment_error("Can't map PA type to a string.");
-    return "NONE";
-}
-
-umtrx_impl::pa_type umtrx_impl::pa_str_to_type(std::string pa_str)
-{
-    BOOST_FOREACH(const umtrx_impl::pa_type_map_pair_t &pa_map_pair, _pa_type_map)
-    {
-        if (pa_map_pair.name == pa_str)
-            return pa_map_pair.type;
-    }
-    UHD_MSG(error) << "PA name " << pa_str << " is not recognized. "
-                   << "Setting PA type to NONE." << std::endl;
-    return umtrx_impl::PA_NONE;
-}
-
 void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 {
     // AD5245 control
@@ -748,55 +672,18 @@ void umtrx_impl::set_pa_dcdc_r(uint8_t val)
     }
 }
 
-double umtrx_impl::pa_interpolate_curve(const pa_curve_t &curve, double v)
+uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
 {
-    pa_curve_t::const_iterator i = curve.upper_bound(v);
-    if (i == curve.end())
-    {
-        return (--i)->second;
-    }
-    if (i == curve.begin())
-    {
-        return i->second;
-    }
-    pa_curve_t::const_iterator l=i;
-    --l;
-
-    const double delta=(v - l->first) / (i->first - l->first);
-    return delta*i->second + (1-delta)*l->second;
+    return uhd::gain_range_t(_pa[which]->min_power(), _pa[which]->max_power(), 0.1);
 }
 
-const umtrx_impl::pa_curve_t &umtrx_impl::get_pa_curve(bool w2v) const
-{
-    switch (get_pa_type())
-    {
-    case PA_NONE:
-        throw uhd::key_error("umtrx_impl::get_pa_curve() must not be called with PA type NONE");
-    case PA_EPA881F40A:
-    case PA_EPA942H40A:
-    case PA_EPA1800F37A:
-        if (w2v)
-            return _EPA942H40A_w2v_curve;
-        else
-            return _EPA942H40A_v2w_curve;
-    default:
-        throw uhd::key_error("Unknown PA type in umtrx_impl::get_pa_curve()");
-    }
-}
-
-uhd::gain_range_t umtrx_impl::get_pa_power_range() const
-{
-    const umtrx_impl::pa_curve_t &curve = get_pa_curve(false);
-    return uhd::gain_range_t(curve.begin()->second, curve.rbegin()->second, 0.1);
-}
-
-double umtrx_impl::set_pa_power(double power)
+double umtrx_impl::set_pa_power(double power, const std::string &which)
 {
     // TODO:: Use DCDC bypass for maximum output power
     // TODO:: Limit output power for UmSITE-TM3
 
     // Find voltage required for the requested output power
-    double v = pa_interpolate_curve(get_pa_curve(true), power);
+    double v = _pa[which]->volts_for(power);
     uint8_t dcdc_val = volt_to_dcdc_r(v);
     // Set the value
     set_pa_dcdc_r(dcdc_val);
@@ -804,7 +691,7 @@ double umtrx_impl::set_pa_power(double power)
     // Check what power do we actually have by reading the DCDC voltage
     // and converting it to the PA power
     double v_actual = read_dc_v("DCOUT").to_real();
-    double w_actual = pa_interpolate_curve(get_pa_curve(false), v_actual);
+    double w_actual = _pa[which]->watts_for(v_actual);
 
     // TODO:: Check that power is actually there by reading VSWR sensor.
 
