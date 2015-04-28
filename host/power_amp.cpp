@@ -1,6 +1,7 @@
 #include "power_amp.hpp"
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 //#include <boost/utility.hpp>
 #include <uhd/utils/msg.hpp>
 #include <uhd/exception.hpp>
@@ -52,6 +53,7 @@ template<typename map_t> static map_t map_reverse(map_t curve);
  * Constants
  **********************************************************************/
 
+// NOTE: All names MUST be uppercase for pa_str_to_type() to work correctly
 const power_amp::pa_type_map_pair_t power_amp::_pa_type_map[] = {
     {power_amp::PA_NONE, "NONE"}, // Also serves as the default
     {power_amp::PA_EPA881F40A, "EPA881F40A"},
@@ -167,11 +169,12 @@ std::string power_amp::pa_type_to_str(pa_type_t pa)
     return "NONE";
 }
 
-power_amp::pa_type_t power_amp::pa_str_to_type(std::string pa_str)
+power_amp::pa_type_t power_amp::pa_str_to_type(const std::string &pa_str)
 {
+    std::string pa_str_upper = boost::to_upper_copy(pa_str);
     BOOST_FOREACH(const power_amp::pa_type_map_pair_t &pa_map_pair, _pa_type_map)
     {
-        if (pa_map_pair.name == pa_str)
+        if (pa_map_pair.name == pa_str_upper)
             return pa_map_pair.type;
     }
     UHD_MSG(error) << "PA name " << pa_str << " is not recognized. "

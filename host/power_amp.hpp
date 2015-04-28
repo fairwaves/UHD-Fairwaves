@@ -32,7 +32,7 @@ public:
     static std::string pa_type_to_str(pa_type_t pa);
 
     // Convert a string to a PA type
-    static pa_type_t pa_str_to_type(std::string pa_str);
+    static pa_type_t pa_str_to_type(const std::string &pa_str);
 
     virtual double min_power() const =0;
     virtual double max_power() const =0;
