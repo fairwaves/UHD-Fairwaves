@@ -103,10 +103,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         for (i = 0; i < 256; i++) {
             tree->access<uint8_t>(mb_path / "pa_dcdc_r").set(i);
             if (i == 0) {
-                sleep(1);
+                boost::this_thread::sleep(boost::posix_time::seconds(1));
             }
 
-            usleep(100 * 1000); // Wait for value to settle
+            boost::this_thread::sleep(boost::posix_time::milliseconds(100)); // Wait for value to settle
 
             std::cout << "[" << std::setw(3) << i << "]="
                       << tree->access<uhd::sensor_value_t>(mb_path / "sensors" / "voltageDCOUT").get().to_pp_string().c_str()

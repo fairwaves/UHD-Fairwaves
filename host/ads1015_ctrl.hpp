@@ -29,7 +29,7 @@
  *
  * Control of TI's ADS1015 12bit ADC with 4 muliplexers
  */
-class UHD_API ads1015_ctrl {
+class ads1015_ctrl {
 public:
     enum ads1015_addr {
         ADS1015_NONE        = 0,

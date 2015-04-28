@@ -19,7 +19,7 @@
 #define INCLUDED_LMS6002D_HPP
 
 #include <stdio.h>
-#include <inttypes.h>
+#include <stdint.h>
 #include <assert.h>
 
 /*!

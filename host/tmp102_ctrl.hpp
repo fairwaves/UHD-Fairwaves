@@ -29,7 +29,7 @@
  *
  * Control of TI's TMP102 temperature sensors
  */
-class UHD_API tmp102_ctrl {
+class tmp102_ctrl {
 public:
         enum conversion_rate {
             TMP102_CR_025HZ = 0,
