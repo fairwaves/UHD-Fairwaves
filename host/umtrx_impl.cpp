@@ -274,7 +274,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _pll_div = 1;
 
     ////////////////////////////////////////////////////////////////////
-    // get the atached PA/LNA type
+    // get the atached PA type
     ////////////////////////////////////////////////////////////////////
     power_amp::pa_type_t pa_type = power_amp::pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
     if (_hw_rev < UMTRX_VER_2_3_1 and pa_type != power_amp::PA_NONE)
@@ -289,6 +289,11 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         std::string name_str = std::string(1, name);
         _pa[name_str] = power_amp::make(pa_type);
         UHD_MSG(status) << "Installed PA for side" << name_str << ": " << power_amp::pa_type_to_str(pa_type) << std::endl;
+    }
+
+    if (_pa["A"])
+    {
+        _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power());
     }
 
     ////////////////////////////////////////////////////////////////////
@@ -674,7 +679,8 @@ void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 
 uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
 {
-    return uhd::gain_range_t(_pa[which]->min_power(), _pa[which]->max_power(), 0.1);
+    double min_power = _pa[which]->min_power();
+    return uhd::gain_range_t(min_power, _pa_power_limit, 0.1);
 }
 
 double umtrx_impl::set_pa_power(double power, const std::string &which)
