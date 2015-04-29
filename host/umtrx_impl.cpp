@@ -293,8 +293,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     if (_pa["A"])
     {
-        _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power());
-        if (_pa_power_limit != _pa["A"]->max_power())
+        _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power_w());
+        if (_pa_power_limit != _pa["A"]->max_power_w())
             UHD_MSG(status) << "Limiting PA output power to: " << _pa_power_limit << " W" << std::endl;
     }
 
@@ -681,8 +681,9 @@ void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 
 uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
 {
-    double min_power = _pa[which]->min_power();
-    return uhd::gain_range_t(min_power, _pa_power_limit, 0.1);
+    double min_power = power_amp::w2dBm(_pa[which]->min_power_w());
+    double max_power = power_amp::w2dBm(_pa_power_limit);
+    return uhd::gain_range_t(min_power, max_power, 0.1);
 }
 
 double umtrx_impl::set_pa_power(double power, const std::string &which)
@@ -691,7 +692,7 @@ double umtrx_impl::set_pa_power(double power, const std::string &which)
     // TODO:: Limit output power for UmSITE-TM3
 
     // Find voltage required for the requested output power
-    double v = _pa[which]->volts_for(power);
+    double v = _pa[which]->dBm2v(power);
     uint8_t dcdc_val = volt_to_dcdc_r(v);
     // Set the value
     set_pa_dcdc_r(dcdc_val);
@@ -699,15 +700,16 @@ double umtrx_impl::set_pa_power(double power, const std::string &which)
     // Check what power do we actually have by reading the DCDC voltage
     // and converting it to the PA power
     double v_actual = read_dc_v("DCOUT").to_real();
-    double w_actual = _pa[which]->watts_for(v_actual);
+    double power_actual = _pa[which]->v2dBm(v_actual);
 
     // TODO:: Check that power is actually there by reading VSWR sensor.
 
-    UHD_MSG(status) << "Setting PA power: Requested=" << power << "W "
-                    << "(" << v << "V dcdc_r=" << int(dcdc_val) << "). Actual=" << w_actual <<"W "
+    UHD_MSG(status) << "Setting PA power: Requested: " << power << "dBm = " << power_amp::dBm2w(power) << "W "
+                    << "(" << v << "V dcdc_r=" << int(dcdc_val) << "). "
+                    << "Actual: " << power_actual << "dBm = " << power_amp::dBm2w(power_actual) <<"W "
                     << "(" << v_actual << "V)" << std::endl;
 
-    return w_actual;
+    return power_actual;
 }
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)

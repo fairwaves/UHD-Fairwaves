@@ -34,11 +34,26 @@ public:
     // Convert a string to a PA type
     static pa_type_t pa_str_to_type(const std::string &pa_str);
 
-    virtual double min_power() const =0;
-    virtual double max_power() const =0;
+    // Convert watts -> dBm
+    static double w2dBm(double w);
+    // Convert dBm -> watts
+    static double dBm2w(double dBm);
 
-    virtual double watts_for(double v) const =0;
-    virtual double volts_for(double w) const =0;
+    // Minimum and maximum supported output power in watts
+    virtual double min_power_w() const =0;
+    virtual double max_power_w() const =0;
+    // Minimum and maximum supported output power in dBm
+    virtual double min_power_dBm() const =0;
+    virtual double max_power_dBm() const =0;
+
+    // Get output power in watts for a given voltage
+    virtual double v2w(double v) const =0;
+    // Get input voltage required to generate given output power (in watts)
+    virtual double w2v(double w) const =0;
+    // Get output power in dBm for a given voltage
+    virtual double v2dBm(double v) const =0;
+    // Get input voltage required to generate given output power (in dBm)
+    virtual double dBm2v(double dBm) const =0;
 
 protected:
 

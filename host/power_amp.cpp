@@ -1,11 +1,10 @@
 #include "power_amp.hpp"
+#include <uhd/utils/msg.hpp>
+#include <uhd/exception.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-//#include <boost/utility.hpp>
-#include <uhd/utils/msg.hpp>
-#include <uhd/exception.hpp>
-
+#include <cmath>
 
 using namespace uhd;
 
@@ -20,19 +19,29 @@ public:
     typedef std::map<double,double> pa_curve_t;
 
     power_amp_impl(pa_type_t pa_type, const pa_curve_t &v2w, const pa_curve_t &w2v);
-    ~power_amp_impl();
+    virtual ~power_amp_impl();
 
     // Get the PA type
-    pa_type_t get_pa_type() const {return _pa_type;}
+    virtual pa_type_t get_pa_type() const {return _pa_type;}
 
     // Get the PA type as a string
-    std::string get_pa_type_str() const {return pa_type_to_str(_pa_type);}
+    virtual std::string get_pa_type_str() const {return pa_type_to_str(_pa_type);}
 
-    double min_power() const;
-    double max_power() const;
+    // Minimum and maximum supported output power in watts
+    virtual double min_power_w() const;
+    virtual double max_power_w() const;
+    // Minimum and maximum supported output power in dBm
+    virtual double min_power_dBm() const;
+    virtual double max_power_dBm() const;
 
-    double watts_for(double v) const;
-    double volts_for(double w) const;
+    // Get output power in watts for a given voltage
+    virtual double v2w(double v) const;
+    // Get input voltage required to generate given output power (in watts)
+    virtual double w2v(double w) const;
+    // Get output power in dBm for a given voltage
+    virtual double v2dBm(double v) const;
+    // Get input voltage required to generate given output power (in dBm)
+    virtual double dBm2v(double dBm) const;
 
 protected:
 
@@ -182,6 +191,16 @@ power_amp::pa_type_t power_amp::pa_str_to_type(const std::string &pa_str)
     return power_amp::PA_NONE;
 }
 
+double power_amp::w2dBm(double w)
+{
+    return 10*log10(w) + 30;
+}
+
+double power_amp::dBm2w(double dBm)
+{
+    return pow(10, (dBm-30)/10);
+}
+
 /***********************************************************************
  * power_amp_impl methods
  **********************************************************************/
@@ -198,22 +217,42 @@ power_amp_impl::~power_amp_impl()
 {
 }
 
-double power_amp_impl::min_power() const
+double power_amp_impl::min_power_w() const
 {
     return _w2v_curve.begin()->first;
 }
 
-double power_amp_impl::max_power() const
+double power_amp_impl::max_power_w() const
 {
     return _w2v_curve.rbegin()->first;
 }
 
-double power_amp_impl::watts_for(double v) const
+double power_amp_impl::min_power_dBm() const
+{
+    return w2dBm(min_power_w());
+}
+
+double power_amp_impl::max_power_dBm() const
+{
+    return w2dBm(max_power_w());
+}
+
+double power_amp_impl::v2w(double v) const
 {
     return pa_interpolate_curve(_v2w_curve, v);
 }
 
-double power_amp_impl::volts_for(double w) const
+double power_amp_impl::w2v(double w) const
 {
     return pa_interpolate_curve(_w2v_curve, w);
+}
+
+double power_amp_impl::v2dBm(double v) const
+{
+    return w2dBm(v2w(v));
+}
+
+double power_amp_impl::dBm2v(double dBm) const
+{
+    return w2v(dBm2w(dBm));
 }
