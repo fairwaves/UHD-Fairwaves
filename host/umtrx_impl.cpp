@@ -698,9 +698,6 @@ double umtrx_impl::set_pa_power(double power, const std::string &which)
     set_nlow(true);
     set_pa_dcdc_r(dcdc_val);
 
-    // Wait for the DCDC converter output to settle before we read it back
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-
     // Check what power do we actually have by reading the DCDC voltage
     // and converting it to the PA power
     double v_actual = read_dc_v("DCOUT").to_real();
