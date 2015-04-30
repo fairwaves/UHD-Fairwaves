@@ -695,6 +695,7 @@ double umtrx_impl::set_pa_power(double power, const std::string &which)
     double v = _pa[which]->dBm2v(power);
     uint8_t dcdc_val = volt_to_dcdc_r(v);
     // Set the value
+    set_nlow(true);
     set_pa_dcdc_r(dcdc_val);
 
     // Wait for the DCDC converter output to settle before we read it back
