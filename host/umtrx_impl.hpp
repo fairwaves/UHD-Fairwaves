@@ -172,6 +172,9 @@ private:
     std::complex<double> get_dc_offset_correction(const std::string &which) const;
     void set_dc_offset_correction(const std::string &which, const std::complex<double> &corr);
 
+    static double dc_offset_int2double(uint8_t corr);
+    static uint8_t dc_offset_double2int(double corr);
+
     //temp sensors read values in degC
     uhd::sensor_value_t read_temp_c(const std::string &which);
     uhd::sensor_value_t read_pa_v(const std::string &which);

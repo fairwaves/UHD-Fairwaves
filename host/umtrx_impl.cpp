@@ -507,18 +507,16 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //set Tx DC calibration values, which are read from mboard EEPROM
         std::string tx_name = (fe_name=="A")?"tx1":"tx2";
-        const std::string dc_i = _iface->mb_eeprom.get(tx_name+"-vga1-dc-i", "");
-        const std::string dc_q = _iface->mb_eeprom.get(tx_name+"-vga1-dc-q", "");
-        if (not dc_i.empty()) _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
-            .set(boost::lexical_cast<int>(dc_i));
-        if (not dc_q.empty()) _tree->access<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
-            .set(boost::lexical_cast<int>(dc_q));
+        const std::string dc_i_str = _iface->mb_eeprom.get(tx_name+"-vga1-dc-i", "");
+        const std::string dc_q_str = _iface->mb_eeprom.get(tx_name+"-vga1-dc-q", "");
+        double dc_i = dc_i_str.empty() ? 0.0 : dc_offset_int2double(boost::lexical_cast<int>(dc_i_str));
+        double dc_q = dc_q_str.empty() ? 0.0 : dc_offset_int2double(boost::lexical_cast<int>(dc_q_str));
 
         //plugin dc_offset from lms into the frontend corrections
         _tree->create<std::complex<double> >(mb_path / "tx_frontends" / fe_name / "dc_offset" / "value")
             .publish(boost::bind(&umtrx_impl::get_dc_offset_correction, this, fe_name))
             .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, _1))
-            .set(std::complex<double>(0.0, 0.0));
+            .set(std::complex<double>(dc_i, dc_q));
     }
 
     //set TCXO DAC calibration value, which is read from mboard EEPROM
@@ -626,14 +624,24 @@ uint16_t umtrx_impl::get_tcxo_dac(const umtrx_iface::sptr &iface){
 std::complex<double> umtrx_impl::get_dc_offset_correction(const std::string &which) const
 {
     return std::complex<double>(
-        (int(_lms_ctrl[which]->get_tx_vga1dc_i_int())-128)/128.0,
-        (int(_lms_ctrl[which]->get_tx_vga1dc_q_int())-128)/128.0);
+        dc_offset_int2double(_lms_ctrl[which]->get_tx_vga1dc_i_int()),
+        dc_offset_int2double(_lms_ctrl[which]->get_tx_vga1dc_q_int()));
 }
 
 void umtrx_impl::set_dc_offset_correction(const std::string &which, const std::complex<double> &corr)
 {
-    _lms_ctrl[which]->_set_tx_vga1dc_i_int(uint8_t((corr.real()*128) + 128.5));
-    _lms_ctrl[which]->_set_tx_vga1dc_q_int(uint8_t((corr.imag()*128) + 128.5));
+    _lms_ctrl[which]->_set_tx_vga1dc_i_int(dc_offset_double2int(corr.real()));
+    _lms_ctrl[which]->_set_tx_vga1dc_q_int(dc_offset_double2int(corr.imag()));
+}
+
+double umtrx_impl::dc_offset_int2double(uint8_t corr)
+{
+    return (corr-128)/128.0;
+}
+
+uint8_t umtrx_impl::dc_offset_double2int(double corr)
+{
+    return (int)(corr*128 + 128.5);
 }
 
 uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
