@@ -58,6 +58,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <uhd/utils/tasks.hpp>
 
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
@@ -200,6 +201,10 @@ private:
     uhd::sensor_value_t read_temp_c(const std::string &which);
     uhd::sensor_value_t read_pa_v(const std::string &which);
     uhd::sensor_value_t read_dc_v(const std::string &which);
+
+    //status monitoring
+    uhd::task::sptr _status_monitor_task;
+    void status_monitor_handler(void);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;

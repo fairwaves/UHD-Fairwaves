@@ -690,10 +690,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
+
+    _status_monitor_task = task::make(boost::bind(&umtrx_impl::status_monitor_handler, this));
 }
 
 umtrx_impl::~umtrx_impl(void)
 {
+    _status_monitor_task.reset();
+
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
         lms6002d_ctrl::sptr ctrl = _lms_ctrl[fe_name];
@@ -1052,3 +1056,18 @@ const char* umtrx_impl::get_hw_rev() const
     }
 }
 
+void umtrx_impl::status_monitor_handler(void)
+{
+    //TODO read the sensors and react...
+    //read_dc_v, etc...
+    UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
+
+    //TODO shutdown frontend when temp > thresh
+    //ctrl->set_rx_enabled(false);
+    //ctrl->set_tx_enabled(false);
+
+    //this sleep defines the polling time between status checks
+    //when the handler completes, it will be called again asap
+    //if the task is canceled, this sleep in interrupted for exit
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+}
