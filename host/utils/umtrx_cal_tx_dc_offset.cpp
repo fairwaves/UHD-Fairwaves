@@ -103,6 +103,7 @@ public:
     double init();
     void run_q(int dc_q);
     void run_i(int dc_i);
+    void run_iq(int dc_i, int dc_q);
 
     void set_dc_i(double i) {_dc_i_prop.set(i);}
     void set_dc_q(double q) {_dc_q_prop.set(q);}
@@ -129,7 +130,7 @@ protected:
     bool _debug_raw_data;
 
     double get_dbrms();
-    void run_x(int dc_val, uhd::property<uint8_t> &dc_prop, int &best_dc_val, const std::string which);
+    bool run_x();
 };
 
 dc_cal_t::dc_cal_t(uhd::property<uint8_t> &dc_i_prop, uhd::property<uint8_t> &dc_q_prop,
@@ -168,12 +169,29 @@ double dc_cal_t::init()
 
 void dc_cal_t::run_q(int dc_q)
 {
-    run_x(dc_q, _dc_q_prop, _best_dc_q, "q");
+    if (_verbose) printf("      dc_q = %d", dc_q);
+    _dc_q_prop.set(dc_q);
+    if (run_x())
+        _best_dc_q = dc_q;
 }
 
 void dc_cal_t::run_i(int dc_i)
 {
-    run_x(dc_i, _dc_i_prop, _best_dc_i, "i");
+    if (_verbose) printf("      dc_i = %d", dc_i);
+    _dc_i_prop.set(dc_i);
+    if (run_x())
+        _best_dc_i = dc_i;
+}
+
+void dc_cal_t::run_iq(int dc_i, int dc_q)
+{
+    if (_verbose) printf("      dc_i = %d dc_q = %d", dc_i, dc_q);
+    _dc_i_prop.set(dc_i);
+    _dc_q_prop.set(dc_q);
+    if (run_x()) {
+        _best_dc_i = dc_i;
+        _best_dc_q = dc_q;
+    }
 }
 
 double dc_cal_t::get_dbrms()
@@ -184,10 +202,9 @@ double dc_cal_t::get_dbrms()
     return compute_tone_dbrms(_buff, _bb_dc_freq/_rx_rate);
 }
 
-void dc_cal_t::run_x(int dc_val, uhd::property<uint8_t> &dc_prop, int &best_dc_val, const std::string which)
+bool dc_cal_t::run_x()
 {
-    if (_verbose) printf("      dc_%s = %d", which.c_str(), dc_val);
-    dc_prop.set(dc_val);
+    bool better = false;
 
     //get the DC offset tone size
     const double dc_dbrms = get_dbrms();
@@ -195,12 +212,13 @@ void dc_cal_t::run_x(int dc_val, uhd::property<uint8_t> &dc_prop, int &best_dc_v
 
     if (dc_dbrms < _lowest_offset){
         _lowest_offset = dc_dbrms;
-        best_dc_val = dc_val;
+        better = true;
         if (_verbose) printf("    *");
         if (_debug_raw_data) write_samples_to_file(_buff, "best_samples.dat");
     }
     if (_verbose) printf("\n");
 
+    return better;
 }
 
 /***********************************************************************
@@ -258,7 +276,6 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
 
         if (verbose) printf("    I in [%d; %d) step %d Q = %d\n",
                                         dc_i_start, dc_i_stop, dc_i_step, dc_cal.get_best_dc_q());
-
         dc_cal.set_dc_q_best();
         for (int dc_i = dc_i_start; dc_i <= dc_i_stop; dc_i += dc_i_step){
             dc_cal.run_i(dc_i);
@@ -266,7 +283,6 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
 
         if (verbose) printf("    I = %d Q in [%d; %d) step %d\n",
                                         dc_cal.get_best_dc_i(), dc_q_start, dc_q_stop, dc_q_step);
-
         dc_cal.set_dc_i_best();
         for (int dc_q = dc_q_start; dc_q <= dc_q_stop; dc_q += dc_q_step){
             dc_cal.run_q(dc_q);
