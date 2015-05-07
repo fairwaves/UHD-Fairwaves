@@ -235,9 +235,9 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
     //capture initial uncorrected value
     const double initial_dc_dbrms = dc_cal.init();
 
-    for (size_t i = 0; i < 10; i++)
+    for (size_t i = 0; i < 6; i++)
     {
-        if (verbose) printf("  iteration %ld\n", i);
+        if (verbose) printf("  iteration %ld  best_i = %d  best_q = %d\n", i, dc_cal.get_best_dc_i(), dc_cal.get_best_dc_q());
 
         switch (i) {
         case 0:
@@ -257,6 +257,7 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
             dc_q_step = 1;
             break;
         case 2:
+        case 3:
             dc_i_start = dc_cal.get_best_dc_i() - 3;
             dc_i_stop  = dc_cal.get_best_dc_i() + 3;
             dc_q_start = dc_cal.get_best_dc_q() - 3;
@@ -274,19 +275,35 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
             break;
         };
 
-        if (verbose) printf("    I in [%d; %d) step %d Q = %d\n",
-                                        dc_i_start, dc_i_stop, dc_i_step, dc_cal.get_best_dc_q());
-        dc_cal.set_dc_q_best();
-        for (int dc_i = dc_i_start; dc_i <= dc_i_stop; dc_i += dc_i_step){
-            dc_cal.run_i(dc_i);
+        if (i <= 2) {
+            // Itereate through I and Q sequentially
+
+            if (verbose) printf("    I in [%d; %d] step %d Q = %d\n",
+                                            dc_i_start, dc_i_stop, dc_i_step, dc_cal.get_best_dc_q());
+            dc_cal.set_dc_q_best();
+            for (int dc_i = dc_i_start; dc_i <= dc_i_stop; dc_i += dc_i_step){
+                dc_cal.run_i(dc_i);
+            }
+
+            if (verbose) printf("    I = %d Q in [%d; %d] step %d\n",
+                                            dc_cal.get_best_dc_i(), dc_q_start, dc_q_stop, dc_q_step);
+            dc_cal.set_dc_i_best();
+            for (int dc_q = dc_q_start; dc_q <= dc_q_stop; dc_q += dc_q_step){
+                dc_cal.run_q(dc_q);
+            }
+        } else {
+            // Itereate through all combinations of I and Q
+
+            if (verbose) printf("    I in [%d; %d] step %d Q in [%d; %d] step %d\n",
+                                dc_i_start, dc_i_stop, dc_i_step,
+                                dc_q_start, dc_q_stop, dc_q_step);
+            for (int dc_i = dc_i_start; dc_i <= dc_i_stop; dc_i += dc_i_step) {
+                for (int dc_q = dc_q_start; dc_q <= dc_q_stop; dc_q += dc_q_step) {
+                    dc_cal.run_iq(dc_i, dc_q);
+                }
+            }
         }
 
-        if (verbose) printf("    I = %d Q in [%d; %d) step %d\n",
-                                        dc_cal.get_best_dc_i(), dc_q_start, dc_q_stop, dc_q_step);
-        dc_cal.set_dc_i_best();
-        for (int dc_q = dc_q_start; dc_q <= dc_q_stop; dc_q += dc_q_step){
-            dc_cal.run_q(dc_q);
-        }
     }
 
     // Calibration result
