@@ -106,8 +106,7 @@ static void store_results(
     const std::string &rx_tx,
     const std::string &what,
     const std::string &which,
-    bool append,
-    bool int_vals
+    bool append
 ){
     std::ofstream cal_data;
     bool write_header=true;
@@ -142,17 +141,19 @@ static void store_results(
         cal_data << boost::format("timestamp, %d\n") % time(NULL);
         cal_data << boost::format("version, 0, 1\n");
         cal_data << boost::format("DATA STARTS HERE\n");
-        cal_data << "lo_frequency, correction_real, correction_imag, measured, delta\n";
+        cal_data << "lo_frequency, correction_real, correction_imag, measured, delta, int_i, int_q\n";
     }
 
     for (size_t i = 0; i < results.size(); i++){
         // Write to file
         cal_data
             << results[i].freq << ", "
-            << (int_vals ? results[i].real_corr : dc_offset_int2double(results[i].real_corr)) << ", "
-            << (int_vals ? results[i].imag_corr : dc_offset_int2double(results[i].imag_corr)) << ", "
+            << dc_offset_int2double(results[i].real_corr) << ", "
+            << dc_offset_int2double(results[i].imag_corr) << ", "
             << results[i].best << ", "
-            << results[i].delta << "\n"
+            << results[i].delta << ", "
+            << results[i].real_corr << ", "
+            << results[i].imag_corr << "\n"
         ;
     }
 

@@ -258,7 +258,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("single_test_i", po::value<int>(&single_test_i)->default_value(128), "Only in the single test mode! I channel calibration value [0 to 255]")
         ("single_test_q", po::value<int>(&single_test_q)->default_value(128), "Only in the single test mode! Q channel calibration value [0 to 255]")
         ("append", "Append measurements to the calibratoin file instead of rewriting [default=overwrite]")
-        ("int_vals", "Write calibration values as raw LMS6002D integer values, incompatible with UHD [default=no]")
     ;
 
     po::variables_map vm;
@@ -382,7 +381,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     threads.join_all();
 
     if (not vm.count("single_test"))
-        store_results(usrp, results, "tx", "dc", which, vm.count("append"), vm.count("int_vals"));
+        store_results(usrp, results, "tx", "dc", which, vm.count("append"));
 
     return 0;
 }
