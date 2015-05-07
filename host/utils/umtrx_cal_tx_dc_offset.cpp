@@ -260,7 +260,7 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
                                         dc_i_start, dc_i_stop, dc_i_step, dc_cal.get_best_dc_q());
 
         dc_cal.set_dc_q_best();
-        for (int dc_i = dc_i_start; dc_i < dc_i_stop; dc_i += dc_i_step){
+        for (int dc_i = dc_i_start; dc_i <= dc_i_stop; dc_i += dc_i_step){
             dc_cal.run_i(dc_i);
         }
 
@@ -268,7 +268,7 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
                                         dc_cal.get_best_dc_i(), dc_q_start, dc_q_stop, dc_q_step);
 
         dc_cal.set_dc_i_best();
-        for (int dc_q = dc_q_start; dc_q < dc_q_stop; dc_q += dc_q_step){
+        for (int dc_q = dc_q_start; dc_q <= dc_q_stop; dc_q += dc_q_step){
             dc_cal.run_q(dc_q);
         }
     }
