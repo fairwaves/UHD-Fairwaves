@@ -87,33 +87,135 @@ static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_l
 }
 
 /***********************************************************************
+ * Calibration utility class
+ **********************************************************************/
+class dc_cal_t {
+public:
+    dc_cal_t(uhd::property<uint8_t> &dc_i_prop, uhd::property<uint8_t> &dc_q_prop,
+             uhd::rx_streamer::sptr rx_stream,
+             const size_t nsamps,
+             double bb_dc_freq,
+             double rx_rate,
+             int verbose,
+             bool debug_raw_data,
+             int init_dc_i=128, int init_dc_q=128);
+
+    double init();
+    void run_q(int dc_q);
+    void run_i(int dc_i);
+
+    void set_dc_i(double i) {_dc_i_prop.set(i);}
+    void set_dc_q(double q) {_dc_q_prop.set(q);}
+    void set_dc_i_best() {_dc_i_prop.set(_best_dc_i);}
+    void set_dc_q_best() {_dc_q_prop.set(_best_dc_q);}
+
+    double get_lowest_offset() const {return _lowest_offset;}
+    int get_best_dc_i() const {return _best_dc_i;}
+    int get_best_dc_q() const {return _best_dc_q;}
+
+protected:
+    double _lowest_offset;
+    int _best_dc_i;
+    int _best_dc_q;
+    uhd::property<uint8_t> &_dc_i_prop;
+    uhd::property<uint8_t> &_dc_q_prop;
+
+    uhd::rx_streamer::sptr _rx_stream;
+    std::vector<samp_type> _buff;
+    const size_t _nsamps;
+    double _bb_dc_freq;
+    double _rx_rate;
+    int _verbose;
+    bool _debug_raw_data;
+
+    double get_dbrms();
+    void run_x(int dc_val, uhd::property<uint8_t> &dc_prop, int &best_dc_val, const std::string which);
+};
+
+dc_cal_t::dc_cal_t(uhd::property<uint8_t> &dc_i_prop, uhd::property<uint8_t> &dc_q_prop,
+                   uhd::rx_streamer::sptr rx_stream,
+                   const size_t nsamps,
+                   double bb_dc_freq,
+                   double rx_rate,
+                   int verbose,
+                   bool debug_raw_data,
+                   int init_dc_i,
+                   int init_dc_q)
+    : _best_dc_i(init_dc_i), _best_dc_q(init_dc_q)
+    , _dc_i_prop(dc_i_prop), _dc_q_prop(dc_q_prop)
+    , _rx_stream(rx_stream)
+    , _nsamps(nsamps)
+    , _bb_dc_freq(bb_dc_freq)
+    , _rx_rate(rx_rate)
+    , _verbose(verbose)
+    , _debug_raw_data(debug_raw_data)
+{
+}
+
+double dc_cal_t::init()
+{
+    _dc_i_prop.set(_best_dc_i);
+    _dc_q_prop.set(_best_dc_q);
+
+    //get the DC offset tone size
+    _lowest_offset = get_dbrms();
+
+    if (_verbose) printf("initial_dc_dbrms = %2.0f dB\n", _lowest_offset);
+    if (_debug_raw_data) write_samples_to_file(_buff, "initial_samples.dat");
+
+    return _lowest_offset;
+}
+
+void dc_cal_t::run_q(int dc_q)
+{
+    run_x(dc_q, _dc_q_prop, _best_dc_q, "q");
+}
+
+void dc_cal_t::run_i(int dc_i)
+{
+    run_x(dc_i, _dc_i_prop, _best_dc_i, "i");
+}
+
+double dc_cal_t::get_dbrms()
+{
+    //receive some samples
+    capture_samples(_rx_stream, _buff, _nsamps);
+    //calculate dB rms
+    return compute_tone_dbrms(_buff, _bb_dc_freq/_rx_rate);
+}
+
+void dc_cal_t::run_x(int dc_val, uhd::property<uint8_t> &dc_prop, int &best_dc_val, const std::string which)
+{
+    if (_verbose) printf("      dc_%s = %d", which.c_str(), dc_val);
+    dc_prop.set(dc_val);
+
+    //get the DC offset tone size
+    const double dc_dbrms = get_dbrms();
+    if (_verbose) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
+
+    if (dc_dbrms < _lowest_offset){
+        _lowest_offset = dc_dbrms;
+        best_dc_val = dc_val;
+        if (_verbose) printf("    *");
+        if (_debug_raw_data) write_samples_to_file(_buff, "best_samples.dat");
+    }
+    if (_verbose) printf("\n");
+
+}
+
+/***********************************************************************
  * Calibration method: Downhill
  **********************************************************************/
-static result_t calibrate_downhill(uhd::property<uint8_t> &dc_i_prop, uhd::property<uint8_t> &dc_q_prop,
-                                   uhd::rx_streamer::sptr rx_stream,
-                                   std::vector<samp_type > &buff,
-                                   const size_t nsamps,
+static result_t calibrate_downhill(dc_cal_t &dc_cal,
                                    double tx_lo,
-                                   double bb_dc_freq,
-                                   double rx_rate,
-                                   int verbose,
-                                   bool debug_raw_data)
+                                   int verbose)
 {
     //bounds and results from searching
-    double lowest_offset;
     int dc_i_start, dc_i_stop, dc_i_step;
     int dc_q_start, dc_q_stop, dc_q_step;
-    int best_dc_i = 128, best_dc_q = 128;
 
     //capture initial uncorrected value
-    dc_i_prop.set(best_dc_i);
-    dc_q_prop.set(best_dc_q);
-    capture_samples(rx_stream, buff, nsamps);
-    const double initial_dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/rx_rate);
-    lowest_offset = initial_dc_dbrms;
-    if (verbose) printf("initial_dc_dbrms = %2.0f dB\n", initial_dc_dbrms);
-
-    if (debug_raw_data) write_samples_to_file(buff, "initial_samples.dat");
+    const double initial_dc_dbrms = dc_cal.init();
 
     for (size_t i = 0; i < 10; i++)
     {
@@ -129,86 +231,55 @@ static result_t calibrate_downhill(uhd::property<uint8_t> &dc_i_prop, uhd::prope
             dc_q_step = 10;
             break;
         case 1:
-            dc_i_start = best_dc_i - 15;
-            dc_i_stop  = best_dc_i + 15;
-            dc_q_start = best_dc_q - 15;
-            dc_q_stop  = best_dc_q + 15;
+            dc_i_start = dc_cal.get_best_dc_i() - 15;
+            dc_i_stop  = dc_cal.get_best_dc_i() + 15;
+            dc_q_start = dc_cal.get_best_dc_q() - 15;
+            dc_q_stop  = dc_cal.get_best_dc_q() + 15;
+            dc_i_step = 1;
+            dc_q_step = 1;
+            break;
+        case 2:
+            dc_i_start = dc_cal.get_best_dc_i() - 3;
+            dc_i_stop  = dc_cal.get_best_dc_i() + 3;
+            dc_q_start = dc_cal.get_best_dc_q() - 3;
+            dc_q_stop  = dc_cal.get_best_dc_q() + 3;
             dc_i_step = 1;
             dc_q_step = 1;
             break;
         default:
-            dc_i_start = best_dc_i - 3;
-            dc_i_stop  = best_dc_i + 3;
-            dc_q_start = best_dc_q - 3;
-            dc_q_stop  = best_dc_q + 3;
+            dc_i_start = dc_cal.get_best_dc_i() - 1;
+            dc_i_stop  = dc_cal.get_best_dc_i() + 1;
+            dc_q_start = dc_cal.get_best_dc_q() - 1;
+            dc_q_stop  = dc_cal.get_best_dc_q() + 1;
             dc_i_step = 1;
             dc_q_step = 1;
             break;
         };
 
         if (verbose) printf("    I in [%d; %d) step %d Q = %d\n",
-                                        dc_i_start, dc_i_stop, dc_i_step, best_dc_q);
+                                        dc_i_start, dc_i_stop, dc_i_step, dc_cal.get_best_dc_q());
 
-        dc_q_prop.set(best_dc_q);
+        dc_cal.set_dc_q_best();
         for (int dc_i = dc_i_start; dc_i < dc_i_stop; dc_i += dc_i_step){
-            if (verbose) printf("      dc_i = %d", dc_i);
-
-            dc_i_prop.set(dc_i);
-
-            //receive some samples
-            capture_samples(rx_stream, buff, nsamps);
-
-            const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/rx_rate);
-            if (verbose) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
-
-            if (dc_dbrms < lowest_offset){
-                lowest_offset = dc_dbrms;
-                best_dc_i = dc_i;
-                if (verbose) printf("    *");
-                if (debug_raw_data) write_samples_to_file(buff, "best_samples.dat");
-            }
-            if (verbose) printf("\n");
-
+            dc_cal.run_i(dc_i);
         }
 
         if (verbose) printf("    I = %d Q in [%d; %d) step %d\n",
-                                        best_dc_i, dc_q_start, dc_q_stop, dc_q_step);
+                                        dc_cal.get_best_dc_i(), dc_q_start, dc_q_stop, dc_q_step);
 
-        dc_i_prop.set(best_dc_i);
+        dc_cal.set_dc_i_best();
         for (int dc_q = dc_q_start; dc_q < dc_q_stop; dc_q += dc_q_step){
-            if (verbose) printf("      dc_q = %d", dc_q);
-            dc_q_prop.set(dc_q);
-
-            //receive some samples
-            capture_samples(rx_stream, buff, nsamps);
-
-            const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/rx_rate);
-            if (verbose) printf("    dc_dbrms = %2.0f dB", dc_dbrms);
-
-            if (dc_dbrms < lowest_offset){
-                lowest_offset = dc_dbrms;
-                best_dc_q = dc_q;
-                if (verbose) printf("    *");
-                if (debug_raw_data) write_samples_to_file(buff, "best_samples.dat");
-            }
-            if (verbose) printf("\n");
+            dc_cal.run_q(dc_q);
         }
     }
-
-    if (verbose) printf("  best_dc_i = %d best_dc_q = %d", best_dc_i, best_dc_q);
-    if (verbose) printf("  lowest_offset = %2.0f dB  delta = %2.0f dB\n", lowest_offset, initial_dc_dbrms - lowest_offset);
 
     // Calibration result
     result_t result;
     result.freq = tx_lo;
-    result.real_corr = best_dc_i;
-    result.imag_corr = best_dc_q;
-    result.best = lowest_offset;
-    result.delta = initial_dc_dbrms - lowest_offset;
-    if (verbose){
-        std::cout << boost::format("TX DC: %f MHz: lowest offset %f dB, corrected %f dB") % (tx_lo/1e6) % result.best % result.delta << std::endl;
-    }
-    else std::cout << "." << std::flush;
+    result.real_corr = dc_cal.get_best_dc_i();
+    result.imag_corr = dc_cal.get_best_dc_q();
+    result.best = dc_cal.get_lowest_offset();
+    result.delta = initial_dc_dbrms - result.best;
 
     // Output to console
     std::cout
@@ -218,6 +289,7 @@ static result_t calibrate_downhill(uhd::property<uint8_t> &dc_i_prop, uhd::prope
         <<  dc_offset_int2double(result.imag_corr) << ") "
         << "leakage = " << result.best << " dB, "
         << "improvement = " << result.delta << " dB\n"
+        << std::flush
     ;
 
     return result;
@@ -320,9 +392,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     boost::thread_group threads;
     threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_freq, tx_wave_ampl));
 
-    //re-usable buffer for samples
-    std::vector<samp_type> buff;
-
     //store the results here
     std::vector<result_t> results;
 
@@ -350,27 +419,28 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         {
             if (vm.count("single_test"))
             {
-                // Perform a single test
-                dc_i_prop.set(single_test_i);
-                dc_q_prop.set(single_test_q);
+                dc_cal_t dc_cal(dc_i_prop, dc_q_prop,
+                                rx_stream,
+                                nsamps,
+                                bb_dc_freq,
+                                actual_rx_rate,
+                                vm.count("verbose"),
+                                vm.count("debug_raw_data"),
+                                single_test_i, single_test_q);
 
-                //receive some samples
-                capture_samples(rx_stream, buff, nsamps);
-                const double dc_dbrms = compute_tone_dbrms(buff, bb_dc_freq/actual_rx_rate);
+                const double dc_dbrms = dc_cal.init();;
                 printf("I = %d Q = %d ", single_test_i, single_test_q);
                 printf("dc_dbrms = %2.1f dB\n", dc_dbrms);
-                if (vm.count("debug_raw_data")) write_samples_to_file(buff, "best_samples.dat");
             } else {
+                dc_cal_t dc_cal(dc_i_prop, dc_q_prop,
+                                rx_stream,
+                                nsamps,
+                                bb_dc_freq,
+                                actual_rx_rate,
+                                vm.count("verbose"),
+                                vm.count("debug_raw_data"));
                 // Perform normal calibration
-                results.push_back(calibrate_downhill(dc_i_prop, dc_q_prop,
-                                                     rx_stream,
-                                                     buff,
-                                                     nsamps,
-                                                     tx_lo,
-                                                     bb_dc_freq,
-                                                     actual_rx_rate,
-                                                     vm.count("verbose"),
-                                                     vm.count("debug_raw_data")));
+                results.push_back(calibrate_downhill(dc_cal, tx_lo, vm.count("verbose")));
             }
         }
     }
