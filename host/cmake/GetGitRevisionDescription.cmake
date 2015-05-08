@@ -104,6 +104,12 @@ function(git_describe _var)
 
 	#message(STATUS "Arguments to execute_process: ${ARGN}")
 
+	#support dirty option (hash cant be specified)
+	list(FIND ARGN "--dirty" _index)
+	if (${_index} GREATER -1)
+		unset(hash)
+	endif()
+
 	execute_process(COMMAND
 		"${GIT_EXECUTABLE}"
 		describe
