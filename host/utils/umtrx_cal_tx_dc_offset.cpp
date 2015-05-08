@@ -59,7 +59,7 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_fre
     while (not boost::this_thread::interruption_requested()){
         for (size_t i = 0; i < buff.size(); i++){
             buff[i] = table(index += step);
-            buff[i] = samp_type(0, 0); //using no-power transmit to cal with
+//            buff[i] = samp_type(0, 0); //using no-power transmit to cal with
         }
         tx_stream->send(&buff.front(), buff.size(), md);
     }
