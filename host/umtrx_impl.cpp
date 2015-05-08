@@ -183,7 +183,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     // high performance settings control
     ////////////////////////////////////////////////////////////////
     _iface->poke32(U2_REG_MISC_CTRL_SFC_CLEAR, 1); //clear settings fifo control state machine
-    _ctrl = umtrx_fifo_ctrl::make(this->make_xport(UMTRX_CTRL_FRAMER, device_addr_t()), UMTRX_CTRL_SID);
+    const size_t fifo_ctrl_window(device_addr.cast<size_t>("fifo_ctrl_window", 1024)); //default gets clipped to hardware maximum
+    _ctrl = umtrx_fifo_ctrl::make(this->make_xport(UMTRX_CTRL_FRAMER, device_addr_t()), UMTRX_CTRL_SID, fifo_ctrl_window);
     _ctrl->peek32(0); //test readback
     _tree->create<time_spec_t>(mb_path / "time/cmd")
         .subscribe(boost::bind(&umtrx_fifo_ctrl::set_time, _ctrl, _1));

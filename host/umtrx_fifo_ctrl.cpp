@@ -44,13 +44,15 @@ static const boost::uint32_t MAX_SEQS_OUT = 15;
 class umtrx_fifo_ctrl_impl : public umtrx_fifo_ctrl{
 public:
 
-    umtrx_fifo_ctrl_impl(zero_copy_if::sptr xport, const boost::uint32_t sid):
+    umtrx_fifo_ctrl_impl(zero_copy_if::sptr xport, const boost::uint32_t sid, const boost::uint32_t window_size):
         _xport(xport),
         _sid(sid),
+        _window_size(std::min(window_size, MAX_SEQS_OUT)),
         _seq_out(0),
         _seq_ack(0),
         _timeout(ACK_TIMEOUT)
     {
+        UHD_MSG(status) << "fifo_ctrl.window_size = " << _window_size << std::endl;
         while (_xport->get_recv_buff(0.0)){} //flush
         this->set_time(uhd::time_spec_t(0.0));
         this->set_tick_rate(1.0); //something possible but bogus
@@ -72,7 +74,7 @@ public:
 
         this->send_pkt((addr - SETTING_REGS_BASE)/4, data, POKE32_CMD);
 
-        this->wait_for_ack(_seq_out-MAX_SEQS_OUT);
+        this->wait_for_ack(_seq_out-_window_size);
     }
 
     boost::uint32_t peek32(wb_addr_type addr){
@@ -101,7 +103,7 @@ public:
         boost::mutex::scoped_lock lock(_mutex);
 
         this->send_pkt(SPI_DIV, SPI_DIVIDER, POKE32_CMD);
-        this->wait_for_ack(_seq_out-MAX_SEQS_OUT);
+        this->wait_for_ack(_seq_out-_window_size);
 
         _ctrl_word_cache = 0; // force update first time around
     }
@@ -128,13 +130,13 @@ public:
         //conditionally send control word
         if (_ctrl_word_cache != ctrl_word){
             this->send_pkt(SPI_CTRL, ctrl_word, POKE32_CMD);
-            this->wait_for_ack(_seq_out-MAX_SEQS_OUT);
+            this->wait_for_ack(_seq_out-_window_size);
             _ctrl_word_cache = ctrl_word;
         }
 
         //send data word
         this->send_pkt(SPI_DATA, data_out, POKE32_CMD);
-        this->wait_for_ack(_seq_out-MAX_SEQS_OUT);
+        this->wait_for_ack(_seq_out-_window_size);
 
         //conditional readback
         if (readback){
@@ -230,6 +232,7 @@ private:
 
     zero_copy_if::sptr _xport;
     const boost::uint32_t _sid;
+    const boost::uint32_t _window_size;
     boost::mutex _mutex;
     boost::uint16_t _seq_out;
     boost::uint16_t _seq_ack;
@@ -241,6 +244,6 @@ private:
 };
 
 
-umtrx_fifo_ctrl::sptr umtrx_fifo_ctrl::make(zero_copy_if::sptr xport, const boost::uint32_t sid){
-    return sptr(new umtrx_fifo_ctrl_impl(xport, sid));
+umtrx_fifo_ctrl::sptr umtrx_fifo_ctrl::make(zero_copy_if::sptr xport, const boost::uint32_t sid, const size_t window_size){
+    return sptr(new umtrx_fifo_ctrl_impl(xport, sid, boost::uint32_t(window_size)));
 }

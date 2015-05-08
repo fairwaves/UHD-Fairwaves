@@ -36,7 +36,7 @@ public:
     typedef boost::shared_ptr<umtrx_fifo_ctrl> sptr;
 
     //! Make a new FIFO control object
-    static sptr make(uhd::transport::zero_copy_if::sptr xport, const boost::uint32_t sid);
+    static sptr make(uhd::transport::zero_copy_if::sptr xport, const boost::uint32_t sid, const size_t window_size);
 
     //! Set the command time that will activate
     virtual void set_time(const uhd::time_spec_t &time) = 0;
