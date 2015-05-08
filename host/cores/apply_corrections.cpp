@@ -105,7 +105,13 @@ static void apply_fe_corrections(
 
     //make the calibration file path
     const fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd" / "cal" / (file_prefix + db_eeprom.serial + ".csv");
-    if (not fs::exists(cal_data_path)) return;
+    UHD_MSG(status) << "Looking for FE correction at: " << cal_data_path.c_str() << "...  ";
+    if (not fs::exists(cal_data_path)) {
+        UHD_MSG(status) << "Not found" << std::endl;
+        return;
+    }
+
+    UHD_MSG(status) << "Found, loading...  ";
 
     //parse csv file or get from cache
     if (not fe_cal_cache.has_key(cal_data_path.string())){
@@ -133,8 +139,9 @@ static void apply_fe_corrections(
         }
         std::sort(datas.begin(), datas.end(), fe_cal_comp);
         fe_cal_cache[cal_data_path.string()] = datas;
-        UHD_MSG(status) << "Loaded " << cal_data_path.string() << std::endl;
-
+        UHD_MSG(status) << "Loaded" << std::endl;
+    } else {
+        UHD_MSG(status) << "Loaded from cache" << std::endl;
     }
 
     sub_tree->access<std::complex<double> >(fe_path)

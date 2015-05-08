@@ -20,6 +20,7 @@
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <vector>
 #include <complex>
@@ -37,66 +38,8 @@ typedef std::complex<float> samp_type;
  **********************************************************************/
 static const double tau = 6.28318531;
 static const size_t wave_table_len = 8192;
-static const size_t num_search_steps = 5;
-static const size_t num_search_iters = 7;
 static const double default_freq_step = 1e6;
 static const size_t default_num_samps = 10000;
-
-/***********************************************************************
- * Set standard defaults for devices
- **********************************************************************/
-static inline void set_optimum_defaults(uhd::usrp::multi_usrp::sptr usrp){
-    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-
-    const uhd::fs_path mb_path = "/mboards/0";
-    const std::string mb_name = tree->access<std::string>(mb_path / "name").get();
-    if (mb_name.find("USRP2") != std::string::npos or mb_name.find("N200") != std::string::npos or mb_name.find("N210") != std::string::npos){
-        usrp->set_tx_rate(12.5e6);
-        usrp->set_rx_rate(12.5e6);
-    }
-    else if (mb_name.find("UMTRX") != std::string::npos){
-        usrp->set_tx_rate(13e6/2);
-        usrp->set_tx_bandwidth(5e6);
-        usrp->set_rx_rate(13e6/2);
-        usrp->set_rx_bandwidth(5e6);
-    }
-    else if (mb_name.find("B100") != std::string::npos){
-        usrp->set_tx_rate(4e6);
-        usrp->set_rx_rate(4e6);
-    }
-    else if (mb_name.find("E100") != std::string::npos or mb_name.find("E110") != std::string::npos){
-        usrp->set_tx_rate(4e6);
-        usrp->set_rx_rate(8e6);
-    }
-    else{
-        throw std::runtime_error("self-calibration is not supported for this hardware");
-    }
-
-    const uhd::fs_path tx_fe_path = "/mboards/0/dboards/A/tx_frontends/0";
-    const std::string tx_name = tree->access<std::string>(tx_fe_path / "name").get();
-    if (tx_name.find("WBX") != std::string::npos or tx_name.find("SBX") != std::string::npos){
-        usrp->set_tx_gain(0);
-    }
-    else if (tx_name.find("LMS6002D") != std::string::npos){
-        usrp->set_tx_gain(10);
-    }
-    else{
-        throw std::runtime_error("self-calibration is not supported for this hardware");
-    }
-
-    const uhd::fs_path rx_fe_path = "/mboards/0/dboards/A/tx_frontends/0";
-    const std::string rx_name = tree->access<std::string>(rx_fe_path / "name").get();
-    if (rx_name.find("WBX") != std::string::npos or rx_name.find("SBX") != std::string::npos){
-        usrp->set_rx_gain(25);
-    }
-    else if (rx_name.find("LMS6002D") != std::string::npos){
-        usrp->set_rx_gain(10);
-    }
-    else{
-        throw std::runtime_error("self-calibration is not supported for this hardware");
-    }
-
-}
 
 /***********************************************************************
  * Sinusoid wave table
@@ -147,48 +90,70 @@ static inline void write_samples_to_file(
 }
 
 /***********************************************************************
+ * Convert integer calibration values to floats
+ **********************************************************************/
+static double dc_offset_int2double(uint8_t corr)
+{
+    return (corr-128)/128.0;
+}
+
+/***********************************************************************
  * Store data to file
  **********************************************************************/
 static void store_results(
     uhd::usrp::multi_usrp::sptr usrp,
     const std::vector<result_t> &results,
-    const std::string &XX,
-    const std::string &xx,
+    const std::string &rx_tx,
     const std::string &what,
-    const std::string &which
+    const std::string &which,
+    bool append
 ){
+    std::ofstream cal_data;
+    bool write_header=true;
+    std::string rx_tx_upper = boost::to_upper_copy(rx_tx);
+
     //extract eeprom serial
     uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-    const uhd::fs_path db_path = "/mboards/0/dboards/"+which+"/" + xx + "_eeprom";
+    const uhd::fs_path db_path = "/mboards/0/dboards/"+which+"/" + rx_tx + "_eeprom";
     const uhd::usrp::dboard_eeprom_t db_eeprom = tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
-    if (db_eeprom.serial.empty()) throw std::runtime_error(XX + " dboard has empty serial!");
+    if (db_eeprom.serial.empty()) throw std::runtime_error(rx_tx_upper + " dboard has empty serial!");
 
     //make the calibration file path
     fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd";
     fs::create_directory(cal_data_path);
     cal_data_path = cal_data_path / "cal";
     fs::create_directory(cal_data_path);
-    cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.1_%s.csv") % xx % what % db_eeprom.serial);
+    cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.2_%s.csv") % rx_tx % what % db_eeprom.serial);
     if (fs::exists(cal_data_path)){
-        fs::rename(cal_data_path, cal_data_path.string() + str(boost::format(".%d") % time(NULL)));
+        if (append)
+            write_header = false;
+        else
+            fs::rename(cal_data_path, cal_data_path.string() + str(boost::format(".%d") % time(NULL)));
     }
 
-    //fill the calibration file
-    std::ofstream cal_data(cal_data_path.string().c_str());
-    cal_data << boost::format("name, %s Frontend Calibration\n") % XX;
-    cal_data << boost::format("serial, %s\n") % db_eeprom.serial;
-    cal_data << boost::format("timestamp, %d\n") % time(NULL);
-    cal_data << boost::format("version, 0, 1\n");
-    cal_data << boost::format("DATA STARTS HERE\n");
-    cal_data << "lo_frequency, correction_real, correction_imag, measured, delta\n";
+    cal_data.open(cal_data_path.string().c_str(), std::ofstream::out | std::ofstream::app);
+
+    if (write_header)
+    {
+        //fill the calibration file
+        cal_data << boost::format("name, %s Frontend Calibration\n") % rx_tx_upper;
+        cal_data << boost::format("serial, %s\n") % db_eeprom.serial;
+        cal_data << boost::format("timestamp, %d\n") % time(NULL);
+        cal_data << boost::format("version, 0, 1\n");
+        cal_data << boost::format("DATA STARTS HERE\n");
+        cal_data << "lo_frequency, correction_real, correction_imag, measured, delta, int_i, int_q\n";
+    }
 
     for (size_t i = 0; i < results.size(); i++){
+        // Write to file
         cal_data
             << results[i].freq << ", "
-            << results[i].real_corr << ", "
-            << results[i].imag_corr << ", "
+            << dc_offset_int2double(results[i].real_corr) << ", "
+            << dc_offset_int2double(results[i].imag_corr) << ", "
             << results[i].best << ", "
-            << results[i].delta << "\n"
+            << results[i].delta << ", "
+            << results[i].real_corr << ", "
+            << results[i].imag_corr << "\n"
         ;
     }
 
