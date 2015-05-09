@@ -30,6 +30,7 @@
 #include "cores/time64_core_200.hpp"
 #include "ads1015_ctrl.hpp"
 #include "tmp102_ctrl.hpp"
+#include "power_amp.hpp"
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/device.hpp>
@@ -119,10 +120,14 @@ private:
     unsigned _pll_div;
     const char* get_hw_rev() const;
 
-    //communication interfaces
-    std::string _device_ip_addr;
-    umtrx_iface::sptr _iface;
-    umtrx_fifo_ctrl::sptr _ctrl;
+    // Optimal VGA settings for GSM signal, according to our measurements.
+    static const int UMTRX_VGA1_DEF;
+    static const int UMTRX_VGA2_DEF;
+
+    // Conversion table for converting DCDC_R values to actual voltages.
+    static const std::vector<double> _dcdc_val_to_volt;
+    // Find a dcdc_r value to approximate requested Vout voltage
+    static int volt_to_dcdc_r(double v);
 
     ads1015_ctrl _sense_pwr;
     ads1015_ctrl _sense_dc;
@@ -133,9 +138,20 @@ private:
     bool _pa_nlow;
     bool _pa_en1;
     bool _pa_en2;
+    uint8_t _pa_dcdc_r;
+    double _pa_power_limit; // Artifical PA output power limit
+
+    void set_pa_dcdc_r(uint8_t val);
+    uint8_t get_pa_dcdc_r() const {return _pa_dcdc_r;}
+
+    //communication interfaces
+    std::string _device_ip_addr;
+    umtrx_iface::sptr _iface;
+    umtrx_fifo_ctrl::sptr _ctrl;
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
+    uhd::dict<std::string, uhd::power_amp::sptr> _pa;
 
     //control for FPGA cores
     std::vector<rx_frontend_core_200::sptr> _rx_fes;
@@ -145,7 +161,6 @@ private:
     time64_core_200::sptr _time64;
 
     //helper routines
-    void set_pa_dcdc_r(uint8_t val);
     void set_mb_eeprom(const uhd::i2c_iface::sptr &, const uhd::usrp::mboard_eeprom_t &);
     double get_master_clock_rate(void) const { return 26e6; }
     double get_master_dsp_rate(void) const { return get_master_clock_rate()/2; }
@@ -167,6 +182,8 @@ private:
     void set_nlow(bool en);
     void set_divsw1(bool en);
     void set_divsw2(bool en);
+    uhd::gain_range_t get_pa_power_range(const std::string &which) const;
+    double set_pa_power(double power, const std::string &which);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
     std::complex<double> get_dc_offset_correction(const std::string &which) const;

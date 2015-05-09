@@ -33,6 +33,42 @@ using namespace uhd::usrp;
 using namespace uhd::transport;
 namespace asio = boost::asio;
 
+// Values recommended by Andrey Sviyazov
+const int umtrx_impl::UMTRX_VGA1_DEF = -20;
+const int umtrx_impl::UMTRX_VGA2_DEF = 22;
+
+static const double _dcdc_val_to_volt_init[256] =
+{
+     9.38,  9.38,  9.40,  9.42,  9.42,  9.44,  9.46,  9.46,  9.48,  9.50, // 10
+     9.50,  9.52,  9.54,  9.54,  9.56,  9.58,  9.58,  9.60,  9.60,  9.62, // 20
+     9.64,  9.66,  9.66,  9.68,  9.70,  9.70,  9.72,  9.74,  9.76,  9.76, // 30
+     9.78,  9.80,  9.82,  9.82,  9.84,  9.86,  9.88,  9.90,  9.92,  9.92, // 40
+     9.94,  9.96,  9.98,  9.98, 10.00, 10.02, 10.04, 10.06, 10.06, 10.08, // 50
+    10.10, 10.12, 10.14, 10.16, 10.18, 10.20, 10.20, 10.24, 10.24, 10.28, // 60
+    10.30, 10.32, 10.34, 10.34, 10.36, 10.38, 10.40, 10.42, 10.44, 10.46, // 70
+    10.48, 10.50, 10.52, 10.54, 10.56, 10.60, 10.62, 10.64, 10.66, 10.68, // 80
+    10.70, 10.72, 10.74, 10.76, 10.78, 10.80, 10.84, 10.86, 10.88, 10.90, // 90
+    10.94, 10.96, 10.98, 11.00, 11.02, 11.06, 11.06, 11.10, 11.12, 11.16, // 100
+    11.18, 11.20, 11.24, 11.26, 11.28, 11.32, 11.34, 11.38, 11.40, 11.44, // 110
+    11.46, 11.50, 11.50, 11.54, 11.58, 11.60, 11.64, 11.66, 11.70, 11.74, // 120
+    11.76, 11.80, 11.84, 11.86, 11.90, 11.94, 11.98, 12.00, 12.02, 12.06, // 130
+    12.10, 12.14, 12.18, 12.22, 12.26, 12.28, 12.32, 12.36, 12.40, 12.44, // 140
+    12.48, 12.54, 12.58, 12.62, 12.64, 12.68, 12.72, 12.76, 12.82, 12.86, // 150
+    12.90, 12.96, 13.00, 13.04, 13.10, 13.14, 13.20, 13.24, 13.30, 13.34, // 160
+    13.38, 13.44, 13.48, 13.54, 13.60, 13.66, 13.72, 13.76, 13.82, 13.88, // 170
+    13.94, 14.02, 14.06, 14.14, 14.20, 14.26, 14.30, 14.36, 14.42, 14.50, // 180
+    14.56, 14.64, 14.72, 14.78, 14.86, 14.92, 15.00, 15.08, 15.16, 15.24, // 190
+    15.32, 15.40, 15.46, 15.54, 15.62, 15.72, 15.80, 15.90, 16.00, 16.08, // 200
+    16.18, 16.28, 16.38, 16.48, 16.58, 16.68, 16.80, 16.90, 16.96, 17.08, // 210
+    17.20, 17.32, 17.44, 17.56, 17.68, 17.82, 17.94, 18.06, 18.20, 18.36, // 220
+    18.48, 18.64, 18.78, 18.94, 19.02, 19.18, 19.34, 19.50, 19.68, 19.84, // 230
+    20.02, 20.20, 20.38, 20.58, 20.76, 20.96, 21.18, 21.38, 21.60, 21.82, // 240
+    21.92, 22.16, 22.40, 22.66, 22.92, 23.18, 23.46, 23.74, 24.02, 24.30, // 250
+    24.62, 24.94, 25.28, 25.62, 25.98, 26.34
+};
+const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
+
+
 /***********************************************************************
  * Make
  **********************************************************************/
@@ -230,6 +266,31 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     // TODO: Add EEPROM cell to manually override this
     _pll_div = 1;
+
+    ////////////////////////////////////////////////////////////////////
+    // get the atached PA type
+    ////////////////////////////////////////////////////////////////////
+    power_amp::pa_type_t pa_type = power_amp::pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
+    if (_hw_rev < UMTRX_VER_2_3_1 and pa_type != power_amp::PA_NONE)
+    {
+        UHD_MSG(error) << "PA type " << power_amp::pa_type_to_str(pa_type) << " is not supported for UmTRX "
+                       << get_hw_rev() << ". Setting PA type to NONE." << std::endl;
+        pa_type = power_amp::PA_NONE;
+    }
+
+    for (char name = 'A'; name <= 'B'; name++)
+    {
+        std::string name_str = std::string(1, name);
+        _pa[name_str] = power_amp::make(pa_type);
+        UHD_MSG(status) << "Installed PA for side" << name_str << ": " << power_amp::pa_type_to_str(pa_type) << std::endl;
+    }
+
+    if (_pa["A"])
+    {
+        _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power_w());
+        if (_pa_power_limit != _pa["A"]->max_power_w())
+            UHD_MSG(status) << "Limiting PA output power to: " << _pa_power_limit << " W" << std::endl;
+    }
 
     ////////////////////////////////////////////////////////////////////
     // create codec control objects
@@ -430,14 +491,32 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         }
 
         //tx gains
-        BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
+        if (!_pa[fe_name])
         {
-            _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / name / "range")
-                .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
+            // Use internal LMS gain control if we don't have a PA
+            BOOST_FOREACH(const std::string &name, ctrl->get_tx_gains())
+            {
+                _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / name / "range")
+                    .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
 
-            _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
-                .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
-                .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
+                _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
+                    .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
+                    .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
+            }
+        } else {
+            // Set LMS internal VGA gains to optimal values
+            ctrl->set_tx_gain(UMTRX_VGA1_DEF, "VGA1");
+            ctrl->set_tx_gain(UMTRX_VGA2_DEF, "VGA2");
+
+            // Use PA control to control output power
+            _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / "PA" / "range")
+                .publish(boost::bind(&umtrx_impl::get_pa_power_range, this, fe_name));
+
+            _tree->create<double>(tx_rf_fe_path / "gains" / "PA" / "value")
+                .coerce(boost::bind(&umtrx_impl::set_pa_power, this, _1, fe_name))
+                // Set default output power to maximum
+                .set(get_pa_power_range(fe_name).stop());
+
         }
 
         //rx freq
@@ -574,11 +653,58 @@ umtrx_impl::~umtrx_impl(void)
     }
 }
 
+int umtrx_impl::volt_to_dcdc_r(double v)
+{
+    if (v <= _dcdc_val_to_volt[0])
+        return 0;
+    else if (v >= _dcdc_val_to_volt[255])
+        return 255;
+    else
+        return std::lower_bound(_dcdc_val_to_volt.begin(), _dcdc_val_to_volt.end(), v) - _dcdc_val_to_volt.begin();
+}
+
 void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 {
     // AD5245 control
     if (_hw_rev >= UMTRX_VER_2_3_1)
+    {
+        _pa_dcdc_r = val;
         _iface->write_i2c(BOOST_BINARY(0101100), boost::assign::list_of(0)(val));
+    }
+}
+
+uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
+{
+    double min_power = power_amp::w2dBm(_pa[which]->min_power_w());
+    double max_power = power_amp::w2dBm(_pa_power_limit);
+    return uhd::gain_range_t(min_power, max_power, 0.1);
+}
+
+double umtrx_impl::set_pa_power(double power, const std::string &which)
+{
+    // TODO:: Use DCDC bypass for maximum output power
+    // TODO:: Limit output power for UmSITE-TM3
+
+    // Find voltage required for the requested output power
+    double v = _pa[which]->dBm2v(power);
+    uint8_t dcdc_val = volt_to_dcdc_r(v);
+    // Set the value
+    set_nlow(true);
+    set_pa_dcdc_r(dcdc_val);
+
+    // Check what power do we actually have by reading the DCDC voltage
+    // and converting it to the PA power
+    double v_actual = read_dc_v("DCOUT").to_real();
+    double power_actual = _pa[which]->v2dBm(v_actual);
+
+    // TODO:: Check that power is actually there by reading VSWR sensor.
+
+    UHD_MSG(status) << "Setting PA power: Requested: " << power << "dBm = " << power_amp::dBm2w(power) << "W "
+                    << "(" << v << "V dcdc_r=" << int(dcdc_val) << "). "
+                    << "Actual: " << power_actual << "dBm = " << power_amp::dBm2w(power_actual) <<"W "
+                    << "(" << v_actual << "V)" << std::endl;
+
+    return power_actual;
 }
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
