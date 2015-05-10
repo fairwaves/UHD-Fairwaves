@@ -92,6 +92,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //store the results here
     std::vector<result_t> results;
 
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    const uhd::fs_path tx_fe_path = "/mboards/0/tx_frontends/"+which;
+    uhd::property<std::complex<double> > &iq_prop = tree->access<std::complex<double> >(tx_fe_path / "iq_balance" / "value");
+
     if (not vm.count("freq_start")) freq_start = usrp->get_tx_freq_range().start() + 50e6;
     if (not vm.count("freq_stop")) freq_stop = usrp->get_tx_freq_range().stop() - 50e6;
     UHD_MSG(status) << boost::format("Calibration frequency range: %d MHz -> %d MHz") % (freq_start/1e6) % (freq_stop/1e6) << std::endl;
@@ -107,7 +111,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double bb_imag_freq = actual_tx_freq - tx_wave_freq - actual_rx_freq;
 
         //capture initial uncorrected value
-        usrp->set_tx_iq_balance(0.0);
+        iq_prop.set(0.0);
         capture_samples(rx_stream, buff, nsamps);
         const double initial_suppression = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate) - compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
 
@@ -126,7 +130,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             for (double ampl_corr = ampl_corr_start; ampl_corr <= ampl_corr_stop + ampl_corr_step/2; ampl_corr += ampl_corr_step){
 
                 const std::complex<double> correction(ampl_corr, phase_corr);
-                usrp->set_tx_iq_balance(correction);
+                iq_prop.set(correction);
 
                 //receive some samples
                 capture_samples(rx_stream, buff, nsamps);
