@@ -154,20 +154,30 @@ static void store_results(
         cal_data << boost::format("timestamp, %d\n") % time(NULL);
         cal_data << boost::format("version, 0, 1\n");
         cal_data << boost::format("DATA STARTS HERE\n");
-        cal_data << "lo_frequency, correction_real, correction_imag, measured, delta, int_i, int_q\n";
+        // For DC calibration we also store LMS6002D integer values
+        if (what == "dc")
+            cal_data << "lo_frequency, correction_real, correction_imag, measured, delta, int_i, int_q\n";
+        else
+            cal_data << "lo_frequency, correction_real, correction_imag, measured, delta\n";
     }
 
     for (size_t i = 0; i < results.size(); i++){
         // Write to file
-        cal_data
-            << results[i].freq << ", "
-            << dc_offset_int2double(results[i].real_corr) << ", "
-            << dc_offset_int2double(results[i].imag_corr) << ", "
-            << results[i].best << ", "
-            << results[i].delta << ", "
-            << results[i].real_corr << ", "
-            << results[i].imag_corr << "\n"
-        ;
+        cal_data << results[i].freq;
+        if (what == "dc") {
+            cal_data << ", " << dc_offset_int2double(results[i].real_corr);
+            cal_data << ", " << dc_offset_int2double(results[i].imag_corr);
+        } else {
+            cal_data << ", " << results[i].real_corr;
+            cal_data << ", " << results[i].imag_corr;
+        }
+        cal_data << ", " << results[i].best;
+        cal_data << ", " << results[i].delta;
+        if (what == "dc") {
+            cal_data << ", " << results[i].real_corr;
+            cal_data << ", " << results[i].imag_corr;
+        }
+        cal_data << "\n";
     }
 
     std::cout << "wrote cal data to " << cal_data_path << std::endl;
