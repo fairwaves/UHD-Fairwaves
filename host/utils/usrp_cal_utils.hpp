@@ -16,11 +16,15 @@
 //
 
 #include <uhd/utils/paths.hpp>
+#include <uhd/utils/thread_priority.hpp>
+#include <uhd/utils/algorithm.hpp>
+#include <uhd/utils/msg.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/thread/thread.hpp>
 #include <iostream>
 #include <vector>
 #include <complex>
@@ -90,6 +94,21 @@ static inline void write_samples_to_file(
 }
 
 /***********************************************************************
+ * Retrieve d'board serial
+ **********************************************************************/
+static std::string get_serial(
+    uhd::usrp::multi_usrp::sptr usrp,
+    const std::string &tx_rx
+){
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    // Will work on 1st subdev, top-level must make sure it's the right one
+    uhd::usrp::subdev_spec_t subdev_spec = usrp->get_rx_subdev_spec();
+    const uhd::fs_path db_path = "/mboards/0/dboards/" + subdev_spec[0].db_name + "/" + tx_rx + "_eeprom";
+    const uhd::usrp::dboard_eeprom_t db_eeprom = tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
+    return db_eeprom.serial;
+}
+
+/***********************************************************************
  * Convert integer calibration values to floats
  **********************************************************************/
 static double dc_offset_int2double(uint8_t corr)
@@ -103,27 +122,21 @@ static double dc_offset_int2double(uint8_t corr)
 static void store_results(
     uhd::usrp::multi_usrp::sptr usrp,
     const std::vector<result_t> &results,
-    const std::string &rx_tx,
-    const std::string &what,
-    const std::string &which,
+    const std::string &rx_tx, // "tx" or "rx"
+    const std::string &what,  // Type of test, e.g. "iq"
     bool append
 ){
     std::ofstream cal_data;
     bool write_header=true;
     std::string rx_tx_upper = boost::to_upper_copy(rx_tx);
-
-    //extract eeprom serial
-    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-    const uhd::fs_path db_path = "/mboards/0/dboards/"+which+"/" + rx_tx + "_eeprom";
-    const uhd::usrp::dboard_eeprom_t db_eeprom = tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
-    if (db_eeprom.serial.empty()) throw std::runtime_error(rx_tx_upper + " dboard has empty serial!");
+    std::string serial = get_serial(usrp, rx_tx);
 
     //make the calibration file path
     fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd";
     fs::create_directory(cal_data_path);
     cal_data_path = cal_data_path / "cal";
     fs::create_directory(cal_data_path);
-    cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.2_%s.csv") % rx_tx % what % db_eeprom.serial);
+    cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.2_%s.csv") % rx_tx % what % serial);
     if (fs::exists(cal_data_path)){
         if (append)
             write_header = false;
@@ -137,7 +150,7 @@ static void store_results(
     {
         //fill the calibration file
         cal_data << boost::format("name, %s Frontend Calibration\n") % rx_tx_upper;
-        cal_data << boost::format("serial, %s\n") % db_eeprom.serial;
+        cal_data << boost::format("serial, %s\n") % serial;
         cal_data << boost::format("timestamp, %d\n") % time(NULL);
         cal_data << boost::format("version, 0, 1\n");
         cal_data << boost::format("DATA STARTS HERE\n");
@@ -198,4 +211,106 @@ static void capture_samples(
     if (num_rx_samps != buff.size()){
         throw std::runtime_error("did not get all the samples requested");
     }
+}
+
+/***********************************************************************
+ * Transmit thread
+ **********************************************************************/
+static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
+    uhd::set_thread_priority_safe();
+
+    //create a transmit streamer
+    uhd::stream_args_t stream_args("fc32"); //complex floats
+    uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
+
+    //setup variables and allocate buffer
+    uhd::tx_metadata_t md;
+    md.has_time_spec = false;
+    std::vector<samp_type> buff(tx_stream->get_max_num_samps()*10);
+
+    //values for the wave table lookup
+    size_t index = 0;
+    const double tx_rate = usrp->get_tx_rate();
+    const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
+    wave_table table(tx_wave_ampl);
+
+    //fill buff and send until interrupted
+    while (not boost::this_thread::interruption_requested()){
+        for (size_t i = 0; i < buff.size(); i++){
+            buff[i] = table(index += step);
+        }
+        tx_stream->send(&buff.front(), buff.size(), md);
+    }
+
+    //send a mini EOB packet
+    md.end_of_burst = true;
+    tx_stream->send("", 0, md);
+}
+
+/***********************************************************************
+ * Tune RX and TX routine
+ **********************************************************************/
+static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_lo_freq, const double rx_offset){
+    //tune the transmitter with no cordic
+    uhd::tune_request_t tx_tune_req(tx_lo_freq);
+    tx_tune_req.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
+    tx_tune_req.dsp_freq = 0;
+    usrp->set_tx_freq(tx_tune_req);
+
+    //tune the receiver
+    usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    return usrp->get_tx_freq();
+}
+
+/***********************************************************************
+ * Setup function
+ **********************************************************************/
+static uhd::usrp::multi_usrp::sptr setup_usrp_for_cal(const std::string &args, const std::string &which, std::string &serial,
+                                                      int vga1_gain, int vga2_gain, int rx_gain, int verbose)
+{
+    std::cout << std::endl;
+    std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
+    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
+    // Do we have an UmTRX here?
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    const uhd::fs_path mb_path = "/mboards/0";
+    const std::string mb_name = tree->access<std::string>(mb_path / "name").get();
+    if (mb_name.find("UMTRX") == std::string::npos){
+        throw std::runtime_error("This utility supports only UmTRX hardware.");
+    }
+
+    //set subdev spec
+    usrp->set_rx_subdev_spec(which+":0");
+    usrp->set_tx_subdev_spec(which+":0");
+
+    UHD_MSG(status) << "Running calibration for " << usrp->get_tx_subdev_name(0) << std::endl;
+    serial = get_serial(usrp, "tx");
+    UHD_MSG(status) << "Daughterboard serial: " << serial << std::endl;
+
+    //set the antennas to cal
+    if (not uhd::has(usrp->get_rx_antennas(), "CAL") or not uhd::has(usrp->get_tx_antennas(), "CAL")){
+        throw std::runtime_error("This board does not have the CAL antenna option, cannot self-calibrate.");
+    }
+    usrp->set_rx_antenna("CAL");
+    usrp->set_tx_antenna("CAL");
+
+    //set optimum defaults
+    //  GSM symbol rate * 4
+    usrp->set_tx_rate(13e6/12);
+    usrp->set_rx_rate(13e6/12);
+    //  500kHz LPF
+    usrp->set_tx_bandwidth(1e6);
+    usrp->set_rx_bandwidth(1e6);
+    // Our recommended VGA1/VGA2
+    usrp->set_tx_gain(vga1_gain, "VGA1");
+    usrp->set_tx_gain(vga2_gain, "VGA2");
+    usrp->set_rx_gain(rx_gain);
+    if (verbose) printf("actual Tx VGA1 gain = %.0f dB\n", usrp->get_tx_gain("VGA1"));
+    if (verbose) printf("actual Tx VGA2 gain = %.0f dB\n", usrp->get_tx_gain("VGA2"));
+    if (verbose) printf("actual Rx gain = %.0f dB\n", usrp->get_rx_gain());
+
+    return usrp;
 }
