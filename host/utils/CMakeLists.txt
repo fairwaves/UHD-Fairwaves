@@ -5,6 +5,7 @@ INSTALL(PROGRAMS
     umtrx_net_burner
     umtrx_nmea
     umtrx_gps_coord
+    umtrx_auto_calibration
     DESTINATION bin
 )
 

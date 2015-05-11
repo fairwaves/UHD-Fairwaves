@@ -1,0 +1,113 @@
+#!/bin/sh
+
+if [ "$#" -lt "1" ] ; then
+  echo "Automatic calibration of an UmTRX for a set of given presets (bands)."
+  echo "Calibrations to be performed:"
+  echo "  - Tx DC offset calibration"
+  echo "  - Tx IQ balance calibration"
+  echo
+  echo "Usage:"
+  echo "  umtrx_cal <preset> [<preset>] [<preset>] ..."
+  echo
+  echo "  preset - GSM850, EGSM900 (same as GSM900), GSM1800 (same as DCS1800), GSM1900 (same as PCS1900)."
+  exit 1
+fi
+
+presets=$*
+
+sides="A B"
+
+run_cal() {
+  what=$1 ; shift
+  freq_start=$1 ; shift
+  freq_stop=$1 ; shift
+  other_args=$*
+
+  echo
+  echo "------------------------------------------------------------------"
+  echo "         Calibrating $what from $freq_start to $freq_stop"
+  echo "------------------------------------------------------------------"
+  echo
+
+  freq_step=$(python -c "print $freq_stop - $freq_start if $freq_stop != $freq_start else 1e3")
+
+  if [ "$what" = "dc" ] ; then
+    cmd="umtrx_cal_tx_dc_offset"
+  elif [ "$what" = "iq" ] ; then
+    cmd="umtrx_cal_tx_iq_balance"
+  else
+    echo "Unknown calibration type \"$what\""
+    return 1
+  fi
+
+  for side in $sides ; do
+    res=255
+    i=0
+    while [ $i -lt 10 -a $res -ne 0 ] ; do
+      i=$(expr $i + 1)
+      cmd_full="$cmd --freq_start $freq_start --freq_stop $freq_stop --freq_step $freq_step --which $side $other_args"
+      $echo $cmd_full
+      $cmd_full
+      res=$(echo $?)
+    done
+
+    if [ $res -ne 0 ] ; then
+      echo
+      echo "Calibration for side $side: FAIL."
+      echo
+    else
+      echo
+      echo "Calibration for side $side SUCCESS."
+      echo
+    fi
+  done
+}
+
+
+run_preset() {
+  preset=$1
+
+  echo
+  echo "===================================================================="
+  echo "                       Running preset $preset"
+  echo "===================================================================="
+  echo
+
+  case $preset in
+  GSM850)
+    run_cal dc 869e6 894e6
+    # The band completely falls into the 810-930 VCO range
+    run_cal iq 869e6 894e6
+    ;;
+
+  GSM900|EGSM900)
+    run_cal dc 925e6 960e6
+    # The band spans VCO ranges 810-930 and 930-11425
+    run_cal iq 925e6 930e6
+    run_cal iq 930.001e6 960e6 --append
+    ;;
+
+  GSM1800|DCS1800)
+    run_cal dc 1805e6 1880e6
+    # The band spans VCO ranges 1620-1860 and 1860-2285
+    run_cal iq 1805e6 1860e6
+    run_cal iq 1860.001e6 1880e6 --append
+    ;;
+
+  GSM1900|PCS1900)
+    run_cal dc 1930e6 1990e6
+    # The band completely falls into the 1860-2285 VCO range
+    run_cal iq 1930e6 1990e6
+    ;;
+
+  *)
+    echo "Unknown preset"
+    exit 2
+    ;;
+  esac
+}
+
+for preset in $presets ; do
+  run_preset $preset
+done
+
