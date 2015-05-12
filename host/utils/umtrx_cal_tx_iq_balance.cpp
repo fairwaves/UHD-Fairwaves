@@ -98,7 +98,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     if (not vm.count("freq_start")) freq_start = usrp->get_tx_freq_range().start() + 50e6;
     if (not vm.count("freq_stop")) freq_stop = usrp->get_tx_freq_range().stop() - 50e6;
-    UHD_MSG(status) << boost::format("Calibration frequency type: IQ balance");
+    UHD_MSG(status) << boost::format("Calibration frequency type: IQ balance") << std::endl;
     UHD_MSG(status) << boost::format("Calibration frequency range: %d MHz -> %d MHz") % (freq_start/1e6) % (freq_stop/1e6) << std::endl;
 
     for (double tx_lo_i = freq_start; tx_lo_i <= freq_stop; tx_lo_i += freq_step){
