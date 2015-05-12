@@ -16,6 +16,7 @@ fi
 presets=$*
 
 sides="A B"
+report=""
 
 run_cal() {
   what=$1 ; shift
@@ -51,15 +52,18 @@ run_cal() {
       res=$(echo $?)
     done
 
+    text_res="Calibration type $what side $side from $freq_start to $freq_stop:"
     if [ $res -ne 0 ] ; then
-      echo
-      echo "Calibration for side $side: FAIL."
-      echo
+      text_res="$text_res FAIL"
     else
-      echo
-      echo "Calibration for side $side SUCCESS."
-      echo
+      text_res="$text_res SUCCESS"
     fi
+
+    echo
+    echo "$text_res"
+    echo
+
+    report="$report$text_res\n"
   done
 }
 
@@ -111,3 +115,9 @@ for preset in $presets ; do
   run_preset $preset
 done
 
+echo
+echo "===================================================================="
+echo "                               Result"
+echo "===================================================================="
+echo
+echo "$report"
