@@ -16,6 +16,7 @@ fi
 presets=$*
 
 sides="A B"
+uhd_args="--args=\"fifo_ctrl_window=0\""
 report=""
 
 run_cal() {
@@ -46,7 +47,7 @@ run_cal() {
     i=0
     while [ $i -lt 10 -a $res -ne 0 ] ; do
       i=$(expr $i + 1)
-      cmd_full="$cmd --freq_start $freq_start --freq_stop $freq_stop --freq_step $freq_step --which $side $other_args"
+      cmd_full="$cmd $uhd_args --freq_start $freq_start --freq_stop $freq_stop --freq_step $freq_step --which $side $other_args"
       $echo $cmd_full
       $cmd_full
       res=$(echo $?)
