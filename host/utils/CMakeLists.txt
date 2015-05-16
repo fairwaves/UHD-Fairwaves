@@ -3,6 +3,8 @@
 ########################################################################
 INSTALL(PROGRAMS
     umtrx_net_burner
+    umtrx_nmea
+    umtrx_gps_coord
     DESTINATION bin
 )
 

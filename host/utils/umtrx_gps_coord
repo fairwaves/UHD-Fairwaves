@@ -1,0 +1,22 @@
+#!/bin/sh
+
+if [ "x$1" = "x-h" -o "x$1" = "x--help" ] ; then
+  echo "Usage:"
+  echo "  umtrx_gps_coord [umtrx_ip]"
+  echo
+  echo "  umtrx_ip - (optional) UmTRX IP address [default=192.168.10.2]"
+  echo
+  echo "Output:"
+  echo "  hh:mm:ss.SSS UTC <lat>N <lon>W <altitude> m"
+  exit 1
+fi
+
+if [ $# -eq 0 ] ; then
+  UMTRX_ADDR="192.168.10.2"
+else
+  UMTRX_ADDR=$1
+fi
+
+echo . | nc -u $UMTRX_ADDR 49171 | \
+  awk -F, '/\$GPGGA/ {print substr($2,0,3) ":" substr($2,3,2) ":" substr($2,5,2) "." substr($2,8,3) " UTC", (substr($3,0,2) + (substr($3,3) / 60.0)) $4,  (substr($5,0,3) + (substr($5,4) / 60.0)) $6, $10 " m"; fflush();}'
+

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+if [ "x$1" = "x-h" -o "x$1" = "x--help" ] ; then
+  echo "Usage:"
+  echo "  umtrx_nmea [umtrx_ip]"
+  echo
+  echo "  umtrx_ip - (optional) UmTRX IP address [default=192.168.10.2]"
+  exit 1
+fi
+
+if [ $# -eq 0 ] ; then
+  UMTRX_ADDR="192.168.10.2"
+else
+  UMTRX_ADDR=$1
+fi
+
+echo . | nc -u $UMTRX_ADDR 49171
