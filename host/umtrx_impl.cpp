@@ -270,6 +270,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // get the atached PA type
     ////////////////////////////////////////////////////////////////////
+    std::list<std::string> pa_types = power_amp::list_pa_str();
+    std::string pa_list_str;
+    BOOST_FOREACH(const std::string &pa_str, pa_types)
+    {
+        pa_list_str += pa_str + " ";
+    }
+    UHD_MSG(status) << "Known PA types: " << pa_list_str << std::endl;
+
     power_amp::pa_type_t pa_type = power_amp::pa_str_to_type(device_addr.cast<std::string>("pa", "NONE"));
     if (_hw_rev < UMTRX_VER_2_3_1 and pa_type != power_amp::PA_NONE)
     {
