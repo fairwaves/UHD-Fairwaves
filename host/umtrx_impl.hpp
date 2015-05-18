@@ -139,7 +139,7 @@ private:
     bool _pa_en1;
     bool _pa_en2;
     uint8_t _pa_dcdc_r;
-    double _pa_power_limit; // Artifical PA output power limit
+    double _pa_power_max_dBm; // Artifical PA output power limit, dBm
 
     void set_pa_dcdc_r(uint8_t val);
     uint8_t get_pa_dcdc_r() const {return _pa_dcdc_r;}

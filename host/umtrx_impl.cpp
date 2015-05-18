@@ -287,9 +287,21 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     if (_pa["A"])
     {
-        _pa_power_limit = device_addr.cast<double>("pa_power_limit", _pa["A"]->max_power_w());
-        if (_pa_power_limit != _pa["A"]->max_power_w())
-            UHD_MSG(status) << "Limiting PA output power to: " << _pa_power_limit << " W" << std::endl;
+        _pa_power_max_dBm = _pa["A"]->max_power_dBm();
+
+        double limit_w = device_addr.cast<double>("pa_power_max_w", _pa["A"]->max_power_w());
+        if (limit_w != _pa["A"]->max_power_w()) {
+            _pa_power_max_dBm = power_amp::w2dBm(limit_w);
+        }
+
+        double limit_dbm = device_addr.cast<double>("pa_power_max_dbm", _pa["A"]->max_power_dBm());
+        if (limit_dbm != _pa["A"]->max_power_dBm()) {
+            _pa_power_max_dBm = limit_dbm;
+        }
+
+        if (_pa_power_max_dBm != _pa["A"]->max_power_dBm()) {
+            UHD_MSG(status) << "Limiting PA output power to: " << _pa_power_max_dBm << "dBm (" << power_amp::dBm2w(_pa_power_max_dBm) << "W)" << std::endl;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////
@@ -675,8 +687,8 @@ void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 
 uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
 {
-    double min_power = power_amp::w2dBm(_pa[which]->min_power_w());
-    double max_power = power_amp::w2dBm(_pa_power_limit);
+    double min_power = _pa[which]->min_power_dBm();
+    double max_power = _pa_power_max_dBm;
     return uhd::gain_range_t(min_power, max_power, 0.1);
 }
 
