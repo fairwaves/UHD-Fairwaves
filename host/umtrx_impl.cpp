@@ -36,6 +36,7 @@ namespace asio = boost::asio;
 // Values recommended by Andrey Sviyazov
 const int umtrx_impl::UMTRX_VGA1_DEF = -20;
 const int umtrx_impl::UMTRX_VGA2_DEF = 22;
+const int umtrx_impl::UMTRX_VGA2_MIN = 0;
 
 static const double _dcdc_val_to_volt_init[256] =
 {
@@ -524,18 +525,19 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
                     .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
             }
         } else {
-            // Set LMS internal VGA gains to optimal values
+            // Set LMS internal VGA1 gain to optimal value
+            // VGA2 will be set in the set_tx_power()
             ctrl->set_tx_gain(UMTRX_VGA1_DEF, "VGA1");
-            ctrl->set_tx_gain(UMTRX_VGA2_DEF, "VGA2");
+            _tx_power_range[fe_name] = generate_tx_power_range(fe_name);
 
             // Use PA control to control output power
             _tree->create<meta_range_t>(tx_rf_fe_path / "gains" / "PA" / "range")
-                .publish(boost::bind(&umtrx_impl::get_pa_power_range, this, fe_name));
+                .publish(boost::bind(&umtrx_impl::get_tx_power_range, this, fe_name));
 
             _tree->create<double>(tx_rf_fe_path / "gains" / "PA" / "value")
-                .coerce(boost::bind(&umtrx_impl::set_pa_power, this, _1, fe_name))
+                .coerce(boost::bind(&umtrx_impl::set_tx_power, this, _1, fe_name))
                 // Set default output power to maximum
-                .set(get_pa_power_range(fe_name).stop());
+                .set(get_tx_power_range(fe_name).stop());
 
         }
 
@@ -693,11 +695,51 @@ void umtrx_impl::set_pa_dcdc_r(uint8_t val)
     }
 }
 
-uhd::gain_range_t umtrx_impl::get_pa_power_range(const std::string &which) const
+uhd::gain_range_t umtrx_impl::generate_tx_power_range(const std::string &which) const
+{
+    // Native PA range plus LMS6 VGA2 control. We keep LMS6 VGA1 constant to
+    // maintain high signal quality.
+    uhd::gain_range_t pa_range = generate_pa_power_range(which);
+//    UHD_MSG(status) << "Original PA output power range: " << pa_range.to_pp_string() << std::endl;
+    uhd::gain_range_t vga_range(pa_range.start() - (UMTRX_VGA2_DEF-UMTRX_VGA2_MIN), pa_range.start()-1, 1.0);
+    uhd::gain_range_t res_range(vga_range);
+    res_range.insert(res_range.end(), pa_range.begin(), pa_range.end());
+//    UHD_MSG(status) << "Generated Tx output power range: " << res_range.to_pp_string() << std::endl;
+    return res_range;
+}
+
+uhd::gain_range_t umtrx_impl::generate_pa_power_range(const std::string &which) const
 {
     double min_power = _pa[which]->min_power_dBm();
     double max_power = _pa_power_max_dBm;
     return uhd::gain_range_t(min_power, max_power, 0.1);
+}
+
+const uhd::gain_range_t &umtrx_impl::get_tx_power_range(const std::string &which) const
+{
+    return _tx_power_range[which];
+}
+
+double umtrx_impl::set_tx_power(double power, const std::string &which)
+{
+    double min_pa_power = _pa[which]->min_power_dBm();
+    double actual_power;
+
+    if (power >= min_pa_power)
+    {
+        UHD_MSG(status) << "Setting Tx power using PA (VGA2=" << UMTRX_VGA2_DEF << ", PA=" << power << ")" << std::endl;
+        // Set VGA2 to the recommended value and use PA to control Tx power
+        _lms_ctrl[which]->set_tx_gain(UMTRX_VGA2_DEF, "VGA2");
+        actual_power = set_pa_power(power, which);
+    } else {
+        double vga2_gain = UMTRX_VGA2_DEF - (min_pa_power-power);
+        UHD_MSG(status) << "Setting Tx power using VGA2 (VGA2=" << vga2_gain << ", PA=" << min_pa_power << ")" << std::endl;
+        // Set PA output power to minimum and use VGA2 to control Tx power
+        actual_power = _lms_ctrl[which]->set_tx_gain(vga2_gain, "VGA2");
+        actual_power = set_pa_power(min_pa_power, which) - (UMTRX_VGA2_DEF-actual_power);
+    }
+
+    return actual_power;
 }
 
 double umtrx_impl::set_pa_power(double power, const std::string &which)

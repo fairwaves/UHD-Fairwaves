@@ -123,6 +123,7 @@ private:
     // Optimal VGA settings for GSM signal, according to our measurements.
     static const int UMTRX_VGA1_DEF;
     static const int UMTRX_VGA2_DEF;
+    static const int UMTRX_VGA2_MIN;
 
     // Conversion table for converting DCDC_R values to actual voltages.
     static const std::vector<double> _dcdc_val_to_volt;
@@ -152,6 +153,7 @@ private:
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
     uhd::dict<std::string, uhd::power_amp::sptr> _pa;
+    uhd::dict<std::string, uhd::gain_range_t> _tx_power_range; // Tx output power range
 
     //control for FPGA cores
     std::vector<rx_frontend_core_200::sptr> _rx_fes;
@@ -182,7 +184,10 @@ private:
     void set_nlow(bool en);
     void set_divsw1(bool en);
     void set_divsw2(bool en);
-    uhd::gain_range_t get_pa_power_range(const std::string &which) const;
+    uhd::gain_range_t generate_tx_power_range(const std::string &which) const;
+    uhd::gain_range_t generate_pa_power_range(const std::string &which) const;
+    const uhd::gain_range_t &get_tx_power_range(const std::string &which) const;
+    double set_tx_power(double power, const std::string &which);
     double set_pa_power(double power, const std::string &which);
     uint16_t get_tcxo_dac(const umtrx_iface::sptr &);
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
