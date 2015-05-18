@@ -191,6 +191,28 @@ power_amp::pa_type_t power_amp::pa_str_to_type(const std::string &pa_str)
     return power_amp::PA_NONE;
 }
 
+std::list<power_amp::pa_type_t> power_amp::list_pa_type()
+{
+    std::list<power_amp::pa_type_t> list;
+
+    BOOST_FOREACH(const power_amp::pa_type_map_pair_t &pa_map_pair, _pa_type_map) {
+        list.push_back(pa_map_pair.type);
+    }
+
+    return list;
+}
+
+std::list<std::string> power_amp::list_pa_str()
+{
+    std::list<std::string> list;
+
+    BOOST_FOREACH(const power_amp::pa_type_map_pair_t &pa_map_pair, _pa_type_map) {
+        list.push_back(pa_map_pair.name);
+    }
+
+    return list;
+}
+
 double power_amp::w2dBm(double w)
 {
     return 10*log10(w) + 30;

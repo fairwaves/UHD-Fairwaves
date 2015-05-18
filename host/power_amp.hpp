@@ -3,6 +3,7 @@
 
 #include <uhd/config.hpp>
 #include <map>
+#include <list>
 #include <boost/shared_ptr.hpp>
 
 namespace uhd {
@@ -24,15 +25,18 @@ public:
 
     // Get the PA type
     virtual pa_type_t get_pa_type() const =0;
-
     // Get the PA type as a string
     virtual std::string get_pa_type_str() const =0;
 
     // Convert PA type to a string
     static std::string pa_type_to_str(pa_type_t pa);
-
     // Convert a string to a PA type
     static pa_type_t pa_str_to_type(const std::string &pa_str);
+
+	// Return a list of PA types
+	static std::list<pa_type_t> list_pa_type();
+	// Return a list of PA type strings
+	static std::list<std::string> list_pa_str();
 
     // Convert watts -> dBm
     static double w2dBm(double w);
