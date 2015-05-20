@@ -246,10 +246,10 @@ protected:
     double set_rx_gain(double gain, const std::string &name) {
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_gain(%f, %s)\n", gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
-		if(name == "VGA1"){
+        if(name == "VGA1"){
             lms.set_rx_vga1gain(gain);
             return lms.get_rx_vga1gain();
-		} else if(name == "VGA2"){
+        } else if(name == "VGA2"){
             lms.set_rx_vga2gain(gain);
             return lms.get_rx_vga2gain();
         } else UHD_THROW_INVALID_CODE_PATH();
