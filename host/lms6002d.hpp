@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <cmath>
 
 /*!
  * LMS6002D control class
@@ -142,21 +143,47 @@ public:
         return lms_read_shift(0x41, 0x1f, 0) - 35;
     }
 
-	/** Set Rx VGA1 gain.
-	gain is raw values [0 .. 127]
+	/** Set Rx VGA1 gain raw value
+	gain is raw values [0 .. 120]
 	Returns the old gain value */
-	int8_t set_rx_vga1gain(int8_t gain){
-		if (gain < 0) // according to standard max value of int8_t is always 127
+	int8_t set_rx_vga1gain_int(int8_t gain){
+		if (gain < 0 || gain >120)
 			gain = 0;
 		int8_t old_bits = lms_write_bits(0x76, 0x7f, gain);
 		return old_bits & 0x7f;
 	}
 
-	/** Get Rx VGA1 gain in dB.
-	gain is in [0 .. 127] range of abstract values
+	/** Get Rx VGA1 gain raw value
+	gain is in [0 .. 120] range of abstract values
 	Returns the gain value */
-	int8_t get_rx_vga1gain(){
+	int8_t get_rx_vga1gain_int(){
 		return lms_read_shift(0x76, 0x7f, 0);
+	}
+
+    /** Converts Rx VGA1 raw values to absolute dBs
+    code must be in [0 .. 120] range */
+    double rxvga1_int_to_db(int8_t code){
+        return 5.0 + 20*log10(127.0/(127.0-code));
+    }
+
+    /** Converts Rx VGA1 gain into raw integer values
+    db must be in [5 .. 30.17] dB range */
+    int8_t rxvga1_db_to_int(double db){
+        return (int8_t)(127.5 - 127 / pow(10, (db-5.0)/20));
+    }
+
+    /** Set Rx VGA1 gain in dB
+	gain is in [5 .. 30.17] dB range
+	Returns the old gain value */
+	double set_rx_vga1gain(double gain){
+		int8_t code = rxvga1_db_to_int(gain);
+		return rxvga1_int_to_db(set_rx_vga1gain_int(code));
+	}
+
+	/** Get Rx VGA1 gain in dB
+    Returns the gain value in [5 .. 30.17] dB range */
+	double get_rx_vga1gain(){
+		return rxvga1_int_to_db(get_rx_vga1gain_int());
 	}
 
     /**  Set VGA2 gain.

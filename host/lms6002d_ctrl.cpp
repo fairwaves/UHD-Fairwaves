@@ -69,7 +69,34 @@ static const uhd::dict<std::string, gain_range_t> lms_tx_gain_ranges = map_list_
 ;
 
 static const uhd::dict<std::string, gain_range_t> lms_rx_gain_ranges = map_list_of
-    ("VGA1", gain_range_t(0, 126, double(1.0)))
+    // VGA1 follows the approximation of [dB] = 5 + 20*log10(127/(127-Code)) where 0 <= Code <= 120
+    ("VGA1", gain_range_t( list_of
+         (range_t(5.00))(range_t(5.07))(range_t(5.14))(range_t(5.21))(range_t(5.28))
+         (range_t(5.35))(range_t(5.42))(range_t(5.49))(range_t(5.57))(range_t(5.64))
+         (range_t(5.71))(range_t(5.79))(range_t(5.86))(range_t(5.94))(range_t(6.01))
+         (range_t(6.09))(range_t(6.17))(range_t(6.25))(range_t(6.33))(range_t(6.41))
+         (range_t(6.49))(range_t(6.57))(range_t(6.65))(range_t(6.74))(range_t(6.82))
+         (range_t(6.90))(range_t(6.99))(range_t(7.08))(range_t(7.16))(range_t(7.25))
+         (range_t(7.34))(range_t(7.43))(range_t(7.52))(range_t(7.61))(range_t(7.71))
+         (range_t(7.80))(range_t(7.90))(range_t(7.99))(range_t(8.09))(range_t(8.19))
+         (range_t(8.29))(range_t(8.39))(range_t(8.49))(range_t(8.59))(range_t(8.69))
+         (range_t(8.80))(range_t(8.91))(range_t(9.01))(range_t(9.12))(range_t(9.23))
+         (range_t(9.35))(range_t(9.46))(range_t(9.57))(range_t(9.69))(range_t(9.81))
+         (range_t(9.93))(range_t(10.05))(range_t(10.17))(range_t(10.30))(range_t(10.43))
+         (range_t(10.55))(range_t(10.69))(range_t(10.82))(range_t(10.95))(range_t(11.09))
+         (range_t(11.23))(range_t(11.37))(range_t(11.51))(range_t(11.66))(range_t(11.81))
+         (range_t(11.96))(range_t(12.11))(range_t(12.27))(range_t(12.43))(range_t(12.59))
+         (range_t(12.76))(range_t(12.92))(range_t(13.10))(range_t(13.27))(range_t(13.45))
+         (range_t(13.63))(range_t(13.82))(range_t(14.01))(range_t(14.21))(range_t(14.41))
+         (range_t(14.61))(range_t(14.82))(range_t(15.03))(range_t(15.25))(range_t(15.48))
+         (range_t(15.71))(range_t(15.95))(range_t(16.19))(range_t(16.45))(range_t(16.71))
+         (range_t(16.97))(range_t(17.25))(range_t(17.53))(range_t(17.83))(range_t(18.13))
+         (range_t(18.45))(range_t(18.78))(range_t(19.12))(range_t(19.47))(range_t(19.84))
+         (range_t(20.23))(range_t(20.63))(range_t(21.06))(range_t(21.50))(range_t(21.97))
+         (range_t(22.47))(range_t(22.99))(range_t(23.55))(range_t(24.15))(range_t(24.80))
+         (range_t(25.49))(range_t(26.25))(range_t(27.08))(range_t(27.99))(range_t(29.01))
+         (range_t(30.17))
+         ))
 	// We limit Rx VGA2 to 30dB, as docs say higher values are dangerous
     ("VGA2", gain_range_t(0, 30, double(3.0)))
 // ToDo: Add LNA control here
