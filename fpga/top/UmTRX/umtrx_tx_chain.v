@@ -6,7 +6,6 @@ module umtrx_tx_chain
 #(
     parameter PROT_DEST = 0, //framer index
     parameter DSPNO = 0, //the dsp unit number: 0, 1, 2...
-    parameter FRONT_BASE = 0,
     parameter DSP_BASE = 0,
     parameter CTRL_BASE = 0,
     parameter FIFOSIZE = 10,
@@ -32,9 +31,9 @@ module umtrx_tx_chain
     input [7:0] set_addr_fe,
     input [31:0] set_data_fe,
 
-    //dsp clock domain
-    output reg [11:0] dac_a,
-    output reg [11:0] dac_b,
+    //fe clock domain
+    output [23:0] front_i,
+    output [23:0] front_q,
     input dac_stb,
     output run,
 
@@ -51,28 +50,6 @@ module umtrx_tx_chain
     //vita time in dsp clock domain
     wire [63:0] vita_time
 );
-
-    /*******************************************************************
-     * Cross DAC signals from fe to dsp clock domain
-     * dac_a/b come from a register on the fe clock domain
-     ******************************************************************/
-    wire [15:0] dac_a_16, dac_b_16;
-    always @(posedge fe_clk) begin
-        dac_a <= dac_a_16[15:4];
-        dac_b <= dac_b_16[15:4];
-    end
-
-    /*******************************************************************
-     * TX frontend on fe clock domain
-     ******************************************************************/
-    wire [23:0] front_i, front_q;
-    tx_frontend #(.BASE(FRONT_BASE)) tx_frontend
-    (
-        .clk(fe_clk), .rst(fe_rst),
-        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
-        .tx_i(front_i), .tx_q(front_q), .run(1'b1),
-        .dac_a(dac_a_16), .dac_b(dac_b_16)
-    );
 
     /*******************************************************************
      * DUC chain on fe clock domain
@@ -180,8 +157,6 @@ module umtrx_tx_chain
         assign DATA[63:32] = vita_sample;
         assign DATA[95:64] = duc_sample;
         assign DATA[127:96] = {front_i[23:8], front_q[23:8]};
-        assign DATA[159:128] = {dac_a_16, dac_b_16};
-        assign DATA[191:160] = {dac_a, 4'b0, dac_b, 4'b0};
     end
     endgenerate
 

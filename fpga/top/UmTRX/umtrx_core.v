@@ -448,7 +448,7 @@ module umtrx_core
    // Buffer Pool Status -- Slave #5   
    
    //compatibility number -> increment when the fpga has been sufficiently altered
-   localparam compat_num = {16'd9, 16'd0}; //major, minor
+   localparam compat_num = {16'd9, 16'd1}; //major, minor
 
    wire [31:0] irq_readback = {16'b0, aux_ld2, aux_ld1, button, spi_ready, 12'b0};
 
@@ -672,20 +672,20 @@ module umtrx_core
 
    // /////////////////////////////////////////////////////////////////////////
    // RX Frontend
-    wire [23:0] front0_i, front0_q;
+    wire [23:0] rx_front0_i, rx_front0_q;
     rx_frontend #(.BASE(SR_RX_FRONT0)) rx_frontend0
     (
         .clk(fe_clk), .rst(fe_rst),
         .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
-        .i_out(front0_i), .q_out(front0_q), .run(1'b1),
+        .i_out(rx_front0_i), .q_out(rx_front0_q), .run(1'b1),
         .adc_a({adc0_a, 4'b0}), .adc_b({adc0_b, 4'b0})
     );
-    wire [23:0] front1_i, front1_q;
+    wire [23:0] rx_front1_i, rx_front1_q;
     rx_frontend #(.BASE(SR_RX_FRONT1)) rx_frontend1
     (
         .clk(fe_clk), .rst(fe_rst),
         .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
-        .i_out(front1_i), .q_out(front1_q), .run(1'b1),
+        .i_out(rx_front1_i), .q_out(rx_front1_q), .run(1'b1),
         .adc_a({adc1_a, 4'b0}), .adc_b({adc1_b, 4'b0})
     );
 
@@ -716,8 +716,8 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .front_i(rx_fe_sw[0]?front1_i:front0_i),
-        .front_q(rx_fe_sw[0]?front1_q:front0_q),
+        .front_i(rx_fe_sw[0]?rx_front1_i:rx_front0_i),
+        .front_q(rx_fe_sw[0]?rx_front1_q:rx_front0_q),
         .adc_stb(rx_fe_sw[0]?adc1_strobe:adc0_strobe),
         .run(run_rx_dsp[0]),
         .vita_data_sys(dsp_rx0_data), .vita_valid_sys(dsp_rx0_valid), .vita_ready_sys(dsp_rx0_ready),
@@ -743,8 +743,8 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .front_i(rx_fe_sw[1]?front1_i:front0_i),
-        .front_q(rx_fe_sw[1]?front1_q:front0_q),
+        .front_i(rx_fe_sw[1]?rx_front1_i:rx_front0_i),
+        .front_q(rx_fe_sw[1]?rx_front1_q:rx_front0_q),
         .adc_stb(rx_fe_sw[1]?adc1_strobe:adc0_strobe),
         .run(run_rx_dsp[1]),
         .vita_data_sys(dsp_rx1_data), .vita_valid_sys(dsp_rx1_valid), .vita_ready_sys(dsp_rx1_ready),
@@ -770,8 +770,8 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .front_i(rx_fe_sw[2]?front1_i:front0_i),
-        .front_q(rx_fe_sw[2]?front1_q:front0_q),
+        .front_i(rx_fe_sw[2]?rx_front1_i:rx_front0_i),
+        .front_q(rx_fe_sw[2]?rx_front1_q:rx_front0_q),
         .adc_stb(rx_fe_sw[2]?adc1_strobe:adc0_strobe),
         .run(run_rx_dsp[2]),
         .vita_data_sys(dsp_rx2_data), .vita_valid_sys(dsp_rx2_valid), .vita_ready_sys(dsp_rx2_ready),
@@ -797,8 +797,8 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .front_i(rx_fe_sw[3]?front1_i:front0_i),
-        .front_q(rx_fe_sw[3]?front1_q:front0_q),
+        .front_i(rx_fe_sw[3]?rx_front1_i:rx_front0_i),
+        .front_q(rx_fe_sw[3]?rx_front1_q:rx_front0_q),
         .adc_stb(rx_fe_sw[3]?adc1_strobe:adc0_strobe),
         .run(run_rx_dsp[3]),
         .vita_data_sys(dsp_rx3_data), .vita_valid_sys(dsp_rx3_valid), .vita_ready_sys(dsp_rx3_ready),
@@ -809,6 +809,28 @@ module umtrx_core
         assign run_rx_dsp[3] = 0;
     end
     endgenerate
+
+   // /////////////////////////////////////////////////////////////////////////
+   // TX Frontend
+    wire [23:0] tx_front0_i, tx_front0_q;
+    wire [3:0] dac0_a_pad, dac0_b_pad;
+    tx_frontend #(.BASE(SR_TX_FRONT0)) tx_frontend0
+    (
+        .clk(fe_clk), .rst(fe_rst),
+        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
+        .tx_i(tx_front0_i), .tx_q(tx_front0_q), .run(1'b1),
+        .dac_a({dac0_a, dac0_a_pad}), .dac_b({dac0_b, dac0_b_pad})
+    );
+
+    wire [23:0] tx_front1_i, tx_front1_q;
+    wire [3:0] dac1_a_pad, dac1_b_pad;
+    tx_frontend #(.BASE(SR_TX_FRONT1)) tx_frontend1
+    (
+        .clk(fe_clk), .rst(fe_rst),
+        .set_stb(set_stb_fe),.set_addr(set_addr_fe),.set_data(set_data_fe),
+        .tx_i(tx_front1_i), .tx_q(tx_front1_q), .run(1'b1),
+        .dac_a({dac1_a, dac1_a_pad}), .dac_b({dac1_b, dac1_b_pad})
+    );
 
    // /////////////////////////////////////////////////////////////////////////
    // TX chains
@@ -823,10 +845,10 @@ module umtrx_core
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.out(tx_fe_sw),.changed());
 
     //assign dac switch
-    wire [11:0] dac0_a_int, dac0_b_int;
-    wire [11:0] dac1_a_int, dac1_b_int;
-    assign {dac0_a, dac0_b} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
-    assign {dac1_a, dac1_b} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
+    wire [23:0] dac0_a_int, dac0_b_int;
+    wire [23:0] dac1_a_int, dac1_b_int;
+    assign {tx_front0_i, tx_front0_q} = (tx_fe_sw == 0)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
+    assign {tx_front1_i, tx_front1_q} = (tx_fe_sw == 1)? {dac0_a_int, dac0_b_int} : {dac1_a_int, dac1_b_int};
 
     generate
     if (`NUMDUC > 0) begin
@@ -834,7 +856,6 @@ module umtrx_core
     #(
         .PROT_DEST(0),
         .DSPNO(0),
-        .FRONT_BASE(SR_TX_FRONT0),
         .DSP_BASE(SR_TX_DSP0),
         .CTRL_BASE(SR_TX_CTRL0),
         .FIFOSIZE(DSP_TX_FIFOSIZE)
@@ -846,7 +867,7 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac0_a_int), .dac_b(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx_dsp0),
+        .front_i(dac0_a_int), .front_q(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx_dsp0),
         .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
@@ -861,7 +882,6 @@ module umtrx_core
     #(
         .PROT_DEST(1),
         .DSPNO(1),
-        .FRONT_BASE(SR_TX_FRONT1),
         .DSP_BASE(SR_TX_DSP1),
         .CTRL_BASE(SR_TX_CTRL1),
         .FIFOSIZE(DSP_TX_FIFOSIZE)
@@ -873,7 +893,7 @@ module umtrx_core
         .fe_clk(fe_clk), .fe_rst(fe_rst),
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
-        .dac_a(dac1_a_int), .dac_b(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx_dsp1),
+        .front_i(dac1_a_int), .front_q(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx_dsp1),
         .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
