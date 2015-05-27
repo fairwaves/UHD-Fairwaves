@@ -1,0 +1,23 @@
+Source: umtrx
+Section: libs
+Priority: optional
+Maintainer: Josh Blum <josh@pothosware.com>
+Build-Depends:
+    debhelper (>= 9.0.0),
+    cmake (>= 2.8),
+    libboost-all-dev,
+    libuhd-dev (>= 3.7)
+Standards-Version: 3.9.5
+Homepage: http://umtrx.org/
+Vcs-Git: https://github.com/fairwaves/UHD-Fairwaves.git
+Vcs-Browser: https://github.com/fairwaves/UHD-Fairwaves
+
+Package: umtrx
+Section: libs
+Architecture: any
+Pre-Depends: multiarch-support, ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: python
+Description: Fairwaves UmTRX hardware driver
+ The industrial grade dual-channel wide-band SDR transceiver.
+ Includes UmTRX command line utilities and UHD device module.
