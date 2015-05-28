@@ -1,5 +1,6 @@
 //
 // Copyright 2010,2012 Ettus Research LLC
+// Copyright 2015 Fairwaves, Inc
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,10 +17,8 @@
 //
 
 #include "usrp_cal_utils.hpp"
-#include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/safe_main.hpp>
 #include <boost/program_options.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/math/special_functions/round.hpp>
 #include <iostream>
 #include <complex>
@@ -28,70 +27,16 @@
 
 namespace po = boost::program_options;
 
-/***********************************************************************
- * Transmit thread
- **********************************************************************/
-static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
-    uhd::set_thread_priority_safe();
-
-    //create a transmit streamer
-    uhd::stream_args_t stream_args("fc32"); //complex floats
-    uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
-
-    //setup variables and allocate buffer
-    uhd::tx_metadata_t md;
-    md.has_time_spec = false;
-    std::vector<samp_type> buff(tx_stream->get_max_num_samps()*10);
-
-    //values for the wave table lookup
-    size_t index = 0;
-    const double tx_rate = usrp->get_tx_rate();
-    const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
-    wave_table table(tx_wave_ampl);
-
-    //fill buff and send until interrupted
-    while (not boost::this_thread::interruption_requested()){
-        for (size_t i = 0; i < buff.size(); i++){
-            buff[i] = table(index += step);
-        }
-        tx_stream->send(&buff.front(), buff.size(), md);
-    }
-
-    //send a mini EOB packet
-    md.end_of_burst = true;
-    tx_stream->send("", 0, md);
-}
-
-/***********************************************************************
- * Tune RX and TX routine
- **********************************************************************/
-static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_lo_freq, const double rx_offset){
-    //tune the transmitter with no cordic
-    uhd::tune_request_t tx_tune_req(tx_lo_freq);
-    tx_tune_req.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
-    tx_tune_req.dsp_freq = 0;
-    usrp->set_tx_freq(tx_tune_req);
-
-    //tune the receiver
-    usrp->set_rx_freq(usrp->get_tx_freq() - rx_offset);
-
-    //wait for the LOs to become locked
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-    boost::system_time start = boost::get_system_time();
-    while (not usrp->get_tx_sensor("lo_locked").to_bool() or not usrp->get_rx_sensor("lo_locked").to_bool()){
-        if (boost::get_system_time() > start + boost::posix_time::milliseconds(100)){
-            throw std::runtime_error("timed out waiting for TX and/or RX LO to lock");
-        }
-    }
-
-    return usrp->get_tx_freq();
-}
+static const size_t num_search_steps = 5;
+static const size_t num_search_iters = 7;
 
 /***********************************************************************
  * Main
  **********************************************************************/
 int UHD_SAFE_MAIN(int argc, char *argv[]){
-    std::string args, subdev, serial;
+    std::string args, which, serial;
+    int verbose;
+    int vga1_gain, vga2_gain, rx_gain;
     double tx_wave_freq, tx_wave_ampl, rx_offset;
     double freq_start, freq_stop, freq_step;
     size_t nsamps;
@@ -101,14 +46,18 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("help", "help message")
         ("verbose", "enable some verbose")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
-        ("subdev", po::value<std::string>(&subdev), "Subdevice specification (default: first subdevice, often 'A')")
-        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(507.123e3), "Transmit wave frequency in Hz")
+        ("which", po::value<std::string>(&which)->default_value("A"), "Which chain A or B?")
+        ("vga1", po::value<int>(&vga1_gain)->default_value(-20), "LMS6002D Tx VGA1 gain [-35 to -4]")
+        ("vga2", po::value<int>(&vga2_gain)->default_value(22), "LMS6002D Tx VGA2 gain [0 to 25]")
+        ("rx_gain", po::value<int>(&rx_gain)->default_value(100), "LMS6002D Rx combined gain [0 to 156]")
+        ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
-        ("rx_offset", po::value<double>(&rx_offset)->default_value(.9344e6), "RX LO offset from the TX LO in Hz")
+        ("rx_offset", po::value<double>(&rx_offset)->default_value(300e3), "RX LO offset from the TX LO in Hz")
         ("freq_start", po::value<double>(&freq_start), "Frequency start in Hz (do not specify for default)")
         ("freq_stop", po::value<double>(&freq_stop), "Frequency stop in Hz (do not specify for default)")
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
         ("nsamps", po::value<size_t>(&nsamps)->default_value(default_num_samps), "Samples per data capture")
+        ("append", "Append measurements to the calibratoin file instead of rewriting [default=overwrite]")
     ;
 
     po::variables_map vm;
@@ -117,16 +66,17 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //print the help message
     if (vm.count("help")){
-        std::cout << boost::format("USRP Generate TX IQ Balance Calibration Table %s") % desc << std::endl;
+        std::cout << boost::format("UmTRX Generate TX IQ Balance Calibration Table %s") % desc << std::endl;
         std::cout <<
-            "This application measures leakage between RX and TX on a transceiver daughterboard to self-calibrate.\n"
-            "Note: Not all daughterboards support this feature. Refer to the UHD manual for details.\n"
+            "This application measures leakage between RX and TX using LMS6002D internal RF loopback to self-calibrate.\n"
             << std::endl;
         return EXIT_FAILURE;
     }
 
+    verbose = vm.count("verbose");
+
     // Create a USRP device
-    uhd::usrp::multi_usrp::sptr usrp = setup_usrp_for_cal(args, subdev, serial);
+    uhd::usrp::multi_usrp::sptr usrp = setup_usrp_for_cal(args, which, serial, vga1_gain, vga2_gain, rx_gain, verbose);
 
     //create a receive streamer
     uhd::stream_args_t stream_args("fc32"); //complex floats
@@ -142,8 +92,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //store the results here
     std::vector<result_t> results;
 
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    const uhd::fs_path tx_fe_path = "/mboards/0/tx_frontends/"+which;
+    uhd::property<std::complex<double> > &iq_prop = tree->access<std::complex<double> >(tx_fe_path / "iq_balance" / "value");
+
     if (not vm.count("freq_start")) freq_start = usrp->get_tx_freq_range().start() + 50e6;
     if (not vm.count("freq_stop")) freq_stop = usrp->get_tx_freq_range().stop() - 50e6;
+    UHD_MSG(status) << boost::format("Calibration frequency type: IQ balance") << std::endl;
     UHD_MSG(status) << boost::format("Calibration frequency range: %d MHz -> %d MHz") % (freq_start/1e6) % (freq_stop/1e6) << std::endl;
 
     for (double tx_lo_i = freq_start; tx_lo_i <= freq_stop; tx_lo_i += freq_step){
@@ -157,8 +112,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double bb_imag_freq = actual_tx_freq - tx_wave_freq - actual_rx_freq;
 
         //capture initial uncorrected value
-        usrp->set_tx_iq_balance(0.0);
-        capture_samples(usrp, rx_stream, buff, nsamps);
+        iq_prop.set(0.0);
+        capture_samples(rx_stream, buff, nsamps);
         const double initial_suppression = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate) - compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
 
         //bounds and results from searching
@@ -176,10 +131,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             for (double ampl_corr = ampl_corr_start; ampl_corr <= ampl_corr_stop + ampl_corr_step/2; ampl_corr += ampl_corr_step){
 
                 const std::complex<double> correction(ampl_corr, phase_corr);
-                usrp->set_tx_iq_balance(correction);
+                iq_prop.set(correction);
 
                 //receive some samples
-                capture_samples(usrp, rx_stream, buff, nsamps);
+                capture_samples(rx_stream, buff, nsamps);
 
                 const double tone_dbrms = compute_tone_dbrms(buff, bb_tone_freq/actual_rx_rate);
                 const double imag_dbrms = compute_tone_dbrms(buff, bb_imag_freq/actual_rx_rate);
@@ -194,9 +149,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
             }}
 
-            //std::cout << "best_phase_corr " << best_phase_corr << std::endl;
-            //std::cout << "best_ampl_corr " << best_ampl_corr << std::endl;
-            //std::cout << "best_suppression " << best_suppression << std::endl;
+            if (verbose) std::cout << "best_phase_corr " << best_phase_corr << std::endl;
+            if (verbose) std::cout << "best_ampl_corr " << best_ampl_corr << std::endl;
+            if (verbose) std::cout << "best_suppression " << best_suppression << std::endl;
 
             phase_corr_start = best_phase_corr - phase_corr_step;
             phase_corr_stop = best_phase_corr + phase_corr_step;
@@ -212,7 +167,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             result.best = best_suppression;
             result.delta = best_suppression - initial_suppression;
             results.push_back(result);
-            if (vm.count("verbose")){
+            if (verbose){
                 std::cout << boost::format("TX IQ: %f MHz: best suppression %f dB, corrected %f dB") % (tx_lo/1e6) % result.best % result.delta << std::endl;
             }
             else std::cout << "." << std::flush;
@@ -225,7 +180,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     threads.interrupt_all();
     threads.join_all();
 
-    store_results(results, "TX", "tx", "iq", serial);
+    store_results(usrp, results, "tx", "iq", vm.count("append"));
 
     return EXIT_SUCCESS;
 }

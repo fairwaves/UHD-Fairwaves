@@ -17,74 +17,16 @@
 //
 
 #include "usrp_cal_utils.hpp"
-#include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/safe_main.hpp>
-#include <uhd/utils/paths.hpp>
-#include <uhd/utils/algorithm.hpp>
-#include <uhd/usrp/multi_usrp.hpp>
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/math/special_functions/round.hpp>
-#include <boost/random.hpp>
 #include <iostream>
 #include <complex>
 #include <cmath>
 #include <ctime>
 
 namespace po = boost::program_options;
-
-/***********************************************************************
- * Transmit thread
- **********************************************************************/
-static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
-    uhd::set_thread_priority_safe();
-
-    //create a transmit streamer
-    uhd::stream_args_t stream_args("fc32"); //complex floats
-    uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
-
-    //setup variables and allocate buffer
-    uhd::tx_metadata_t md;
-    md.has_time_spec = false;
-    std::vector<samp_type> buff(tx_stream->get_max_num_samps()*10);
-
-    //values for the wave table lookup
-    size_t index = 0;
-    const double tx_rate = usrp->get_tx_rate();
-    const size_t step = boost::math::iround(wave_table_len * tx_wave_freq/tx_rate);
-    wave_table table(tx_wave_ampl);
-
-    //fill buff and send until interrupted
-    while (not boost::this_thread::interruption_requested()){
-        for (size_t i = 0; i < buff.size(); i++){
-            buff[i] = table(index += step);
-//            buff[i] = samp_type(0, 0); //using no-power transmit to cal with
-        }
-        tx_stream->send(&buff.front(), buff.size(), md);
-    }
-
-    //send a mini EOB packet
-    md.end_of_burst = true;
-    tx_stream->send("", 0, md);
-}
-
-/***********************************************************************
- * Tune RX and TX routine
- **********************************************************************/
-static double tune_rx_and_tx(uhd::usrp::multi_usrp::sptr usrp, const double tx_lo_freq, const double rx_offset){
-    //tune the transmitter with no cordic
-    uhd::tune_request_t tx_tune_req(tx_lo_freq);
-    tx_tune_req.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
-    tx_tune_req.dsp_freq = 0;
-    usrp->set_tx_freq(tx_tune_req);
-
-    //tune the receiver
-    usrp->set_rx_freq(uhd::tune_request_t(usrp->get_tx_freq(), rx_offset));
-
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    return usrp->get_tx_freq();
-}
 
 /***********************************************************************
  * Calibration utility class
@@ -332,13 +274,13 @@ static result_t calibrate_downhill(dc_cal_t &dc_cal,
  * Main
  **********************************************************************/
 int UHD_SAFE_MAIN(int argc, char *argv[]){
-    std::string args;
+    std::string args, which, serial;
+    int verbose;
     int vga1_gain, vga2_gain, rx_gain;
     double tx_wave_freq, tx_wave_ampl, rx_offset;
     double freq_start, freq_stop, freq_step;
     size_t nsamps;
     size_t ntrials;
-    std::string which;
     int single_test_i, single_test_q;
 
     po::options_description desc("Allowed options");
@@ -347,6 +289,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("verbose", "enable some verbose")
         ("debug_raw_data", "save raw captured signals to files")
         ("args", po::value<std::string>(&args)->default_value(""), "device address args [default = \"\"]")
+        ("which", po::value<std::string>(&which)->default_value("A"), "Which chain A or B?")
         ("vga1", po::value<int>(&vga1_gain)->default_value(-20), "LMS6002D Tx VGA1 gain [-35 to -4]")
         ("vga2", po::value<int>(&vga2_gain)->default_value(22), "LMS6002D Tx VGA2 gain [0 to 25]")
         ("rx_gain", po::value<int>(&rx_gain)->default_value(100), "LMS6002D Rx combined gain [0 to 156]")
@@ -358,7 +301,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("freq_step", po::value<double>(&freq_step)->default_value(default_freq_step), "Step size for LO sweep in Hz")
         ("nsamps", po::value<size_t>(&nsamps)->default_value(default_num_samps), "Samples per data capture")
         ("ntrials", po::value<size_t>(&ntrials)->default_value(1), "Num trials per TX LO")
-        ("which", po::value<std::string>(&which)->default_value("A"), "Which chain A or B?")
         ("single_test", "Perform a single measurement and exit (freq = freq_start, I = single_test_i, Q = single_test_q]")
         ("single_test_i", po::value<int>(&single_test_i)->default_value(128), "Only in the single test mode! I channel calibration value [0 to 255]")
         ("single_test_q", po::value<int>(&single_test_q)->default_value(128), "Only in the single test mode! Q channel calibration value [0 to 255]")
@@ -375,47 +317,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cout <<
             "This application measures leakage between RX and TX using LMS6002D internal RF loopback to self-calibrate.\n"
             << std::endl;
-        return ~0;
+        return EXIT_FAILURE;
     }
 
-    //create a usrp device
-    std::cout << std::endl;
-    std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+    verbose = vm.count("verbose");
 
-    // Do we have an UmTRX here?
-    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
-    const uhd::fs_path mb_path = "/mboards/0";
-    const std::string mb_name = tree->access<std::string>(mb_path / "name").get();
-    if (mb_name.find("UMTRX") == std::string::npos){
-        throw std::runtime_error("This utility supports only UmTRX hardware.");
-    }
-
-    //set subdev spec
-    usrp->set_rx_subdev_spec(which+":0");
-    usrp->set_tx_subdev_spec(which+":0");
-
-    //set the antennas to cal
-    if (not uhd::has(usrp->get_rx_antennas(), "CAL") or not uhd::has(usrp->get_tx_antennas(), "CAL")){
-        throw std::runtime_error("This board does not have the CAL antenna option, cannot self-calibrate.");
-    }
-    usrp->set_rx_antenna("CAL");
-    usrp->set_tx_antenna("CAL");
-
-    //set optimum defaults
-    //  GSM symbol rate * 4
-    usrp->set_tx_rate(13e6/12);
-    usrp->set_rx_rate(13e6/12);
-    //  500kHz LPF
-    usrp->set_tx_bandwidth(1e6);
-    usrp->set_rx_bandwidth(1e6);
-    // Our recommended VGA1/VGA2
-    usrp->set_tx_gain(vga1_gain, "VGA1");
-    usrp->set_tx_gain(vga2_gain, "VGA2");
-    usrp->set_rx_gain(rx_gain);
-    if (vm.count("verbose")) printf("actual Tx VGA1 gain = %.0f dB\n", usrp->get_tx_gain("VGA1"));
-    if (vm.count("verbose")) printf("actual Tx VGA2 gain = %.0f dB\n", usrp->get_tx_gain("VGA2"));
-    if (vm.count("verbose")) printf("actual Rx gain = %.0f dB\n", usrp->get_rx_gain());
+    // Create a USRP device
+    uhd::usrp::multi_usrp::sptr usrp = setup_usrp_for_cal(args, which, serial, vga1_gain, vga2_gain, rx_gain, verbose);
 
     //create a receive streamer
     uhd::stream_args_t stream_args("fc32"); //complex floats
@@ -428,12 +336,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //store the results here
     std::vector<result_t> results;
 
-    const uhd::fs_path tx_fe_path = mb_path+"/dboards/"+which+"/tx_frontends/0";
+    uhd::property_tree::sptr tree = usrp->get_device()->get_tree();
+    const uhd::fs_path tx_fe_path = "/mboards/0/dboards/"+which+"/tx_frontends/0";
     uhd::property<uint8_t> &dc_i_prop = tree->access<uint8_t>(tx_fe_path / "lms6002d/tx_dc_i/value");
     uhd::property<uint8_t> &dc_q_prop = tree->access<uint8_t>(tx_fe_path / "lms6002d/tx_dc_q/value");
 
     if (not vm.count("freq_start")) freq_start = usrp->get_tx_freq_range().start() + 50e6;
     if (not vm.count("freq_stop")) freq_stop = usrp->get_tx_freq_range().stop() - 50e6;
+    UHD_MSG(status) << boost::format("Calibration frequency type: DC offset") << std::endl;
+    UHD_MSG(status) << boost::format("Calibration frequency range: %d MHz -> %d MHz") % (freq_start/1e6) % (freq_stop/1e6) << std::endl;
 
     for (double tx_lo_i = freq_start; tx_lo_i <= freq_stop; tx_lo_i += freq_step){
         const double tx_lo = tune_rx_and_tx(usrp, tx_lo_i, rx_offset);
@@ -443,10 +354,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         const double actual_tx_freq = usrp->get_tx_freq();
         const double actual_rx_freq = usrp->get_rx_freq();
         const double bb_dc_freq = actual_tx_freq - actual_rx_freq;
-        if (vm.count("verbose")) printf("actual_rx_rate = %0.2f MHz\n", actual_rx_rate/1e6);
-        if (vm.count("verbose")) printf("actual_tx_freq = %0.2f MHz\n", actual_tx_freq/1e6);
-        if (vm.count("verbose")) printf("actual_rx_freq = %0.2f MHz\n", actual_rx_freq/1e6);
-        if (vm.count("verbose")) printf("bb_dc_freq = %0.2f MHz\n", bb_dc_freq/1e6);
+        if (verbose) printf("actual_rx_rate = %0.2f MHz\n", actual_rx_rate/1e6);
+        if (verbose) printf("actual_tx_freq = %0.2f MHz\n", actual_tx_freq/1e6);
+        if (verbose) printf("actual_rx_freq = %0.2f MHz\n", actual_rx_freq/1e6);
+        if (verbose) printf("bb_dc_freq = %0.2f MHz\n", bb_dc_freq/1e6);
 
         for (size_t trial_no = 0; trial_no < ntrials; trial_no++)
         {
@@ -457,7 +368,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                                 nsamps,
                                 bb_dc_freq,
                                 actual_rx_rate,
-                                vm.count("verbose"),
+                                verbose,
                                 vm.count("debug_raw_data"),
                                 single_test_i, single_test_q);
 
@@ -470,10 +381,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                                 nsamps,
                                 bb_dc_freq,
                                 actual_rx_rate,
-                                vm.count("verbose"),
+                                verbose,
                                 vm.count("debug_raw_data"));
                 // Perform normal calibration
-                results.push_back(calibrate_downhill(dc_cal, tx_lo, vm.count("verbose")));
+                results.push_back(calibrate_downhill(dc_cal, tx_lo, verbose));
             }
         }
     }
@@ -484,7 +395,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     threads.join_all();
 
     if (not vm.count("single_test"))
-        store_results(usrp, results, "tx", "dc", which, vm.count("append"));
+        store_results(usrp, results, "tx", "dc", vm.count("append"));
 
-    return 0;
+    return EXIT_SUCCESS;
 }
