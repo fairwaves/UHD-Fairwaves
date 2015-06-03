@@ -2,14 +2,23 @@
 
 if [ "$#" -lt "1" ] ; then
   echo "Automatic calibration of an UmTRX for a set of given presets (bands)."
-  echo "Calibrations to be performed:"
-  echo "  - Tx DC offset calibration"
-  echo "  - Tx IQ balance calibration"
   echo
   echo "Usage:"
   echo "  umtrx_cal <preset> [<preset>] [<preset>] ..."
   echo
   echo "  preset - GSM850, EGSM900 (same as GSM900), GSM1800 (same as DCS1800), GSM1900 (same as PCS1900)."
+  echo
+  echo "Calibrations to be performed:"
+  echo "  - Tx DC offset calibration"
+  echo "  - Tx IQ balance calibration"
+  echo
+  echo "The result of the calibration is stored in the DIR/.uhd/cal/ directory. DIR is one of the \$APPDATA, \$HOME and /tmp,"
+  echo "whichever is defined. Make sure you run calibration from the same user as the one who runs applications or define"
+  echo "\$APPDATA or \$HOME appropriately. Calibration files will be loaded by the application automatically on startup."
+  echo "Old calibration files are renamed when you run a calibration to avoid overwriting."
+  echo
+  echo "Calibration is permanent and only depends on temperature. If the temperature of the system is stable, you need to"
+  echo "run the calibration only once."
   exit 1
 fi
 
