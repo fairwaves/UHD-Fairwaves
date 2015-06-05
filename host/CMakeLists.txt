@@ -26,6 +26,7 @@ project(UmTRX-UHD)
 ########################################################################
 include(${PROJECT_SOURCE_DIR}/cmake/GetGitRevisionDescription.cmake)
 git_describe(UMTRX_VERSION --dirty)
+string(REPLACE "g" "" UMTRX_VERSION ${UMTRX_VERSION}) #remove hash prefix g
 message(STATUS "UMTRX_VERSION: ${UMTRX_VERSION}")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/umtrx_version.in.hpp"
