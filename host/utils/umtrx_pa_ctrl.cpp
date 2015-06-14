@@ -114,10 +114,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         }
     }
     if (vm.count("divsw1")) {
-        tree->access<bool>(mb_path / "divsw1").set(divsw1 ? 1 : 0);
+        tree->access<bool>(mb_path / "dboards" / "A" / "rx_frontends" / "0" / "diversiy").set(divsw1 ? 1 : 0);
     }
     if (vm.count("divsw2")) {
-        tree->access<bool>(mb_path / "divsw2").set(divsw2 ? 1 : 0);
+        tree->access<bool>(mb_path / "dboards" / "B" / "rx_frontends" / "0" / "diversiy").set(divsw1 ? 1 : 0);
     }
 
     return 0;
