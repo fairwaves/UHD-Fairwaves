@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+DEBIAN  := $(shell dpkg-parsechangelog | grep ^Version: | cut -d' ' -f2)
+DEBVERS := $(shell echo '$(DEBIAN)' | cut -d- -f1)
+VERSION := $(shell echo '$(DEBVERS)' | sed -e 's/[+-].*//' -e 's/~//g')
+
+%:
+	dh $@ --sourcedirectory=host --builddirectory=build
+
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info
+
+override_dh_auto_configure:
+	echo $(VERSION) > host/.tarball-version
+	dh_auto_configure --sourcedirectory=host
