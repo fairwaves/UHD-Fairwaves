@@ -1,0 +1,18 @@
+Source: uhd-fairwaves
+Section: science
+Priority: optional
+Maintainer: Fairwaves <support@fairwaves.co>
+Build-Depends: debhelper (>= 9), cmake (>= 2.8.12), libboost-all-dev, uhd, pkg-config
+Standards-Version: 3.9.6
+Homepage: https://github.com/fairwaves/UHD-Fairwaves
+Vcs-Git: https://github.com/fairwaves/UHD-Fairwaves.git
+
+Package: umtrx-uhd-plugin
+Architecture: any
+Section: libs
+Pre-Depends: multiarch-support, ${misc:Pre-Depends}
+Depends: uhd, python, adduser, ${shlibs:Depends}, ${misc:Depends}
+Suggests: gnuradio
+Description: UmTRX hardware support for UHD
+ Add support for UmTRX SRD transceiver so it can be available 
+ through UHD framework.
