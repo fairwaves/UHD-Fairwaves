@@ -1,5 +1,5 @@
-umtrx (1.0.2+1SNAPSHOT1432672997-g10e758b~unstable) unstable; urgency=low
+umtrx (1.0.3) unstable; urgency=low
 
-  * Pending release (master branch)
+  * Created debian control files for 1.0.3 release of umtrx
 
- -- Josh Blum <josh@pothosware.com>  Tue, 26 May 2015 13:43:28 -0700
+ -- Josh Blum <josh@pothosware.com>  Sat, 20 Jun 2015 16:31:24 -0700
