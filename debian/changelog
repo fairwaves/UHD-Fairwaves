@@ -1,0 +1,5 @@
+umtrx (1.0.3) unstable; urgency=low
+
+  * Created debian control files for 1.0.3 release of umtrx
+
+ -- Josh Blum <josh@pothosware.com>  Sat, 20 Jun 2015 16:31:24 -0700
