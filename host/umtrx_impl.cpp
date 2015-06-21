@@ -705,6 +705,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
 umtrx_impl::~umtrx_impl(void)
 {
+    sleep(60);
     _status_monitor_task.reset();
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
@@ -1100,6 +1101,37 @@ void umtrx_impl::status_monitor_handler(void)
     else boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
 }
 
+/*!
+ * Querying sensors using the status monitor server:
+ *
+ * Start UmTRX driver with status_port set in args
+ * ./some_application --args="status_port=12345"
+ *
+ * Example code for sensor querying using python sockets;
+ * creates and connect a socket and performs transaction.
+ * Each socket is good for one request/reply transaction,
+ * therefore we create a new socket for each transaction.
+ *
+ * import socket
+ * s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ * s.connect(("localhost", 12345));
+ *
+ * #query mother board sensor
+ * s.send("sensor=tempA")
+ * print s.recv(1024)
+ * name=TempA,value=56.437500,unit=C
+ *
+ * #query a rx sensor, use rx=spec to specify frontend
+ * s.send("sensor=lo_locked,rx=A:0")
+ * print s.recv(1024)
+ * name=LO,value=true,unit=locked
+ *
+ * #query a tx sensor, use tx=spec to specify frontend
+ * s.send("sensor=lo_locked,tx=A:0")
+ * print s.recv(1024)
+ * name=LO,value=true,unit=locked
+ */
+
 void umtrx_impl::status_monitor_tcp_acceptor(void)
 {
     if (not wait_read_sockfd(_status_tcp_acceptor->native(), 1500)) return;
@@ -1109,13 +1141,40 @@ void umtrx_impl::status_monitor_tcp_acceptor(void)
     _status_tcp_acceptor->accept(socket);
 
     //receive the request in device args markup
-    char buff[1024];
-    socket.receive(boost::asio::buffer(buff, sizeof(buff)));
-    const device_addr_t request(buff);
+    std::vector<char> request_str(socket.available());
+    socket.receive(boost::asio::buffer(&request_str[0], request_str.size()));
+    const device_addr_t request(std::string(&request_str[0], request_str.size()));
 
     //handle the request
     device_addr_t response;
-    response["foo"] = "bar";
+    if (request.has_key("sensor"))
+    {
+        try
+        {
+            fs_path sensors_path = "/mboards/0";
+            if (request.has_key("tx"))
+            {
+                subdev_spec_t spec(request.get("tx"));
+                if (spec.empty()) spec = subdev_spec_t("A:0");
+                sensors_path = sensors_path / "dboards" / spec.at(0).db_name / "tx_frontends" / spec.at(0).sd_name;
+            }
+            if (request.has_key("rx"))
+            {
+                subdev_spec_t spec(request.get("rx"));
+                if (spec.empty()) spec = subdev_spec_t("A:0");
+                sensors_path = sensors_path / "dboards" / spec.at(0).db_name / "rx_frontends" / spec.at(0).sd_name;
+            }
+
+            const sensor_value_t sensor = _tree->access<sensor_value_t>(sensors_path / "sensors" / request.get("sensor")).get();
+            response["name"] = sensor.name;
+            response["value"] = sensor.value;
+            response["unit"] = sensor.unit;
+        }
+        catch (const std::exception &ex)
+        {
+            response["error"] = ex.what();
+        }
+    }
 
     //send the response
     const std::string response_str(response.to_string());
