@@ -705,7 +705,6 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
 umtrx_impl::~umtrx_impl(void)
 {
-    sleep(60);
     _status_monitor_task.reset();
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
@@ -732,6 +731,7 @@ int umtrx_impl::volt_to_dcdc_r(double v)
 
 void umtrx_impl::set_pa_dcdc_r(uint8_t val)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     // AD5245 control
     if (_hw_rev >= UMTRX_VER_2_3_1)
     {
@@ -789,6 +789,7 @@ double umtrx_impl::set_tx_power(double power, const std::string &which)
 
 double umtrx_impl::set_pa_power(double power, const std::string &which)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     // TODO:: Use DCDC bypass for maximum output power
     // TODO:: Limit output power for UmSITE-TM3
 
@@ -816,6 +817,7 @@ double umtrx_impl::set_pa_power(double power, const std::string &which)
 
 void umtrx_impl::set_mb_eeprom(const uhd::i2c_iface::sptr &iface, const uhd::usrp::mboard_eeprom_t &eeprom)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     store_umtrx_eeprom(eeprom, *iface);
 }
 
@@ -880,6 +882,7 @@ uint8_t umtrx_impl::dc_offset_double2int(double corr)
 
 uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     double temp = (which == "A") ? _temp_side_a.get_temp() :
                                    _temp_side_b.get_temp();
     return uhd::sensor_value_t("Temp"+which, temp, "C");
@@ -887,6 +890,7 @@ uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
 
 uhd::sensor_value_t umtrx_impl::read_pa_v(const std::string &which)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     unsigned i;
     for (i = 0; i < 4; i++) {
         if (which == power_sensors[i])
@@ -902,6 +906,7 @@ uhd::sensor_value_t umtrx_impl::read_pa_v(const std::string &which)
 
 uhd::sensor_value_t umtrx_impl::read_dc_v(const std::string &which)
 {
+    boost::recursive_mutex::scoped_lock l(_i2c_mutex);
     unsigned i;
     for (i = 0; i < 4; i++) {
         if (which == dc_sensors[i])
