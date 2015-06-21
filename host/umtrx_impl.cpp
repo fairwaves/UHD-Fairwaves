@@ -691,6 +691,15 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
 
+    ////////////////////////////////////////////////////////////////////
+    // create status monitor
+    ////////////////////////////////////////////////////////////////////
+    if (device_addr.has_key("status_port"))
+    {
+        UHD_MSG(status) << "Creating TCP monitor on port " << device_addr.get("status_port") << std::endl;
+        _status_tcp_acceptor.reset(new asio::ip::tcp::acceptor(
+        _status_io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), device_addr.cast<int>("status_port", 0))));
+    }
     _status_monitor_task = task::make(boost::bind(&umtrx_impl::status_monitor_handler, this));
 }
 
@@ -1056,18 +1065,62 @@ const char* umtrx_impl::get_hw_rev() const
     }
 }
 
+static bool wait_read_sockfd(const int sockfd, const size_t timeoutMs)
+{
+    //setup timeval for timeout
+    timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = timeoutMs*1000;
+
+    //setup rset for timeout
+    fd_set rset;
+    FD_ZERO(&rset);
+    FD_SET(sockfd, &rset);
+
+    //call select with timeout on receive socket
+    return ::select(sockfd+1, &rset, NULL, NULL, &tv) > 0;
+}
+
 void umtrx_impl::status_monitor_handler(void)
 {
     //TODO read the sensors and react...
     //read_dc_v, etc...
-    UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
+    //UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
 
     //TODO shutdown frontend when temp > thresh
     //ctrl->set_rx_enabled(false);
     //ctrl->set_tx_enabled(false);
 
+    //if the status server is running, wait the specified timeout and handle
+    if (_status_tcp_acceptor) this->status_monitor_tcp_acceptor();
+
     //this sleep defines the polling time between status checks
     //when the handler completes, it will be called again asap
     //if the task is canceled, this sleep in interrupted for exit
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+    else boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+}
+
+void umtrx_impl::status_monitor_tcp_acceptor(void)
+{
+    if (not wait_read_sockfd(_status_tcp_acceptor->native(), 1500)) return;
+
+    //accept the client socket
+    asio::ip::tcp::socket socket(_status_io_service);
+    _status_tcp_acceptor->accept(socket);
+
+    //receive the request in device args markup
+    char buff[1024];
+    socket.receive(boost::asio::buffer(buff, sizeof(buff)));
+    const device_addr_t request(buff);
+
+    //handle the request
+    device_addr_t response;
+    response["foo"] = "bar";
+
+    //send the response
+    const std::string response_str(response.to_string());
+    socket.send(boost::asio::buffer(response_str.c_str(), response_str.size()));
+
+    //close the socket, it wont be re-used
+    socket.close();
 }
