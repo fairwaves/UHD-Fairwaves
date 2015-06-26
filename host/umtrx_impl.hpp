@@ -207,9 +207,12 @@ private:
     //status monitoring
     uhd::task::sptr _status_monitor_task;
     void status_monitor_handler(void);
-    void status_monitor_tcp_acceptor(void);
-    boost::asio::io_service _status_io_service;
-    boost::shared_ptr<boost::asio::ip::tcp::acceptor> _status_tcp_acceptor;
+
+    //tcp query server
+    uhd::task::sptr _server_query_task;
+    void server_query_handler(void);
+    boost::asio::io_service _server_query_io_service;
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> _server_query_tcp_acceptor;
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;

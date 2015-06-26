@@ -697,8 +697,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     if (device_addr.has_key("status_port"))
     {
         UHD_MSG(status) << "Creating TCP monitor on port " << device_addr.get("status_port") << std::endl;
-        _status_tcp_acceptor.reset(new asio::ip::tcp::acceptor(
-        _status_io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), device_addr.cast<int>("status_port", 0))));
+        _server_query_tcp_acceptor.reset(new asio::ip::tcp::acceptor(
+            _server_query_io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), device_addr.cast<int>("status_port", 0))));
+        _server_query_task = task::make(boost::bind(&umtrx_impl::server_query_handler, this));
     }
     _status_monitor_task = task::make(boost::bind(&umtrx_impl::status_monitor_handler, this));
 }
@@ -706,6 +707,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 umtrx_impl::~umtrx_impl(void)
 {
     _status_monitor_task.reset();
+    _server_query_task.reset();
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
@@ -1097,13 +1099,10 @@ void umtrx_impl::status_monitor_handler(void)
     //ctrl->set_rx_enabled(false);
     //ctrl->set_tx_enabled(false);
 
-    //if the status server is running, wait the specified timeout and handle
-    if (_status_tcp_acceptor) this->status_monitor_tcp_acceptor();
-
     //this sleep defines the polling time between status checks
     //when the handler completes, it will be called again asap
     //if the task is canceled, this sleep in interrupted for exit
-    else boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
 }
 
 /*!
@@ -1122,30 +1121,25 @@ void umtrx_impl::status_monitor_handler(void)
  * s.connect(("localhost", 12345));
  *
  * #query mother board sensor
- * s.send("sensor=tempA")
+ * s.send("sensor=sensor=/mboards/0/sensors/tempA")
  * print s.recv(1024)
  * name=TempA,value=56.437500,unit=C
  *
- * #query a rx sensor, use rx=spec to specify frontend
- * s.send("sensor=lo_locked,rx=A:0")
- * print s.recv(1024)
- * name=LO,value=true,unit=locked
- *
- * #query a tx sensor, use tx=spec to specify frontend
- * s.send("sensor=lo_locked,tx=A:0")
+ * #query a rx sensor
+ * s.send("sensor=/mboards/0/dboards/A/rx_frontends/0/sensors/lo_locked")
  * print s.recv(1024)
  * name=LO,value=true,unit=locked
  */
 
-void umtrx_impl::status_monitor_tcp_acceptor(void)
+void umtrx_impl::server_query_handler(void)
 {
-    if (not wait_read_sockfd(_status_tcp_acceptor->native(), 1500)) return;
+    //accept the client socket (timeout is 100 ms, task is called again)
+    if (not wait_read_sockfd(_server_query_tcp_acceptor->native(), 100)) return;
+    asio::ip::tcp::socket socket(_server_query_io_service);
+    _server_query_tcp_acceptor->accept(socket);
 
-    //accept the client socket
-    asio::ip::tcp::socket socket(_status_io_service);
-    _status_tcp_acceptor->accept(socket);
-
-    //receive the request in device args markup
+    //receive the request in device args markup (wait up to a second for the client)
+    if (not wait_read_sockfd(socket.native(), 1000)) return;
     std::vector<char> request_str(socket.available());
     socket.receive(boost::asio::buffer(&request_str[0], request_str.size()));
     const device_addr_t request(std::string(&request_str[0], request_str.size()));
@@ -1156,21 +1150,7 @@ void umtrx_impl::status_monitor_tcp_acceptor(void)
     {
         try
         {
-            fs_path sensors_path = "/mboards/0";
-            if (request.has_key("tx"))
-            {
-                subdev_spec_t spec(request.get("tx"));
-                if (spec.empty()) spec = subdev_spec_t("A:0");
-                sensors_path = sensors_path / "dboards" / spec.at(0).db_name / "tx_frontends" / spec.at(0).sd_name;
-            }
-            if (request.has_key("rx"))
-            {
-                subdev_spec_t spec(request.get("rx"));
-                if (spec.empty()) spec = subdev_spec_t("A:0");
-                sensors_path = sensors_path / "dboards" / spec.at(0).db_name / "rx_frontends" / spec.at(0).sd_name;
-            }
-
-            const sensor_value_t sensor = _tree->access<sensor_value_t>(sensors_path / "sensors" / request.get("sensor")).get();
+            const sensor_value_t sensor = _tree->access<sensor_value_t>(request.get("sensor")).get();
             response["name"] = sensor.name;
             response["value"] = sensor.value;
             response["unit"] = sensor.unit;
