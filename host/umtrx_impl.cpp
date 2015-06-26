@@ -1111,11 +1111,6 @@ void umtrx_impl::status_monitor_handler(void)
  * Start UmTRX driver with status_port set in args
  * ./some_application --args="status_port=12345"
  *
- * Example code for sensor querying using python sockets;
- * creates and connect a socket and performs transaction.
- * Each socket is good for one request/reply transaction,
- * therefore we create a new socket for each transaction.
- *
  * import socket
  * s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
  * s.connect(("localhost", 12345));
@@ -1135,36 +1130,44 @@ void umtrx_impl::server_query_handler(void)
 {
     //accept the client socket (timeout is 100 ms, task is called again)
     if (not wait_read_sockfd(_server_query_tcp_acceptor->native(), 100)) return;
-    asio::ip::tcp::socket socket(_server_query_io_service);
-    _server_query_tcp_acceptor->accept(socket);
+    boost::shared_ptr<asio::ip::tcp::socket> socket(new asio::ip::tcp::socket(_server_query_io_service));
+    _server_query_tcp_acceptor->accept(*socket);
 
-    //receive the request in device args markup (wait up to a second for the client)
-    if (not wait_read_sockfd(socket.native(), 1000)) return;
-    std::vector<char> request_str(socket.available());
-    socket.receive(boost::asio::buffer(&request_str[0], request_str.size()));
-    const device_addr_t request(std::string(&request_str[0], request_str.size()));
+    //create a new thread to handle the client
+    boost::thread handler(boost::bind(&umtrx_impl::client_query_handle, this, socket));
+    handler.detach();
+}
 
-    //handle the request
-    device_addr_t response;
-    if (request.has_key("sensor"))
+void umtrx_impl::client_query_handle(boost::shared_ptr<boost::asio::ip::tcp::socket> socket)
+{
+    while (not boost::this_thread::interruption_requested())
     {
-        try
+        //receive the request in device args markup
+        if (not wait_read_sockfd(socket->native(), 100)) continue;
+        if (socket->available() == 0) break; //socket closed
+        std::vector<char> request_str(socket->available());
+        socket->receive(boost::asio::buffer(&request_str[0], request_str.size()));
+        const device_addr_t request(std::string(&request_str[0], request_str.size()));
+
+        //handle the request
+        device_addr_t response;
+        if (request.has_key("sensor"))
         {
-            const sensor_value_t sensor = _tree->access<sensor_value_t>(request.get("sensor")).get();
-            response["name"] = sensor.name;
-            response["value"] = sensor.value;
-            response["unit"] = sensor.unit;
+            try
+            {
+                const sensor_value_t sensor = _tree->access<sensor_value_t>(request.get("sensor")).get();
+                response["name"] = sensor.name;
+                response["value"] = sensor.value;
+                response["unit"] = sensor.unit;
+            }
+            catch (const std::exception &ex)
+            {
+                response["error"] = ex.what();
+            }
         }
-        catch (const std::exception &ex)
-        {
-            response["error"] = ex.what();
-        }
+
+        //send the response
+        const std::string response_str(response.to_string());
+        socket->send(boost::asio::buffer(response_str.c_str(), response_str.size()));
     }
-
-    //send the response
-    const std::string response_str(response.to_string());
-    socket.send(boost::asio::buffer(response_str.c_str(), response_str.size()));
-
-    //close the socket, it wont be re-used
-    socket.close();
 }

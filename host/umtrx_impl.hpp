@@ -213,6 +213,7 @@ private:
     void server_query_handler(void);
     boost::asio::io_service _server_query_io_service;
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> _server_query_tcp_acceptor;
+    void client_query_handle(boost::shared_ptr<boost::asio::ip::tcp::socket>);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
