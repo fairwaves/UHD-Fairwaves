@@ -39,6 +39,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ########################################################################
 list(APPEND UMTRX_SOURCES
     umtrx_impl.cpp
+    umtrx_monitor.cpp
     umtrx_io_impl.cpp
     umtrx_find.cpp
     umtrx_iface.cpp

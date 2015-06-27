@@ -691,23 +691,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->access<std::string>(mb_path / "clock_source" / "value").set("internal");
     _tree->access<std::string>(mb_path / "time_source" / "value").set("none");
 
-    ////////////////////////////////////////////////////////////////////
-    // create status monitor
-    ////////////////////////////////////////////////////////////////////
-    if (device_addr.has_key("status_port"))
-    {
-        UHD_MSG(status) << "Creating TCP monitor on port " << device_addr.get("status_port") << std::endl;
-        _server_query_tcp_acceptor.reset(new asio::ip::tcp::acceptor(
-            _server_query_io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), device_addr.cast<int>("status_port", 0))));
-        _server_query_task = task::make(boost::bind(&umtrx_impl::server_query_handler, this));
-    }
-    _status_monitor_task = task::make(boost::bind(&umtrx_impl::status_monitor_handler, this));
+    //create status monitor and client handler
+    this->status_monitor_start(device_addr);
 }
 
 umtrx_impl::~umtrx_impl(void)
 {
-    _status_monitor_task.reset();
-    _server_query_task.reset();
+    this->status_monitor_stop();
 
     BOOST_FOREACH(const std::string &fe_name, _lms_ctrl.keys())
     {
@@ -1070,104 +1060,5 @@ const char* umtrx_impl::get_hw_rev() const
     case UMTRX_VER_2_3_0:  return "2.3.0";
     case UMTRX_VER_2_3_1:  return "2.3.1";
     default:               return "[unknown]";
-    }
-}
-
-static bool wait_read_sockfd(const int sockfd, const size_t timeoutMs)
-{
-    //setup timeval for timeout
-    timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = timeoutMs*1000;
-
-    //setup rset for timeout
-    fd_set rset;
-    FD_ZERO(&rset);
-    FD_SET(sockfd, &rset);
-
-    //call select with timeout on receive socket
-    return ::select(sockfd+1, &rset, NULL, NULL, &tv) > 0;
-}
-
-void umtrx_impl::status_monitor_handler(void)
-{
-    //TODO read the sensors and react...
-    //read_dc_v, etc...
-    //UHD_MSG(status) << this->read_temp_c("A").to_pp_string() << std::endl;
-
-    //TODO shutdown frontend when temp > thresh
-    //ctrl->set_rx_enabled(false);
-    //ctrl->set_tx_enabled(false);
-
-    //this sleep defines the polling time between status checks
-    //when the handler completes, it will be called again asap
-    //if the task is canceled, this sleep in interrupted for exit
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
-}
-
-/*!
- * Querying sensors using the status monitor server:
- *
- * Start UmTRX driver with status_port set in args
- * ./some_application --args="status_port=12345"
- *
- * import socket
- * s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
- * s.connect(("localhost", 12345));
- *
- * #query mother board sensor
- * s.send("sensor=sensor=/mboards/0/sensors/tempA")
- * print s.recv(1024)
- * name=TempA,value=56.437500,unit=C
- *
- * #query a rx sensor
- * s.send("sensor=/mboards/0/dboards/A/rx_frontends/0/sensors/lo_locked")
- * print s.recv(1024)
- * name=LO,value=true,unit=locked
- */
-
-void umtrx_impl::server_query_handler(void)
-{
-    //accept the client socket (timeout is 100 ms, task is called again)
-    if (not wait_read_sockfd(_server_query_tcp_acceptor->native(), 100)) return;
-    boost::shared_ptr<asio::ip::tcp::socket> socket(new asio::ip::tcp::socket(_server_query_io_service));
-    _server_query_tcp_acceptor->accept(*socket);
-
-    //create a new thread to handle the client
-    boost::thread handler(boost::bind(&umtrx_impl::client_query_handle, this, socket));
-    handler.detach();
-}
-
-void umtrx_impl::client_query_handle(boost::shared_ptr<boost::asio::ip::tcp::socket> socket)
-{
-    while (not boost::this_thread::interruption_requested())
-    {
-        //receive the request in device args markup
-        if (not wait_read_sockfd(socket->native(), 100)) continue;
-        if (socket->available() == 0) break; //socket closed
-        std::vector<char> request_str(socket->available());
-        socket->receive(boost::asio::buffer(&request_str[0], request_str.size()));
-        const device_addr_t request(std::string(&request_str[0], request_str.size()));
-
-        //handle the request
-        device_addr_t response;
-        if (request.has_key("sensor"))
-        {
-            try
-            {
-                const sensor_value_t sensor = _tree->access<sensor_value_t>(request.get("sensor")).get();
-                response["name"] = sensor.name;
-                response["value"] = sensor.value;
-                response["unit"] = sensor.unit;
-            }
-            catch (const std::exception &ex)
-            {
-                response["error"] = ex.what();
-            }
-        }
-
-        //send the response
-        const std::string response_str(response.to_string());
-        socket->send(boost::asio::buffer(response_str.c_str(), response_str.size()));
     }
 }
