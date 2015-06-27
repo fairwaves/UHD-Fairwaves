@@ -74,7 +74,6 @@ void umtrx_impl::status_monitor_start(const uhd::device_addr_t &device_addr)
 
 void umtrx_impl::status_monitor_stop(void)
 {
-    sleep(100);
     _status_monitor_task.reset();
     _server_query_task.reset();
 }
