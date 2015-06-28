@@ -158,7 +158,6 @@ void umtrx_impl::client_query_handle(boost::shared_ptr<boost::asio::ip::tcp::soc
         try
         {
             boost::property_tree::write_json(os, response, false/*not pretty required*/);
-            os << std::endl;
             boost::asio::write(*socket, responseBuff);
         }
         catch (const std::exception &ex)
