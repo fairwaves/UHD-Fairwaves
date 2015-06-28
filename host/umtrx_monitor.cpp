@@ -55,7 +55,7 @@ namespace asio = boost::asio;
  * {u'result': {u'unit': u'C', u'name': u'TempA', u'value': u'61.625000'}}
  *
  * #set the value of a tree entry, types can be BOOL, INT, DOUBLE
- * s.send(json.dumps(dict(action='GET', path='/mboards/0/dboards/A/rx_frontends/0/freq/value', type='DOUBLE', value=1e9))+'\n')
+ * s.send(json.dumps(dict(action='SET', path='/mboards/0/dboards/A/rx_frontends/0/freq/value', type='DOUBLE', value=1e9))+'\n')
  * print json.loads(f.readline())
  * {} #empty response means no error
  */
