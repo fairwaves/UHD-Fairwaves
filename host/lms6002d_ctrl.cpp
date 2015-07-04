@@ -21,6 +21,7 @@
 #include <boost/thread.hpp>
 #include <boost/array.hpp>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <utility>
 #include <cmath>
 #include <cfloat>
@@ -154,11 +155,13 @@ public:
 
     uhd::sensor_value_t get_rx_pll_locked()
     {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         return uhd::sensor_value_t("LO", lms.get_rx_pll_locked(), "locked", "unlocked");
     }
 
     uhd::sensor_value_t get_tx_pll_locked()
     {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         return uhd::sensor_value_t("LO", lms.get_tx_pll_locked(), "locked", "unlocked");
     }
 
@@ -214,17 +217,20 @@ public:
 
     uint8_t get_tx_vga1dc_i_int(void)
     {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         return lms.get_tx_vga1dc_i_int();
     }
 
     uint8_t get_tx_vga1dc_q_int(void)
     {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         return lms.get_tx_vga1dc_i_int();
     }
 
 protected:
 
     double set_freq(dboard_iface::unit_t unit, double f) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_freq(%f)\n", f);
         unsigned ref_freq = _clock_rate;
         double actual_freq = 0;
@@ -254,6 +260,7 @@ protected:
     }
 
     bool set_enabled(dboard_iface::unit_t unit, bool en) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_enabled(%d)\n", en);
         if (unit==dboard_iface::UNIT_RX) {
             if (en)
@@ -271,6 +278,7 @@ protected:
     }
 
     double set_rx_gain(double gain, const std::string &name) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_gain(%f, %s)\n", gain, name.c_str());
         assert_has(lms_rx_gain_ranges.keys(), name, "LMS6002D rx gain name");
         if(name == "VGA1"){
@@ -284,6 +292,7 @@ protected:
     }
 
     void set_rx_ant(const std::string &ant) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_ant(%s)\n", ant.c_str());
         //validate input
         assert_has(lms_rx_antennas, ant, "LMS6002D rx antenna name");
@@ -317,6 +326,7 @@ protected:
     }
 
     double set_rx_bandwidth(double bandwidth) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_rx_bandwidth(%f)\n", bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
@@ -328,6 +338,7 @@ protected:
     }
 
     double set_tx_gain(double gain, const std::string &name) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_gain(%f, %s)\n", gain, name.c_str());
         //validate input
         assert_has(lms_tx_gain_ranges.keys(), name, "LMS6002D tx gain name");
@@ -349,6 +360,7 @@ protected:
     }
 
     void set_tx_ant(const std::string &ant) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_ant(%s)\n", ant.c_str());
         //validate input
         assert_has(lms_tx_antennas, ant, "LMS6002D tx antenna ant");
@@ -368,6 +380,7 @@ protected:
     }
 
     double set_tx_bandwidth(double bandwidth) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_bandwidth(%f)\n", bandwidth);
         // Get the closest available bandwidth
         bandwidth = lms_bandwidth_range.clip(bandwidth);
@@ -379,12 +392,14 @@ protected:
     }
 
     uint8_t _set_tx_vga1dc_i_int(uint8_t offset) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_i_int(%d)\n", offset);
         lms.set_tx_vga1dc_i_int(offset);
         return offset;
     }
 
     uint8_t _set_tx_vga1dc_q_int(uint8_t offset) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_q_int(%d)\n", offset);
         lms.set_tx_vga1dc_q_int(offset);
         return offset;
@@ -402,6 +417,8 @@ private:
     const int _lms_spi_number;
     const int _adf4350_spi_number;
     const double _clock_rate;
+
+    boost::recursive_mutex _mutex;
 };
 
 lms6002d_ctrl::sptr lms6002d_ctrl::make(uhd::spi_iface::sptr spiface, const int lms_spi_number, const int adf4350_spi_number, const double clock_rate)

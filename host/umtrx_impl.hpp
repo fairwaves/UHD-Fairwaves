@@ -48,6 +48,8 @@
 #include <uhd/transport/udp_simple.hpp>
 #include <uhd/transport/udp_zero_copy.hpp>
 #include <uhd/transport/bounded_buffer.hpp>
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <uhd/types/ranges.hpp>
 #include <uhd/exception.hpp>
 #include <uhd/utils/static.hpp>
@@ -58,6 +60,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <uhd/utils/tasks.hpp>
 
 
 // Halfthe size of USRP2 SRAM, because we split the same SRAM into buffers for two Tx channels instead of one.
@@ -200,6 +203,21 @@ private:
     uhd::sensor_value_t read_temp_c(const std::string &which);
     uhd::sensor_value_t read_pa_v(const std::string &which);
     uhd::sensor_value_t read_dc_v(const std::string &which);
+    boost::recursive_mutex _i2c_mutex;
+
+    //status monitoring
+    void status_monitor_start(const uhd::device_addr_t &device_addr);
+    void status_monitor_stop(void);
+    uhd::task::sptr _status_monitor_task;
+    void status_monitor_handler(void);
+
+    //tcp query server
+    uhd::task::sptr _server_query_task;
+    void server_query_handler(void);
+    boost::asio::io_service _server_query_io_service;
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> _server_query_tcp_acceptor;
+    void client_query_handle(boost::shared_ptr<boost::asio::ip::tcp::socket>);
+    void client_query_handle1(const boost::property_tree::ptree &request, boost::property_tree::ptree &response);
 
     //streaming
     std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
