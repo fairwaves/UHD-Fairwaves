@@ -1035,7 +1035,9 @@ void umtrx_impl::set_nlow(bool en)
 
 void umtrx_impl::set_diversity(bool en, int chan)
 {
-    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+chan), (en) ? 0 : 1);
+    // chan 0 has inversed switch polarity
+    // chan 1 has straight switch polarity
+    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+chan), (en != (chan==1)) ? 0 : 1);
 }
 
 const char* umtrx_impl::get_hw_rev() const
