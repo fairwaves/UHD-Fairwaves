@@ -69,6 +69,19 @@ static const double _dcdc_val_to_volt_init[256] =
 };
 const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
 
+/***********************************************************************
+ * Property tree "alias" function
+ **********************************************************************/
+
+// TODO: coerce() is not supported
+template <typename T> property<T> &property_alias(uhd::property_tree::sptr &_tree,
+                                                  const uhd::fs_path &orig, const uhd::fs_path &alias)
+{
+    // By default route each chanel to its own antenna
+    return _tree->create<T>(alias)
+        .subscribe(boost::bind(&uhd::property<T>::set, boost::ref(_tree->access<T>(orig)), _1))
+        .publish(boost::bind(&uhd::property<T>::get, boost::ref(_tree->access<T>(orig))));
+}
 
 /***********************************************************************
  * Make
