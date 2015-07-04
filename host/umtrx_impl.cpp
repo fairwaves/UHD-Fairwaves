@@ -69,6 +69,19 @@ static const double _dcdc_val_to_volt_init[256] =
 };
 const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
 
+/***********************************************************************
+ * Property tree "alias" function
+ **********************************************************************/
+
+// TODO: coerce() is not supported
+template <typename T> property<T> &property_alias(uhd::property_tree::sptr &_tree,
+                                                  const uhd::fs_path &orig, const uhd::fs_path &alias)
+{
+    // By default route each chanel to its own antenna
+    return _tree->create<T>(alias)
+        .subscribe(boost::bind(&uhd::property<T>::set, boost::ref(_tree->access<T>(orig)), _1))
+        .publish(boost::bind(&uhd::property<T>::get, boost::ref(_tree->access<T>(orig))));
+}
 
 /***********************************************************************
  * Make
@@ -258,12 +271,27 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tree->create<std::string>(mb_path / "hwrev").set(get_hw_rev());
     UHD_MSG(status) << "Detected UmTRX " << get_hw_rev() << std::endl;
 
+    ////////////////////////////////////////////////////////////////////////
+    // configure diversity switches
+    ////////////////////////////////////////////////////////////////////////
 
+    // note: the control is also aliased to RF frontend later
     _tree->create<bool>(mb_path / "divsw1")
-            .subscribe(boost::bind(&umtrx_impl::set_divsw1, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, _1, 0))
+            .set(device_addr.cast<bool>("divsw1", false));
+    UHD_MSG(status) << "Diversity switch for channel 1: "
+                    << (_tree->access<bool>(mb_path / "divsw1").get()?"true":"false")
+                    << std::endl;
     _tree->create<bool>(mb_path / "divsw2")
-            .subscribe(boost::bind(&umtrx_impl::set_divsw2, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, _1, 1))
+            .set(device_addr.cast<bool>("divsw2", false));
+    UHD_MSG(status) << "Diversity switch for channel 2: "
+                    << (_tree->access<bool>(mb_path / "divsw2").get()?"true":"false")
+                    << std::endl;
 
+    ////////////////////////////////////////////////////////////////////////
+    // set PLL divider
+    ////////////////////////////////////////////////////////////////////////
 
     // TODO: Add EEPROM cell to manually override this
     _pll_div = 1;
@@ -619,6 +647,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .publish(boost::bind(&umtrx_impl::get_dc_offset_correction, this, fe_name))
             .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, _1))
             .set(std::complex<double>(dc_i, dc_q));
+
+        // Alias diversity switch control from mb_path
+        property_alias<bool>(_tree, mb_path / "divsw"+(fe_name=="A"?"1":"2"), rx_rf_fe_path / "diversity");
     }
 
     //set TCXO DAC calibration value, which is read from mboard EEPROM
@@ -1002,14 +1033,11 @@ void umtrx_impl::set_nlow(bool en)
     _pa_nlow = en; commit_pa_state();
 }
 
-void umtrx_impl::set_divsw1(bool en)
+void umtrx_impl::set_diversity(bool en, int chan)
 {
-    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+0), (en) ? 1 : 0);
-}
-
-void umtrx_impl::set_divsw2(bool en)
-{
-    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+1), (en) ? 1 : 0);
+    // chan 0 has inversed switch polarity
+    // chan 1 has straight switch polarity
+    _iface->poke32(U2_REG_SR_ADDR(SR_DIVSW+chan), (en != (chan==1)) ? 0 : 1);
 }
 
 const char* umtrx_impl::get_hw_rev() const

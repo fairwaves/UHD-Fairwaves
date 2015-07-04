@@ -182,8 +182,7 @@ private:
     void set_enpa1(bool en);
     void set_enpa2(bool en);
     void set_nlow(bool en);
-    void set_divsw1(bool en);
-    void set_divsw2(bool en);
+    void set_diversity(bool en, int chan);
     uhd::gain_range_t generate_tx_power_range(const std::string &which) const;
     uhd::gain_range_t generate_pa_power_range(const std::string &which) const;
     const uhd::gain_range_t &get_tx_power_range(const std::string &which) const;
