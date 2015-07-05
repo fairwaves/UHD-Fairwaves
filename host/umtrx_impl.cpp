@@ -73,7 +73,6 @@ const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, 
  * Property tree "alias" function
  **********************************************************************/
 
-// TODO: coerce() is not supported
 template <typename T> property<T> &property_alias(uhd::property_tree::sptr &_tree,
                                                   const uhd::fs_path &orig, const uhd::fs_path &alias)
 {
