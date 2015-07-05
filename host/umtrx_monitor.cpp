@@ -220,8 +220,8 @@ void umtrx_impl::client_query_handle1(const boost::property_tree::ptree &request
         const std::string type = request.get("type", "");
         if (type.empty()) response.put("error", "type field not specified: BOOL, INT, DOUBLE");
         else if (type == "BOOL") _tree->access<bool>(path).set(request.get<bool>("value"));
-        else if (type == "INT") _tree->access<int>(path).set(request.get<bool>("value"));
-        else if (type == "DOUBLE") _tree->access<double>(path).set(request.get<bool>("value"));
+        else if (type == "INT") _tree->access<int>(path).set(request.get<int>("value"));
+        else if (type == "DOUBLE") _tree->access<double>(path).set(request.get<double>("value"));
         else response.put("error", "unknown type: " + type);
     }
     else if (action == "HAS")
