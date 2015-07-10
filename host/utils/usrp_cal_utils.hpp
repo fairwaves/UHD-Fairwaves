@@ -25,6 +25,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/math/special_functions/round.hpp>
 #include <iostream>
 #include <vector>
 #include <complex>
