@@ -47,10 +47,10 @@ public:
     void run_i(int dc_i);
     void run_iq(int dc_i, int dc_q);
 
-    void set_dc_i(double i) {_dc_i_prop.set(i);}
-    void set_dc_q(double q) {_dc_q_prop.set(q);}
-    void set_dc_i_best() {_dc_i_prop.set(_best_dc_i);}
-    void set_dc_q_best() {_dc_q_prop.set(_best_dc_q);}
+    void set_dc_i(double i) {prop_set_check(_dc_i_prop, i);}
+    void set_dc_q(double q) {prop_set_check(_dc_q_prop, q);}
+    void set_dc_i_best() {set_dc_i(_best_dc_i);}
+    void set_dc_q_best() {set_dc_q(_best_dc_q);}
 
     double get_lowest_offset() const {return _lowest_offset;}
     int get_best_dc_i() const {return _best_dc_i;}
@@ -70,6 +70,8 @@ protected:
     double _rx_rate;
     int _verbose;
     bool _debug_raw_data;
+
+    void prop_set_check(uhd::property<uint8_t> &prop, uint8_t val);
 
     double get_dbrms();
     bool run_x();
@@ -97,8 +99,8 @@ dc_cal_t::dc_cal_t(uhd::property<uint8_t> &dc_i_prop, uhd::property<uint8_t> &dc
 
 double dc_cal_t::init()
 {
-    _dc_i_prop.set(_best_dc_i);
-    _dc_q_prop.set(_best_dc_q);
+    set_dc_i_best();
+    set_dc_q_best();
 
     //get the DC offset tone size
     _lowest_offset = get_dbrms();
@@ -112,7 +114,7 @@ double dc_cal_t::init()
 void dc_cal_t::run_q(int dc_q)
 {
     if (_verbose) printf("      dc_q = %d", dc_q);
-    _dc_q_prop.set(dc_q);
+    set_dc_q(dc_q);
     if (run_x())
         _best_dc_q = dc_q;
 }
@@ -120,7 +122,7 @@ void dc_cal_t::run_q(int dc_q)
 void dc_cal_t::run_i(int dc_i)
 {
     if (_verbose) printf("      dc_i = %d", dc_i);
-    _dc_i_prop.set(dc_i);
+    set_dc_i(dc_i);
     if (run_x())
         _best_dc_i = dc_i;
 }
@@ -128,12 +130,22 @@ void dc_cal_t::run_i(int dc_i)
 void dc_cal_t::run_iq(int dc_i, int dc_q)
 {
     if (_verbose) printf("      dc_i = %d dc_q = %d", dc_i, dc_q);
-    _dc_i_prop.set(dc_i);
-    _dc_q_prop.set(dc_q);
+    set_dc_i(dc_i);
+    set_dc_q(dc_q);
     if (run_x()) {
         _best_dc_i = dc_i;
         _best_dc_q = dc_q;
     }
+}
+
+void dc_cal_t::prop_set_check(uhd::property<uint8_t> &prop, uint8_t val)
+{
+    prop.set(val);
+    uint8_t val_read = prop.get();
+    if (val_read != val)
+        throw std::runtime_error(
+            str(boost::format("Calibration property sets incorrectly. Requested %d, read back %d")
+                          % int(val) % int(val_read)));
 }
 
 double dc_cal_t::get_dbrms()
