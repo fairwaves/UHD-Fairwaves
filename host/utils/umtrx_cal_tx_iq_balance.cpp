@@ -49,7 +49,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("which", po::value<std::string>(&which)->default_value("A"), "Which chain A or B?")
         ("vga1", po::value<int>(&vga1_gain)->default_value(-20), "LMS6002D Tx VGA1 gain [-35 to -4]")
         ("vga2", po::value<int>(&vga2_gain)->default_value(22), "LMS6002D Tx VGA2 gain [0 to 25]")
-        ("rx_gain", po::value<int>(&rx_gain)->default_value(100), "LMS6002D Rx combined gain [0 to 156]")
+        ("rx_gain", po::value<int>(&rx_gain)->default_value(50), "LMS6002D Rx combined gain [0 to 156]")
         ("tx_wave_freq", po::value<double>(&tx_wave_freq)->default_value(50e3), "Transmit wave frequency in Hz")
         ("tx_wave_ampl", po::value<double>(&tx_wave_ampl)->default_value(0.7), "Transmit wave amplitude in counts")
         ("rx_offset", po::value<double>(&rx_offset)->default_value(300e3), "RX LO offset from the TX LO in Hz")
