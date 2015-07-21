@@ -1,3 +1,15 @@
+umtrx (1.0.4) unstable; urgency=low
+
+  * Do not add 'g' to a git id when creating a version string.
+  * Proper debianization.
+  * Add ability to set diversity switches position from UHD args.
+  * By default route each Rx channel to it's own antenna.
+  * JSON API to question/control property tree of a running UHD app. Useful for querying sensors and for debugging purposes.
+  * Python utility to query VSWR from a running UHD app in real time using JSON API.
+  * Fix DC and IQ calibration utilities.
+
+ -- Alexander Chemeris <Alexander.Chemeris@fairwaves.co>  Tue, 21 Jul 2015 18:51:56 -0400
+
 umtrx (1.0.3) unstable; urgency=low
 
   * Created debian control files for 1.0.3 release of umtrx
