@@ -224,7 +224,7 @@ public:
     uint8_t get_tx_vga1dc_q_int(void)
     {
         boost::recursive_mutex::scoped_lock l(_mutex);
-        return lms.get_tx_vga1dc_i_int();
+        return lms.get_tx_vga1dc_q_int();
     }
 
 protected:
