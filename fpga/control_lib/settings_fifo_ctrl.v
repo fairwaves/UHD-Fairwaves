@@ -22,7 +22,8 @@ module settings_fifo_ctrl
         parameter XPORT_HDR = 1, //extra transport hdr line
         parameter PROT_DEST = 0, //protocol framer destination
         parameter PROT_HDR = 1, //needs a protocol header?
-        parameter ACK_SID = 0 //stream ID for packet ACK
+        parameter ACK_SID = 0, //stream ID for packet ACK
+        parameter DEPTH = 6 //size of fifo in addr bit width
     )
     (
         //clock and synchronous reset for all interfaces
@@ -79,7 +80,7 @@ module settings_fifo_ctrl
     wire command_fifo_full, command_fifo_empty;
     wire command_fifo_read, command_fifo_write;
 
-    shortfifo #(.WIDTH(129)) command_fifo (
+    longfifo #(.WIDTH(129), .SIZE(DEPTH)) command_fifo (
         .clk(clock), .rst(reset), .clear(clear),
         .datain({in_command_ticks, in_command_hdr, in_command_data, in_command_has_time}),
         .dataout({out_command_ticks, out_command_hdr, out_command_data, out_command_has_time}),
@@ -96,7 +97,7 @@ module settings_fifo_ctrl
     wire result_fifo_full, result_fifo_empty;
     wire result_fifo_read, result_fifo_write;
 
-    shortfifo #(.WIDTH(64)) result_fifo (
+    longfifo #(.WIDTH(64), .SIZE(DEPTH)) result_fifo (
         .clk(clock), .rst(reset), .clear(clear),
         .datain({in_result_hdr, in_result_data}),
         .dataout({out_result_hdr, out_result_data}),
