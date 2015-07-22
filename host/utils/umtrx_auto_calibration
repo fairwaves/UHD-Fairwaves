@@ -34,12 +34,6 @@ run_cal() {
   freq_stop=$1 ; shift
   other_args=$*
 
-  echo
-  echo "------------------------------------------------------------------"
-  echo "         Calibrating $what from $freq_start to $freq_stop"
-  echo "------------------------------------------------------------------"
-  echo
-
   freq_step=$(python -c "print $freq_stop - $freq_start if $freq_stop != $freq_start else 1e3")
 
   if [ "$what" = "dc" ] ; then
@@ -52,6 +46,13 @@ run_cal() {
   fi
 
   for side in $sides ; do
+
+    echo
+    echo "------------------------------------------------------------------"
+    echo "       Calibrating $what from $freq_start to $freq_stop for side $side"
+    echo "------------------------------------------------------------------"
+    echo
+
     res=255
     i=0
     while [ $i -lt 10 -a $res -ne 0 ] ; do
