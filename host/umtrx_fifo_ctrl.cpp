@@ -57,6 +57,10 @@ public:
         _seq_ack(0),
         _prev_recv_seq(0),
         _total_recv_packets(0),
+        _start_of_burst(false),
+        _skip_late(false),
+        _use_time(false),
+        _tick_rate(1.0),
         _timeout(ACK_TIMEOUT)
     {
         UHD_MSG(status) << "fifo_ctrl.window_size = " << _window_size << std::endl;
@@ -162,11 +166,17 @@ public:
         _time = time;
         _use_time = _time != uhd::time_spec_t(0.0);
         if (_use_time) _timeout = MASSIVE_TIMEOUT; //permanently sets larger timeout
+        _start_of_burst = true;
     }
 
     void set_tick_rate(const double rate){
         boost::mutex::scoped_lock lock(_mutex);
         _tick_rate = rate;
+    }
+
+    void set_late_policy(const bool skip_late)
+    {
+        _skip_late = skip_late;
     }
 
 private:
@@ -191,7 +201,8 @@ private:
         packet_info.packet_count = _seq_out;
         packet_info.sid = _sid;
         packet_info.tsf = _time.to_ticks(_tick_rate);
-        packet_info.sob = false;
+        packet_info.sob = _start_of_burst;
+        _start_of_burst = false; //only set once by set time, then cleared
         packet_info.eob = false;
         packet_info.has_sid = true;
         packet_info.has_cid = false;
@@ -202,8 +213,11 @@ private:
         //load header
         vrt::if_hdr_pack_be(pkt, packet_info);
 
-        //load payload
+        //time command flags
+        if (_skip_late) cmd |= SKIP_LATE_CMD;
         if (_use_time) cmd |= TIME_WAIT_CMD;
+
+        //load payload
         const boost::uint32_t ctrl_word = (addr & 0xff) | cmd | (_seq_out << 16);
         pkt[packet_info.num_header_words32+0] = htonl(ctrl_word);
         pkt[packet_info.num_header_words32+1] = htonl(data);
@@ -288,6 +302,8 @@ private:
     boost::uint16_t _next_recv_seq;
     boost::uint64_t _total_recv_packets;
     uhd::time_spec_t _time;
+    bool _start_of_burst;
+    bool _skip_late;
     bool _use_time;
     double _tick_rate;
     double _timeout;

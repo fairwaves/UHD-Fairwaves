@@ -448,7 +448,7 @@ module umtrx_core
    // Buffer Pool Status -- Slave #5   
    
    //compatibility number -> increment when the fpga has been sufficiently altered
-   localparam compat_num = {16'd9, 16'd1}; //major, minor
+   localparam compat_num = {16'd9, 16'd2}; //major, minor
 
    wire [31:0] irq_readback = {16'b0, aux_ld2, aux_ld1, button, spi_ready, 12'b0};
 

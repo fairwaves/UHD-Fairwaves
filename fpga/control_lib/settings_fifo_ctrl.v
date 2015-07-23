@@ -247,22 +247,24 @@ module settings_fifo_ctrl
     always @(posedge clock)
         vita_time_reg <= vita_time;
 
-    wire late;
+    wire late, now;
     `ifndef FIFO_CTRL_NO_TIME
     time_compare time_compare(
-        .time_now(vita_time_reg), .trigger_time(command_ticks_reg), .late(late));
+        .time_now(vita_time_reg), .trigger_time(command_ticks_reg), .late(late), .now(now));
     `else
     assign late = 1;
+    assign now = 1;
     `endif
 
     //these config flags are available only in the LOAD_CMD state (where we wait)
     wire time_wait = out_command_hdr[9];
     wire skip_late = out_command_hdr[10]; //TODO (implement)
+    reg cmd_was_late;
 
     //action occurs in the event state and when there is fifo space (should always be true)
     //the third condition is that all peripherals in the perfs signal are ready/active high
     //the fourth condition is that is an event time has been set, action is delayed until that time
-    wire time_ready = (time_wait)? late : 1;
+    wire time_ready = (time_wait)? (late || now) : 1;
     wire action = (cmd_state == EVENT_CMD) && ~result_fifo_full && perfs_ready && time_ready;
 
     assign command_fifo_read = action;
@@ -282,6 +284,7 @@ module settings_fifo_ctrl
                 command_ticks_reg <= out_command_ticks;
                 command_hdr_reg <= out_command_hdr;
                 command_data_reg <= out_command_data;
+                cmd_was_late <= late; //TODO do something with
             end
 
             EVENT_CMD: begin // poking and peeking happens here!
