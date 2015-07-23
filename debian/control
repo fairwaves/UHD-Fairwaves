@@ -17,6 +17,8 @@ Section: libs
 Architecture: any
 Pre-Depends: multiarch-support, ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}, uhd-umtrx
+Conflicts: umtrx-uhd
+Replaces: umtrx-uhd
 Recommends: python
 Description: Fairwaves UmTRX driver - runtime utilities
  The industrial grade dual-channel wide-band SDR transceiver.
@@ -25,5 +27,7 @@ Package: uhd-umtrx
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: umtrx-uhd
+Replaces: umtrx-uhd
 Description: Fairwaves UmTRX driver - UHD plugin module
  The industrial grade dual-channel wide-band SDR transceiver.
