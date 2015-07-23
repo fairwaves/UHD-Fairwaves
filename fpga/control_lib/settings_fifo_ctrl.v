@@ -76,16 +76,17 @@ module settings_fifo_ctrl
     wire [63:0] in_command_ticks, out_command_ticks;
     wire [31:0] in_command_hdr, out_command_hdr;
     wire [31:0] in_command_data, out_command_data;
-    wire in_command_has_time, out_command_has_time;
     wire command_fifo_full, command_fifo_empty;
     wire command_fifo_read, command_fifo_write;
+    wire [15:0] command_fifo_occupied;
 
-    longfifo #(.WIDTH(129), .SIZE(DEPTH)) command_fifo (
+    longfifo #(.WIDTH(128), .SIZE(DEPTH)) command_fifo (
         .clk(clock), .rst(reset), .clear(clear),
-        .datain({in_command_ticks, in_command_hdr, in_command_data, in_command_has_time}),
-        .dataout({out_command_ticks, out_command_hdr, out_command_data, out_command_has_time}),
+        .datain({in_command_ticks, in_command_hdr, in_command_data}),
+        .dataout({out_command_ticks, out_command_hdr, out_command_data}),
         .write(command_fifo_write), .full(command_fifo_full), //input interface
-        .empty(command_fifo_empty), .read(command_fifo_read)  //output interface
+        .empty(command_fifo_empty), .read(command_fifo_read), //output interface
+        .occupied(command_fifo_occupied)
     );
 
     //------------------------------------------------------------------
@@ -96,13 +97,15 @@ module settings_fifo_ctrl
     wire [31:0] in_result_data, out_result_data;
     wire result_fifo_full, result_fifo_empty;
     wire result_fifo_read, result_fifo_write;
+    wire [15:0] result_fifo_occupied;
 
     longfifo #(.WIDTH(64), .SIZE(DEPTH)) result_fifo (
         .clk(clock), .rst(reset), .clear(clear),
         .datain({in_result_hdr, in_result_data}),
         .dataout({out_result_hdr, out_result_data}),
         .write(result_fifo_write), .full(result_fifo_full), //input interface
-        .empty(result_fifo_empty), .read(result_fifo_read)  //output interface
+        .empty(result_fifo_empty), .read(result_fifo_read), //output interface
+        .occupied(result_fifo_occupied)
     );
 
     //------------------------------------------------------------------
@@ -140,7 +143,6 @@ module settings_fifo_ctrl
     assign in_command_ticks    = in_ticks_reg;
     assign in_command_data     = in_data_reg;
     assign in_command_hdr      = in_hdr_reg;
-    assign in_command_has_time = has_tsf_reg;
 
     always @(posedge clock) begin
         if (reset) begin
@@ -253,10 +255,14 @@ module settings_fifo_ctrl
     assign late = 1;
     `endif
 
+    //these config flags are available only in the LOAD_CMD state (where we wait)
+    wire time_wait = out_command_hdr[9];
+    wire skip_late = out_command_hdr[10]; //TODO (implement)
+
     //action occurs in the event state and when there is fifo space (should always be true)
     //the third condition is that all peripherals in the perfs signal are ready/active high
     //the fourth condition is that is an event time has been set, action is delayed until that time
-    wire time_ready = (out_command_has_time)? late : 1;
+    wire time_ready = (time_wait)? late : 1;
     wire action = (cmd_state == EVENT_CMD) && ~result_fifo_full && perfs_ready && time_ready;
 
     assign command_fifo_read = action;
@@ -333,11 +339,14 @@ module settings_fifo_ctrl
     localparam WRITE_VRT_SID  = 2;
     localparam WRITE_RB_HDR   = 3;
     localparam WRITE_RB_DATA  = 4;
+    localparam WRITE_RB_DATA2 = 5;
+    localparam WRITE_RB_DATA3 = 6;
 
     //the state for the start of packet condition
     localparam WRITE_PKT_HDR = (PROT_HDR)? WRITE_PROT_HDR : WRITE_VRT_HDR;
 
     reg [2:0] out_state;
+    reg [31:0] last_result_hdr;
 
     assign out_valid = ~result_fifo_empty;
     assign result_fifo_read = out_data[33] && writing;
@@ -345,9 +354,11 @@ module settings_fifo_ctrl
     always @(posedge clock) begin
         if (reset) begin
             out_state <= WRITE_PKT_HDR;
+            last_result_hdr <= 32'b0;
         end
         else if (writing && out_data[33]) begin
             out_state <= WRITE_PKT_HDR;
+            last_result_hdr <= out_result_hdr;
         end
         else if (writing) begin
             out_state <= out_state + 1;
@@ -358,7 +369,7 @@ module settings_fifo_ctrl
     //-- assign to output fifo interface
     //------------------------------------------------------------------
     wire [31:0] prot_hdr;
-    assign prot_hdr[15:0] = 16; //bytes in proceeding vita packet
+    assign prot_hdr[15:0] = 24; //bytes in proceeding vita packet
     assign prot_hdr[16] = 1; //yes frame
     assign prot_hdr[18:17] = PROT_DEST;
     assign prot_hdr[31:19] = 0; //nothing
@@ -371,12 +382,14 @@ module settings_fifo_ctrl
             WRITE_VRT_SID:  out_data_int <= ACK_SID;
             WRITE_RB_HDR:   out_data_int <= out_result_hdr;
             WRITE_RB_DATA:  out_data_int <= out_result_data;
+            WRITE_RB_DATA2: out_data_int <= last_result_hdr;
+            WRITE_RB_DATA3: out_data_int <= {result_fifo_occupied, command_fifo_occupied};
             default:        out_data_int <= 0;
         endcase //state
     end
 
     assign out_data[35:34] = 2'b0;
-    assign out_data[33] = (out_state == WRITE_RB_DATA);
+    assign out_data[33] = (out_state == WRITE_RB_DATA3);
     assign out_data[32] = (out_state == WRITE_PKT_HDR);
     assign out_data[31:0] = out_data_int;
 
@@ -390,7 +403,7 @@ module settings_fifo_ctrl
         command_fifo_empty, command_fifo_full, //2
         command_fifo_read, command_fifo_write, //2
         addr, //8
-        strobe_reg, strobe, poke, out_command_has_time //4
+        strobe_reg, strobe, poke, time_wait //4
     };
 
 endmodule //settings_fifo_ctrl

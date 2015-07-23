@@ -29,11 +29,16 @@
 using namespace uhd;
 using namespace uhd::transport;
 
+//command policy flags
 static const size_t POKE32_CMD = (1 << 8);
-static const size_t PEEK32_CMD = 0;
+static const size_t PEEK32_CMD = 0; //no flag set
+static const size_t TIME_WAIT_CMD = (1 << 9);
+static const size_t SKIP_LATE_CMD = (1 << 10);
+
 static const double ACK_TIMEOUT = 0.5;
 static const double MASSIVE_TIMEOUT = 10.0; //for when we wait on a timed command
-static const boost::uint32_t MAX_SEQS_OUT = 64-1;
+static const boost::uint32_t FIFO_DEPTH = 64;
+static const boost::uint32_t MAX_SEQS_OUT = FIFO_DEPTH-1;
 
 #define SPI_DIV SR_SPI_CORE + 0
 #define SPI_CTRL SR_SPI_CORE + 1
@@ -50,6 +55,8 @@ public:
         _window_size(std::min(window_size, MAX_SEQS_OUT)),
         _seq_out(0),
         _seq_ack(0),
+        _prev_recv_seq(0),
+        _total_recv_packets(0),
         _timeout(ACK_TIMEOUT)
     {
         UHD_MSG(status) << "fifo_ctrl.window_size = " << _window_size << std::endl;
@@ -196,6 +203,7 @@ private:
         vrt::if_hdr_pack_be(pkt, packet_info);
 
         //load payload
+        if (_use_time) cmd |= TIME_WAIT_CMD;
         const boost::uint32_t ctrl_word = (addr & 0xff) | cmd | (_seq_out << 16);
         pkt[packet_info.num_header_words32+0] = htonl(ctrl_word);
         pkt[packet_info.num_header_words32+1] = htonl(data);
@@ -221,10 +229,50 @@ private:
             vrt::if_packet_info_t packet_info;
             packet_info.num_packet_words32 = buff->size()/sizeof(boost::uint32_t);
             vrt::if_hdr_unpack_be(pkt, packet_info);
-            _seq_ack = ntohl(pkt[packet_info.num_header_words32+0]) >> 16;
-            if (_seq_ack == seq_to_ack){
-                return ntohl(pkt[packet_info.num_header_words32+1]);
+
+            //extract the payloads
+            const boost::int32_t header = ntohl(pkt[packet_info.num_header_words32+0]);
+            const boost::int32_t rb_data = ntohl(pkt[packet_info.num_header_words32+1]);
+            const boost::int32_t last_header = ntohl(pkt[packet_info.num_header_words32+2]);
+            const boost::int32_t fifo_occupied = ntohl(pkt[packet_info.num_header_words32+3]);
+            const boost::uint16_t this_seq = header >> 16;
+            const boost::uint16_t last_seq = last_header >> 16;
+            const boost::uint16_t result_fifo_occupied = fifo_occupied >> 16;
+            const boost::uint16_t command_fifo_occupied = fifo_occupied & 0xffff;
+
+            //check if we lost packets from device -> host
+            const boost::uint16_t next_recv_seq = _prev_recv_seq+1;
+            if (next_recv_seq != this_seq)
+            {
+                UHD_MSG(error) << boost::format(
+                    "Detected packet loss from device to host:\n"
+                    "Host expected sequence 0x%x, but got 0x%x"
+                ) % next_recv_seq % this_seq << std::endl;
             }
+
+            //check if we lost packets from host -> device
+            if (_total_recv_packets != 0 and _prev_recv_seq != last_seq)
+            {
+                UHD_MSG(error) << boost::format(
+                    "Detected packet loss from host to device:\n"
+                    "Device expected last sequence 0x%x, but saw 0x%x"
+                ) % _prev_recv_seq % last_seq << std::endl;
+            }
+
+            if (result_fifo_occupied > FIFO_DEPTH/2 or command_fifo_occupied > FIFO_DEPTH/2)
+            {
+                UHD_MSG(warning) << boost::format(
+                    "FIFOs are past half capacity!\n"
+                    "Command FIFO occupancy: %d/%d\n"
+                    "Result FIFO occupancy: %d/%d"
+                ) % command_fifo_occupied % FIFO_DEPTH % result_fifo_occupied % FIFO_DEPTH << std::endl;
+            }
+
+            //store state for next recv iteration
+            _total_recv_packets++;
+            _prev_recv_seq = this_seq;
+            _seq_ack = this_seq;
+            if (_seq_ack == seq_to_ack) return rb_data;
         }
 
         return 0;
@@ -236,6 +284,9 @@ private:
     boost::mutex _mutex;
     boost::uint16_t _seq_out;
     boost::uint16_t _seq_ack;
+    boost::uint16_t _prev_recv_seq;
+    boost::uint16_t _next_recv_seq;
+    boost::uint64_t _total_recv_packets;
     uhd::time_spec_t _time;
     bool _use_time;
     double _tick_rate;
