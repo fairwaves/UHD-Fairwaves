@@ -127,12 +127,10 @@ public:
         //load data word (must be in upper bits)
         const boost::uint32_t data_out = data << (32 - num_bits);
 
-        //conditionally send control word
-        if (_ctrl_word_cache != ctrl_word){
-            this->send_pkt(SPI_CTRL, ctrl_word, POKE32_CMD);
-            this->wait_for_ack(_seq_out-_window_size);
-            _ctrl_word_cache = ctrl_word;
-        }
+        //send control word
+        this->send_pkt(SPI_CTRL, ctrl_word, POKE32_CMD);
+        this->wait_for_ack(_seq_out-_window_size);
+        _ctrl_word_cache = ctrl_word;
 
         //send data word
         this->send_pkt(SPI_DATA, data_out, POKE32_CMD);
