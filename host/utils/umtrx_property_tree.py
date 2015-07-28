@@ -51,8 +51,8 @@ class umtrx_property_tree:
     self._send_request('GET', path, value_type='DOUBLE')
     return self._recv_response()
 
-  def query_sensor_raw(self, sensor_path):
-    self._send_request('GET', sensor_path, value_type='SENSOR')
+  def query_sensor_raw(self, path):
+    self._send_request('GET', path, value_type='SENSOR')
     return self._recv_response()
 
   def query_range_raw(self, path):
@@ -64,24 +64,24 @@ class umtrx_property_tree:
   #
 
   def query_bool_value(self, path):
-    res = self.query_bool_raw(sensor_path)
+    res = self.query_bool_raw(path)
     return res['result']['value']
 
   def query_int_value(self, path):
-    res = self.query_int_raw(sensor_path)
+    res = self.query_int_raw(path)
     return res['result']['value']
 
   def query_double_value(self, path):
-    res = self.query_double_raw(sensor_path)
+    res = self.query_double_raw(path)
     return res['result']['value']
 
-  def query_sensor_value(self, sensor_path):
-    res = self.query_sensor_raw(sensor_path)
+  def query_sensor_value(self, path):
+    res = self.query_sensor_raw(path)
     return res['result']['value']
 
   def query_range_value(self, path):
-    res = self.query_range_raw(sensor_path)
-    return res['result']['value']
+    res = self.query_range_raw(path)
+    return res['result']
 
   #
   # Setters
