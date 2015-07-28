@@ -412,16 +412,57 @@ module umtrx_core
 
    // /////////////////////////////////////////////////////////////////////////
    // SPI -- Slave #2
-    wire [31:0] spi_debug;
-    wire [31:0] spi_readback;
-    wire spi_ready;
-    simple_spi_core #(.BASE(SR_SPI_CORE), .WIDTH(5)) shared_spi(
+    reg [31:0] spi_readback;
+    reg spi_ready;
+
+    wire [0:0] AXIS_SPI_CONFIG_tdest;
+    wire [79:0] AXIS_SPI_CONFIG_tdata;
+    wire AXIS_SPI_CONFIG_tvalid;
+    wire AXIS_SPI_CONFIG_tready;
+
+    wire [0:0] AXIS_SPI_READBACK_tdest;
+    wire [31:0] AXIS_SPI_READBACK_tdata;
+    wire AXIS_SPI_READBACK_tvalid;
+    wire AXIS_SPI_READBACK_tready;
+
+    axis_spi_core #(.DESTW(1), .WIDTH(5), .DEBUG(0)) axis_shared_spi(
         .clock(dsp_clk), .reset(dsp_rst),
-        .set_stb(set_stb_dsp), .set_addr(set_addr_dsp), .set_data(set_data_dsp),
-        .readback(spi_readback), .ready(spi_ready),
+
+        .CONFIG_tdest(AXIS_SPI_CONFIG_tdest),
+        .CONFIG_tdata(AXIS_SPI_CONFIG_tdata),
+        .CONFIG_tvalid(AXIS_SPI_CONFIG_tvalid),
+        .CONFIG_tready(AXIS_SPI_CONFIG_tready),
+
+        .READBACK_tdest(AXIS_SPI_READBACK_tdest),
+        .READBACK_tdata(AXIS_SPI_READBACK_tdata),
+        .READBACK_tvalid(AXIS_SPI_READBACK_tvalid),
+        .READBACK_tready(AXIS_SPI_READBACK_tready),
+
         .sen({aux_sen2,aux_sen1,sen_dac,sen_lms2,sen_lms1}),
-        .sclk(sclk), .mosi(mosi), .miso(miso), .debug(spi_debug)
+        .sclk(sclk), .mosi(mosi), .miso(miso)
     );
+
+    //configuration input bus driven by settings registers, register 0 triggers
+    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi_sr0(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
+        .out(AXIS_SPI_CONFIG_tdata[31:0]),.changed(AXIS_SPI_CONFIG_tvalid));
+
+    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi_sr1(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
+        .out(AXIS_SPI_CONFIG_tdata[63:32]),.changed());
+
+    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi_sr2(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
+        .out(AXIS_SPI_CONFIG_tdata[79:64]),.changed());
+
+    //readback output bus latches values into readback register
+    assign AXIS_SPI_READBACK_tready = 1'b1;
+    always @(posedge dsp_clk) begin
+        if (AXIS_SPI_READBACK_tvalid && AXIS_SPI_READBACK_tready) begin
+            spi_readback <= AXIS_SPI_READBACK_tdata;
+        end
+        spi_ready <= AXIS_SPI_CONFIG_tready; //delay one (needed by fifo ctrl)
+    end
 
    // /////////////////////////////////////////////////////////////////////////
    // I2C -- Slave #3
@@ -448,7 +489,7 @@ module umtrx_core
    // Buffer Pool Status -- Slave #5   
    
    //compatibility number -> increment when the fpga has been sufficiently altered
-   localparam compat_num = {16'd9, 16'd1}; //major, minor
+   localparam compat_num = {16'd9, 16'd2}; //major, minor
 
    wire [31:0] irq_readback = {16'b0, aux_ld2, aux_ld1, button, spi_ready, 12'b0};
 
