@@ -174,6 +174,10 @@ module umtrx_core
    wire [7:0] 	set_addr, set_addr_dsp, set_addr_sys, set_addr_fe, set_addr_udp_wb, set_addr_udp_sys;
    wire [31:0] 	set_data, set_data_dsp, set_data_sys, set_data_fe, set_data_udp_wb, set_data_udp_sys;
    wire 	set_stb, set_stb_dsp, set_stb_sys, set_stb_fe, set_stb_udp_wb, set_stb_udp_sys;
+
+   wire set_stb_dsp0, set_stb_dsp1;
+   wire [31:0] set_data_dsp0, set_data_dsp1;
+   wire [7:0] set_addr_dsp0, set_addr_dsp1;
    
    reg 		wb_rst;
    wire 	dsp_rst, sys_rst, fe_rst;
@@ -412,8 +416,9 @@ module umtrx_core
 
    // /////////////////////////////////////////////////////////////////////////
    // SPI -- Slave #2
-    reg [31:0] spi_readback;
-    reg spi_ready;
+    reg [31:0] spi_readback0;
+    reg [31:0] spi_readback1;
+    wire spi_ready;
 
     wire [0:0] AXIS_SPI_CONFIG_tdest;
     wire [79:0] AXIS_SPI_CONFIG_tdata;
@@ -442,26 +447,57 @@ module umtrx_core
         .sclk(sclk), .mosi(mosi), .miso(miso)
     );
 
-    //configuration input bus driven by settings registers, register 0 triggers
-    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi_sr0(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
-        .out(AXIS_SPI_CONFIG_tdata[31:0]),.changed(AXIS_SPI_CONFIG_tvalid));
+    //setting register block for spi dest 0 (wishbone)
+    wire [79:0] spi_config0;
+    wire spi_trigger0;
+    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi0_sr0(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
+        .out(spi_config0[31:0]),.changed(spi_trigger0));
 
-    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi_sr1(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
-        .out(AXIS_SPI_CONFIG_tdata[63:32]),.changed());
+    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi0_sr1(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
+        .out(spi_config0[63:32]),.changed());
 
-    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi_sr2(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),
-        .out(AXIS_SPI_CONFIG_tdata[79:64]),.changed());
+    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi0_sr2(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
+        .out(spi_config0[79:64]),.changed());
+
+    //setting register block for spi dest 1 (ctrl fifo)
+    wire [79:0] spi_config1;
+    wire spi_trigger1;
+    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi1_sr0(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
+        .out(spi_config1[31:0]),.changed(spi_trigger1));
+
+    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi1_sr1(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
+        .out(spi_config1[63:32]),.changed());
+
+    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi1_sr2(
+        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
+        .out(spi_config1[79:64]),.changed());
+
+    //assign config bus from setting register sources
+    //Note: the triggers are exclusive (settings fifo cross clock)
+    assign AXIS_SPI_CONFIG_tdest = (spi_trigger0)?1'b0:1'b1;
+    assign AXIS_SPI_CONFIG_tdata = (spi_trigger0)?spi_config0:spi_config1;
+    assign AXIS_SPI_CONFIG_tvalid = spi_trigger0 || spi_trigger1;
+
+    //create spi ready to block the ctrl fifo ASAP
+    wire spi_ready_now = AXIS_SPI_CONFIG_tready && !AXIS_SPI_CONFIG_tvalid;
+    assign spi_ready = spi_ready_now && spi_ready_prev;
+    reg spi_ready_prev;
+    always @(posedge dsp_clk) begin
+        spi_ready_prev <= spi_ready_now;
+    end
 
     //readback output bus latches values into readback register
     assign AXIS_SPI_READBACK_tready = 1'b1;
     always @(posedge dsp_clk) begin
         if (AXIS_SPI_READBACK_tvalid && AXIS_SPI_READBACK_tready) begin
-            spi_readback <= AXIS_SPI_READBACK_tdata;
+            if (AXIS_SPI_READBACK_tdest == 1'b0) spi_readback0 <= AXIS_SPI_READBACK_tdata;
+            if (AXIS_SPI_READBACK_tdest == 1'b1) spi_readback1 <= AXIS_SPI_READBACK_tdata;
         end
-        spi_ready <= AXIS_SPI_CONFIG_tready; //delay one (needed by fifo ctrl)
     end
 
    // /////////////////////////////////////////////////////////////////////////
@@ -497,7 +533,7 @@ module umtrx_core
      (.wb_clk_i(wb_clk), .wb_rst_i(wb_rst), .wb_stb_i(s5_stb),
       .wb_adr_i(s5_adr), .wb_dat_o(s5_dat_i), .wb_ack_o(s5_ack),
 
-      .word00(spi_readback),.word01(`NUMDDC),.word02(`NUMDUC),.word03(32'b0),
+      .word00(spi_readback0),.word01(`NUMDDC),.word02(`NUMDUC),.word03(32'b0),
       .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
       .word08(status),.word09(32'b0),.word10(vita_time[63:32]),
       .word11(vita_time[31:0]),.word12(compat_num),.word13(irq_readback),
@@ -539,10 +575,6 @@ module umtrx_core
      (.clk_i(dsp_clk), .rst_i(dsp_rst), .set_stb_i(set_stb_dsp), .set_addr_i(set_addr_dsp), .set_data_i(set_data_dsp),
       .clk_o(fe_clk), .rst_o(fe_rst), .set_stb_o(set_stb_fe), .set_addr_o(set_addr_fe), .set_data_o(set_data_fe));
 
-   wire set_stb_dsp0, set_stb_dsp1;
-   wire [31:0] set_data_dsp0, set_data_dsp1;
-   wire [7:0] set_addr_dsp0, set_addr_dsp1;
-
    //mux settings_bus_crossclock and settings_readback_bus_fifo_ctrl with prio
    assign set_stb_dsp = set_stb_dsp0 | set_stb_dsp1;
    assign set_addr_dsp = set_stb_dsp1? set_addr_dsp1 : set_addr_dsp0;
@@ -583,7 +615,7 @@ module umtrx_core
         .in_data(ctrl_data_dsp), .in_valid(ctrl_valid_dsp), .in_ready(ctrl_ready_dsp),
         .out_data(resp_data_dsp), .out_valid(resp_valid_dsp), .out_ready(resp_ready_dsp),
         .strobe(set_stb_dsp1), .addr(set_addr_dsp1), .data(set_data_dsp1),
-        .word00(spi_readback),.word01(32'b0),.word02(32'b0),.word03(32'b0),
+        .word00(spi_readback1),.word01(32'b0),.word02(32'b0),.word03(32'b0),
         .word04(32'b0),.word05(32'b0),.word06(32'b0),.word07(32'b0),
         .word08(32'b0),.word09(32'b0),.word10(vita_time[63:32]),
         .word11(vita_time[31:0]),.word12(32'b0),.word13(irq_readback),
