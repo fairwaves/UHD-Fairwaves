@@ -447,41 +447,31 @@ module umtrx_core
         .sclk(sclk), .mosi(mosi), .miso(miso)
     );
 
-    //setting register block for spi dest 0 (wishbone)
-    wire [79:0] spi_config0;
-    wire spi_trigger0;
-    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi0_sr0(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
-        .out(spi_config0[31:0]),.changed(spi_trigger0));
+    //setting register block for spi dest 0 (wishbone) and spi dest 1 (ctrl fifo)
+    //Note: the strobes are exclusive (settings fifo cross clock)
+    wire [79:0] spi_config [0:1];
+    wire [0:1] spi_trigger;
+    wire [0:1] set_stb_dsp_n = {set_stb_dsp0, set_stb_dsp1};
+    genvar i;
+    generate for (i=0; i <= 1; i=i+1) begin
+        setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi_sr0(
+            .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp_n[i]),.addr(set_addr_dsp),.in(set_data_dsp),
+            .out(spi_config[i][31:0]),.changed(spi_trigger[i]));
 
-    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi0_sr1(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
-        .out(spi_config0[63:32]),.changed());
+        setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi_sr1(
+            .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp_n[i]),.addr(set_addr_dsp),.in(set_data_dsp),
+            .out(spi_config[i][63:32]),.changed());
 
-    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi0_sr2(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp0),.addr(set_addr_dsp0),.in(set_data_dsp0),
-        .out(spi_config0[79:64]),.changed());
-
-    //setting register block for spi dest 1 (ctrl fifo)
-    wire [79:0] spi_config1;
-    wire spi_trigger1;
-    setting_reg #(.my_addr(SR_SPI_CORE+2),.width(32)) axis_shared_spi1_sr0(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
-        .out(spi_config1[31:0]),.changed(spi_trigger1));
-
-    setting_reg #(.my_addr(SR_SPI_CORE+1),.width(32)) axis_shared_spi1_sr1(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
-        .out(spi_config1[63:32]),.changed());
-
-    setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi1_sr2(
-        .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp1),.addr(set_addr_dsp1),.in(set_data_dsp1),
-        .out(spi_config1[79:64]),.changed());
+        setting_reg #(.my_addr(SR_SPI_CORE+0),.width(16)) axis_shared_spi_sr2(
+            .clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp_n[i]),.addr(set_addr_dsp),.in(set_data_dsp),
+            .out(spi_config[i][79:64]),.changed());
+    end endgenerate
 
     //assign config bus from setting register sources
     //Note: the triggers are exclusive (settings fifo cross clock)
-    assign AXIS_SPI_CONFIG_tdest = (spi_trigger0)?1'b0:1'b1;
-    assign AXIS_SPI_CONFIG_tdata = (spi_trigger0)?spi_config0:spi_config1;
-    assign AXIS_SPI_CONFIG_tvalid = spi_trigger0 || spi_trigger1;
+    assign AXIS_SPI_CONFIG_tdest = (spi_trigger[0])?1'b0:1'b1;
+    assign AXIS_SPI_CONFIG_tdata = (spi_trigger[0])?spi_config[0]:spi_config[1];
+    assign AXIS_SPI_CONFIG_tvalid = (spi_trigger != 0);
 
     //create spi ready to block the ctrl fifo ASAP
     wire spi_ready_now = AXIS_SPI_CONFIG_tready && !AXIS_SPI_CONFIG_tvalid;
