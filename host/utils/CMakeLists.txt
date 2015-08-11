@@ -6,6 +6,7 @@ INSTALL(PROGRAMS
     umtrx_nmea
     umtrx_gps_coord
     umtrx_auto_calibration
+    umtrx_firmware
     DESTINATION bin
 )
 
