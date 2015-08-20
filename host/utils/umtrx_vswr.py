@@ -46,6 +46,8 @@ class umtrx_vswr:
     gamma = self._gamma
     if gamma == 1.0:
       return float("inf")
+    elif gamma > 1.0:
+      return float("nan")
     else:
       return (1+gamma)/(1-gamma)
 
@@ -54,15 +56,21 @@ class umtrx_vswr:
     gamma = self._gamma
     if gamma == 1.0:
       return float("-inf")
+    elif gamma > 1.0:
+      return float("nan")
     else:
       return -10.0 * math.log(1.0-gamma*gamma, 10)
 
   def pf_rate(self):
     ''' Estimated reflected power rate, % '''
     gamma = self._gamma
+    if gamma > 1.0:
+      return float("nan")
     return 1.0 - gamma*gamma
 
   def pr_rate(self):
     ''' Estimated reflected power rate, % '''
     gamma = self._gamma
+    if gamma > 1.0:
+      return float("nan")
     return gamma*gamma
