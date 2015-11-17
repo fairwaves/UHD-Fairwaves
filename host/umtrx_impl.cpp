@@ -271,6 +271,22 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     UHD_MSG(status) << "Detected UmTRX " << get_hw_rev() << std::endl;
 
     ////////////////////////////////////////////////////////////////////////
+    // setup umsel2 control when present
+    ////////////////////////////////////////////////////////////////////////
+    //TODO delect umsel2 and setup _umsel2 sptr...
+    //will be null when not available
+    _umsel2 = umsel2_ctrl::make(_ctrl/*peek*/, _ctrl/*spi*/);
+
+    //register lock detect for umsel2
+    if (_umsel2)
+    {
+        _tree->create<sensor_value_t>(mb_path / "dboards" / "A" / "rx_frontends" / "0" / "sensors" / "aux_lo_locked")
+            .publish(boost::bind(&umsel2_ctrl::get_locked, _umsel2, 1));
+        _tree->create<sensor_value_t>(mb_path / "dboards" / "B" / "rx_frontends" / "0" / "sensors" / "aux_lo_locked")
+            .publish(boost::bind(&umsel2_ctrl::get_locked, _umsel2, 2));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // configure diversity switches
     ////////////////////////////////////////////////////////////////////////
 
@@ -570,9 +586,17 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //rx freq
         _tree->create<double>(rx_rf_fe_path / "freq" / "value")
-            .coerce(boost::bind(&lms6002d_ctrl::set_rx_freq, ctrl, _1));
-        _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
-            .publish(boost::bind(&lms6002d_ctrl::get_rx_freq_range, ctrl));
+            .coerce(boost::bind(&umtrx_impl::set_rx_freq, this, fe_name, _1));
+        if (_umsel2)
+        {
+            _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
+                .publish(boost::bind(&umsel2_ctrl::get_rx_freq_range, _umsel2, (fe_name=="A")?1:2));
+        }
+        else
+        {
+            _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
+                .publish(boost::bind(&lms6002d_ctrl::get_rx_freq_range, ctrl));
+        }
         _tree->create<bool>(rx_rf_fe_path / "use_lo_offset").set(false);
 
         //tx freq
@@ -869,6 +893,19 @@ double umtrx_impl::dc_offset_int2double(uint8_t corr)
 uint8_t umtrx_impl::dc_offset_double2int(double corr)
 {
     return (int)(corr*128 + 128.5);
+}
+
+double umtrx_impl::set_rx_freq(const std::string &which, const double freq)
+{
+    if (_umsel2)
+    {
+        //TODO _lms_ctrl[which]->set_rx_freq(freq);360Mhz and 400MHz
+        return _umsel2->set_rx_freq((which=="A")?1:2, freq);
+    }
+    else
+    {
+        return _lms_ctrl[which]->set_rx_freq(freq);
+    }
 }
 
 uhd::sensor_value_t umtrx_impl::read_temp_c(const std::string &which)
