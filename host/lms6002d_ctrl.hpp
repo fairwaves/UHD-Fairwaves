@@ -15,7 +15,7 @@ class lms6002d_ctrl
 {
 public:
     typedef boost::shared_ptr<lms6002d_ctrl> sptr;
-    static sptr make(uhd::spi_iface::sptr spiface, const int lms_spi_number, const int adf4350_spi_number, const double clock_rate);
+    static sptr make(uhd::spi_iface::sptr spiface, const int lms_spi_number, const double clock_rate);
 
     virtual double set_rx_freq(const double freq) = 0;
     virtual double set_tx_freq(const double freq) = 0;

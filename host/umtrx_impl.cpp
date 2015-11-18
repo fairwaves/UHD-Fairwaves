@@ -506,8 +506,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////
     // create RF frontend interfacing
     ////////////////////////////////////////////////////////////////////
-    _lms_ctrl["A"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS1, SPI_SS_AUX1, this->get_master_clock_rate() / _pll_div);
-    _lms_ctrl["B"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS2, SPI_SS_AUX2, this->get_master_clock_rate() / _pll_div);
+    _lms_ctrl["A"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS1, this->get_master_clock_rate() / _pll_div);
+    _lms_ctrl["B"] = lms6002d_ctrl::make(_ctrl/*spi*/, SPI_SS_LMS2, this->get_master_clock_rate() / _pll_div);
 
     // LMS dboard do not have physical eeprom so we just hardcode values from host/lib/usrp/dboard/db_lms.cpp
     dboard_eeprom_t rx_db_eeprom, tx_db_eeprom, gdb_db_eeprom;
