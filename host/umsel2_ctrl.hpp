@@ -24,6 +24,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
 
+#define UMSEL2_CH1_LMS_IF 360e6
+#define UMSEL2_CH2_LMS_IF 400e6
+
 /*!
  * Control UmSEL2 board.
  */

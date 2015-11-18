@@ -587,16 +587,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         //rx freq
         _tree->create<double>(rx_rf_fe_path / "freq" / "value")
             .coerce(boost::bind(&umtrx_impl::set_rx_freq, this, fe_name, _1));
-        if (_umsel2)
-        {
-            _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
-                .publish(boost::bind(&umsel2_ctrl::get_rx_freq_range, _umsel2, (fe_name=="A")?1:2));
-        }
-        else
-        {
-            _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
-                .publish(boost::bind(&lms6002d_ctrl::get_rx_freq_range, ctrl));
-        }
+        _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
+            .publish(boost::bind(&umtrx_impl::get_rx_freq_range, this, fe_name));
         _tree->create<bool>(rx_rf_fe_path / "use_lo_offset").set(false);
 
         //tx freq
@@ -899,12 +891,33 @@ double umtrx_impl::set_rx_freq(const std::string &which, const double freq)
 {
     if (_umsel2)
     {
-        //TODO _lms_ctrl[which]->set_rx_freq(freq);360Mhz and 400MHz
-        return _umsel2->set_rx_freq((which=="A")?1:2, freq);
+        const double target_lms_freq = (which=="A")?UMSEL2_CH1_LMS_IF:UMSEL2_CH2_LMS_IF;
+        const double actual_lms_freq = _lms_ctrl[which]->set_rx_freq(target_lms_freq);
+
+        const double target_umsel_freq = freq - actual_lms_freq;
+        const double actual_umsel_freq = _umsel2->set_rx_freq((which=="A")?1:2, target_umsel_freq);
+
+        return actual_umsel_freq + actual_lms_freq;
     }
     else
     {
         return _lms_ctrl[which]->set_rx_freq(freq);
+    }
+}
+
+uhd::freq_range_t umtrx_impl::get_rx_freq_range(const std::string &which) const
+{
+    if (_umsel2)
+    {
+        const double target_lms_freq = (which=="A")?UMSEL2_CH1_LMS_IF:UMSEL2_CH2_LMS_IF;
+        const uhd::freq_range_t range_umsel = _umsel2->get_rx_freq_range((which=="A")?1:2);
+        return uhd::freq_range_t(
+            range_umsel.start()+target_lms_freq,
+            range_umsel.stop()+target_lms_freq);
+    }
+    else
+    {
+        return _lms_ctrl[which]->get_rx_freq_range();
     }
 }
 

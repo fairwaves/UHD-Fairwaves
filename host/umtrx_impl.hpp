@@ -198,6 +198,7 @@ private:
     std::complex<double> get_dc_offset_correction(const std::string &which) const;
     void set_dc_offset_correction(const std::string &which, const std::complex<double> &corr);
     double set_rx_freq(const std::string &which, const double freq);
+    uhd::freq_range_t get_rx_freq_range(const std::string &which) const;
 
     static double dc_offset_int2double(uint8_t corr);
     static uint8_t dc_offset_double2int(double corr);
