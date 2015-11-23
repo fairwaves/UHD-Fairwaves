@@ -1,3 +1,16 @@
+umtrx (1.0.5) trusty; urgency=low
+
+  * host: disable umtrx_fifo_ctrl cache of spi config
+  * host: Fix getters in umtrx_property_tree.py.
+  * debian: added firmware to package and umtrx_firmware script to handle it
+  * fpga: created axi stream controled spi core
+  * fpga: use axi stream spi core (still single dest)
+  * fpga: connect both spi settings drivers
+  * fpga: simplify spi setting regs with generate loop
+  * fpga: updated 4x ddc image for spi work
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Mon, 23 Nov 2015 15:51:56 +0300
+
 umtrx (1.0.4) unstable; urgency=low
 
   * Do not add 'g' to a git id when creating a version string.
