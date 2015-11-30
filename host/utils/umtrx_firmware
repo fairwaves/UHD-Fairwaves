@@ -1,6 +1,6 @@
 #!/bin/bash
 
-case word in
+case $1 in
     flash )
         umtrx_net_burner --addr=192.168.10.2 --fpga=/usr/share/umtrx/firmware/u2plus_umtrx_v2.bin --fw=/usr/share/umtrx/firmware/umtrx_txrx_uhd.bin --reset
         ;;
