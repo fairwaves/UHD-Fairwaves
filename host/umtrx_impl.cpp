@@ -275,7 +275,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////////
     //TODO delect umsel2 and setup _umsel2 sptr...
     //will be null when not available
-    _umsel2 = umsel2_ctrl::make(_ctrl/*peek*/, _ctrl/*spi*/);
+    _umsel2 = umsel2_ctrl::make(_ctrl/*peek*/, _ctrl/*spi*/, this->get_master_clock_rate());
 
     //register lock detect for umsel2
     if (_umsel2)
