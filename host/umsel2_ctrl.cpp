@@ -16,7 +16,12 @@
 
 #include "umsel2_ctrl.hpp"
 #include "umtrx_regs.hpp"
+#include <uhd/exception.hpp>
+#include <iostream>
+#include <cmath>
 #include <map>
+
+static const bool verbose = true;
 
 static const int REG0_NVALUE_SHIFT = 4;
 static const int REG0_NVALUE_MASK = 0xffff;
@@ -107,6 +112,38 @@ public:
     {
         this->init_synth(SPI_SS_AUX1);
         this->init_synth(SPI_SS_AUX2);
+
+        //--------- basic self tests, use the muxout to verify communication ----------//
+
+        //set mux out to ground in both cases
+        MODIFY_FIELD(_regs[SPI_SS_AUX1][4], 2, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        MODIFY_FIELD(_regs[SPI_SS_AUX2][4], 2, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        this->write_reg(SPI_SS_AUX1, 4);
+        this->write_reg(SPI_SS_AUX2, 4);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD1_IRQ_BIT) == 0);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD2_IRQ_BIT) == 0);
+
+        //set slave1 to muxout vdd
+        MODIFY_FIELD(_regs[SPI_SS_AUX1][4], 1, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        MODIFY_FIELD(_regs[SPI_SS_AUX2][4], 2, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        this->write_reg(SPI_SS_AUX1, 4);
+        this->write_reg(SPI_SS_AUX2, 4);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD1_IRQ_BIT) != 0);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD2_IRQ_BIT) == 0);
+
+        //set slave2 to muxout vdd
+        MODIFY_FIELD(_regs[SPI_SS_AUX1][4], 2, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        MODIFY_FIELD(_regs[SPI_SS_AUX2][4], 1, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        this->write_reg(SPI_SS_AUX1, 4);
+        this->write_reg(SPI_SS_AUX2, 4);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD1_IRQ_BIT) == 0);
+        UHD_ASSERT_THROW((_ctrl->peek32(U2_REG_IRQ_RB) & AUX_LD2_IRQ_BIT) != 0);
+
+        //restore lock detect out
+        MODIFY_FIELD(_regs[SPI_SS_AUX1][4], 6, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        MODIFY_FIELD(_regs[SPI_SS_AUX2][4], 6, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+        this->write_reg(SPI_SS_AUX1, 4);
+        this->write_reg(SPI_SS_AUX2, 4);
     }
 
     ~umsel2_ctrl_impl(void)
@@ -161,9 +198,23 @@ private:
         //muxout to lock detect
         MODIFY_FIELD(_regs[slaveno][4], 6, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
 
-        //write all registers (init sequence counts down)
-        for (int addr = 12; addr >= 0; addr--)
-            this->write_reg(slaveno, addr);
+        //refin single ended
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_REF_MODE_SHIFT);
+
+        //negative polarity
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_PD_POL_SHIFT);
+
+        //charge pump
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_CP_3STATE_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][4], 7/*2.5mA@5.1k*/, REG4_CURRENT_MASK, REG4_CURRENT_SHIFT);
+
+        //output power
+        MODIFY_FIELD(_regs[slaveno][6], 0/*-4dBm*/, REG6_PWR_MASK, REG6_PWR_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][6], 1, 0x1, REG6_PWR_EN_SHIFT);
+
+        //adc enable
+        MODIFY_FIELD(_regs[slaveno][10], 1, 0x1, REG10_ADC_EN_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][10], 1, 0x1, REG10_ADC_CONV_SHIFT);
     }
 
     void pd_synth(const int slaveno)
@@ -186,14 +237,117 @@ private:
             this->write_reg(slaveno, addr);
     }
 
-    double tune_synth(const int slaveno, const double freq)
+    double tune_synth(const int slaveno, const double RFout)
     {
-        
+        if (verbose) std::cout << " RFout " << (RFout/1e6) << " MHz" << std::endl;
+
+        //determine the reference out divider and VCOout
+        double VCOout = 0;
+        int RFOUTDIVSEL = 0;
+        while (true)
+        {
+            int RFOUTDIV = 1 << RFOUTDIVSEL;
+            VCOout = RFout*RFOUTDIV;
+            if (VCOout < 3.4e9) RFOUTDIVSEL++;
+            else break;
+        }
+        if (verbose) std::cout << " RFOUTDIV " << (1 << RFOUTDIVSEL) << "" << std::endl;
+        if (verbose) std::cout << " VCOout " << (VCOout/1e6) << " MHz" << std::endl;
+
+        //use doubler to increase the pfd frequency (good for noise performance)
+        int REFDBL = 1;
+        int REFDIV = 0;
+
+        //prescaler settings
+        int PRESCALER = 0; //4/5
+        const int Nmin = (PRESCALER==0)?23:75;
+
+        //calculate the R divider, N divider, and PDF frequency
+        double NDIV = 0;
+        int RDIV = 1;
+        double fPFD = 0;
+        while (true)
+        {
+            fPFD = _ref_clock*((1+REFDBL)/(RDIV*(1+REFDIV)));
+            NDIV = VCOout/fPFD;
+            if (NDIV < Nmin) RDIV++;
+            else break;
+        }
+        if (verbose) std::cout << " RDIV " << RDIV << "" << std::endl;
+        if (verbose) std::cout << " NDIV " << NDIV << "" << std::endl;
+        if (verbose) std::cout << " fPFD " << (fPFD/1e6) << " MHz" << std::endl;
+
+        //calculate the integer parts of the N divider
+        int NINT = int(NDIV);
+        double NFRAC = std::ldexp(NDIV-NINT, 24);
+        int FRAC1 = int(NFRAC);
+        int MOD2 = fPFD/5e6; //TODO MOD2 = fPFD/GCD(fPFD, fCHSP)
+        int FRAC2 = int((NFRAC-FRAC1)*MOD2);
+        if (verbose) std::cout << " NINT " << NINT << "" << std::endl;
+        if (verbose) std::cout << " FRAC1 " << FRAC1 << "" << std::endl;
+        if (verbose) std::cout << " MOD2 " << MOD2 << "" << std::endl;
+        if (verbose) std::cout << " FRAC2 " << FRAC2 << "" << std::endl;
+
+        //pick the maximum timeout for VCO band select
+        int TIMEOUT = 1023;
+
+        //VCO Band Division
+        //PFD/(band division × 16) < 150 kHz
+        int VCObanddiv = 1;
+        while (not(fPFD/(VCObanddiv*16) < 150e3)) VCObanddiv++;
+        if (verbose) std::cout << " VCObanddiv " << VCObanddiv << "" << std::endl;
+
+        //Automatic Level Calibration Timeout
+        //(Timeout × ALC Wait/PFD Frequency) > 50 μs
+        int ALC = 0;
+        while (not(((TIMEOUT * ALC)/fPFD) > 50e-6)) ALC++;
+        if (verbose) std::cout << " ALC " << ALC << "" << std::endl;
+
+        //Synthesizer Lock Timeout
+        //(Timeout × Synthesizer Lock Timeout/PFD Frequency) > 20 μs
+        int SLT = 0;
+        while (not(((TIMEOUT * SLT)/fPFD) > 20e-6)) SLT++;
+        if (verbose) std::cout << " SLT " << SLT << "" << std::endl;
+
+        //ADC Clock Divider (ADC_CLK_DIV)
+        //PFD/((ADC_CLK_DIV × 4) × 2) < 100 kHz
+        int ADC_CLK_DIV = 1;
+        while (not(fPFD/((ADC_CLK_DIV*4)*2) < 100e3)) ADC_CLK_DIV++;
+        if (verbose) std::cout << " ADC_CLK_DIV " << ADC_CLK_DIV << "" << std::endl;
+
+        //load registers
+        MODIFY_FIELD(_regs[slaveno][0], NINT, REG0_NVALUE_MASK, REG0_NVALUE_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][0], PRESCALER, 0x1, REG0_PRESCALER_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][0], 1/*enb*/, 0x1, REG0_AUTOCAL_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][1], FRAC1, REG1_MFRAC_MASK, REG1_MFRAC_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][2], MOD2, REG2_AUX_MOD_MASK, REG2_AUX_MOD_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][2], FRAC2, REG2_AUX_FRAC_MASK, REG2_AUX_FRAC_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][4], RDIV, REG4_R_MASK, REG4_R_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][4], REFDIV, 0x1, REG4_REF_DIV_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][4], REFDBL, 0x1, REG4_REF_DBL_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][6], RFOUTDIVSEL, REG6_RF_DIV_MASK, REG6_RF_DIV_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][9], SLT, REG9_SYNT_LOCK_TO_MASK, REG9_SYNT_LOCK_TO_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][9], ALC, REG9_AUTO_LVL_TO_MASK, REG9_AUTO_LVL_TO_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][9], TIMEOUT, REG9_TIMEOUT_MASK, REG9_TIMEOUT_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][9], VCObanddiv, REG9_VCO_BAND_MASK, REG9_VCO_BAND_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][10], ADC_CLK_DIV, REG10_ADC_CLK_DIV_MASK, REG10_ADC_CLK_DIV_SHIFT);
+
+        //write all registers
+        for (int addr = 12; addr >= 0; addr--)
+            this->write_reg(slaveno, addr);
+
+        //calculate actual tune value
+        double Nactual = NINT + std::ldexp(double(FRAC1 + FRAC2/double(MOD2)), -24);
+        double RFoutactual = (fPFD*Nactual)/(1 << RFOUTDIVSEL);
+        if (verbose) std::cout << " Nactual " << Nactual << "" << std::endl;
+        if (verbose) std::cout << " RFoutactual " << (RFoutactual/1e6) << " MHz" << std::endl;
+        return RFoutactual;
     }
 
     void write_reg(const int slaveno, const int addr)
     {
         int value = (_regs[slaveno][addr] & ~0xf) | addr;
+        if (verbose) std::cout << "write_reg[" << addr << "] = 0x" << std::hex << value << std::dec << std::endl;
         _spiface->write_spi(slaveno, uhd::spi_config_t::EDGE_RISE, value, 32);
     }
 

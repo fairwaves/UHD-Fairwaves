@@ -897,6 +897,15 @@ double umtrx_impl::set_rx_freq(const std::string &which, const double freq)
         const double target_umsel_freq = freq - actual_lms_freq;
         const double actual_umsel_freq = _umsel2->set_rx_freq((which=="A")?1:2, target_umsel_freq);
 
+        /*
+        std::cout << "target_total_freq " << freq/1e6 << " MHz" << std::endl;
+        std::cout << "target_lms_freq " << target_lms_freq/1e6 << " MHz" << std::endl;
+        std::cout << "actual_lms_freq " << actual_lms_freq/1e6 << " MHz" << std::endl;
+        std::cout << "target_umsel_freq " << target_umsel_freq/1e6 << " MHz" << std::endl;
+        std::cout << "actual_umsel_freq " << actual_umsel_freq/1e6 << " MHz" << std::endl;
+        std::cout << "actual_total_freq " << (actual_umsel_freq + actual_lms_freq)/1e6 << " MHz" << std::endl;
+        //*/
+
         return actual_umsel_freq + actual_lms_freq;
     }
     else
