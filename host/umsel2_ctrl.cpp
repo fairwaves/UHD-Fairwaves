@@ -17,6 +17,7 @@
 #include "umsel2_ctrl.hpp"
 #include "umtrx_regs.hpp"
 #include <uhd/exception.hpp>
+#include <boost/thread.hpp>
 #include <iostream>
 #include <cmath>
 #include <map>
@@ -195,26 +196,123 @@ private:
         _regs[slaveno][11] = REG11_RESERVED;
         _regs[slaveno][12] = REG12_RESERVED_VALUE << REG12_RESERVED_SHIFT;
 
+        //------------------------------------------------------------//
+        //----------------------- register 0 -------------------------//
+        //------------------------------------------------------------//
+
+        //autocal enabled
+        MODIFY_FIELD(_regs[slaveno][0], 1, 0x1, REG0_AUTOCAL_SHIFT);
+
+        //prescaler 4/5
+        MODIFY_FIELD(_regs[slaveno][0], 0, 0x1, REG0_PRESCALER_SHIFT);
+
+        //------------------------------------------------------------//
+        //----------------------- register 3 -------------------------//
+        //------------------------------------------------------------//
+
+        //sd load reset, phase resync, phase adjust = disabled
+        MODIFY_FIELD(_regs[slaveno][3], 0, 0x1, REG3_SD_LOAD_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][3], 0, 0x1, REG3_PHASE_RSYNC_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][3], 0, 0x1, REG3_PHASE_ADJ_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][3], 0, REG3_PHASE_MASK, REG3_PHASE_SHIFT);
+
+        //------------------------------------------------------------//
+        //----------------------- register 4 -------------------------//
+        //------------------------------------------------------------//
+
         //muxout to lock detect
         MODIFY_FIELD(_regs[slaveno][4], 6, REG4_MUXOUT_MASK, REG4_MUXOUT_SHIFT);
+
+        //double buff disabled
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_DBL_BUFF_SHIFT);
+
+        //charge pump current 0.31mA@5.1k
+        MODIFY_FIELD(_regs[slaveno][4], 0, REG4_CURRENT_MASK, REG4_CURRENT_SHIFT);
 
         //refin single ended
         MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_REF_MODE_SHIFT);
 
-        //negative polarity
-        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_PD_POL_SHIFT);
+        //mux level 3V
+        MODIFY_FIELD(_regs[slaveno][4], 1, 0x1, REG4_MUX_LOGIC_SHIFT);
 
-        //charge pump
+        //PD polarity positive
+        MODIFY_FIELD(_regs[slaveno][4], 1, 0x1, REG4_PD_POL_SHIFT);
+
+        //power down disabled
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_PWR_DOWN_SHIFT);
+
+        //charge-pump 3-state disabled
         MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_CP_3STATE_SHIFT);
-        MODIFY_FIELD(_regs[slaveno][4], 7/*2.5mA@5.1k*/, REG4_CURRENT_MASK, REG4_CURRENT_SHIFT);
 
-        //output power
-        MODIFY_FIELD(_regs[slaveno][6], 0/*-4dBm*/, REG6_PWR_MASK, REG6_PWR_SHIFT);
+        //counter reset disabled
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_CNTR_RESET);
+
+        //------------------------------------------------------------//
+        //----------------------- register 6 -------------------------//
+        //------------------------------------------------------------//
+
+        //feedback fundamental
+        MODIFY_FIELD(_regs[slaveno][6], 1, 0x1, REG6_FB_SEL_SHIFT);
+
+        //bleed current 7.5uA
+        MODIFY_FIELD(_regs[slaveno][6], 2, REG6_CP_BLEED_CURR_MASK, REG6_CP_BLEED_CURR_SHIFT);
+
+        //mute until lock detect disabled
+        MODIFY_FIELD(_regs[slaveno][6], 0, 0x1, REG6_MLTD_SHIFT);
+
+        //aux output disabled (-1dBm)
+        MODIFY_FIELD(_regs[slaveno][6], 0, 0x1, REG6_AUX_PWR_EN_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][6], 1, REG6_AUX_PWR_MASK, REG6_AUX_PWR_SHIFT);
+
+        //RF output power (5dBm)
         MODIFY_FIELD(_regs[slaveno][6], 1, 0x1, REG6_PWR_EN_SHIFT);
+        MODIFY_FIELD(_regs[slaveno][6], 3, REG6_PWR_MASK, REG6_PWR_SHIFT);
+
+        //negative bleed enabled
+        MODIFY_FIELD(_regs[slaveno][6], 1, 0x1, REG6_NEG_BLEED_SHIFT);
+
+        //gated bleed disabled
+        MODIFY_FIELD(_regs[slaveno][6], 0, 0x1, REG6_GATED_BLEED_SHIFT);
+
+        //------------------------------------------------------------//
+        //----------------------- register 7 -------------------------//
+        //------------------------------------------------------------//
+
+        //LE Sync REFin
+        MODIFY_FIELD(_regs[slaveno][7], 1, 0x1, REG7_LE_SYNC_SHIFT);
+
+        //LD Cycles
+        MODIFY_FIELD(_regs[slaveno][7], 1024, REG7_LD_CYCLE_CNT_MASK, REG7_LD_CYCLE_CNT_SHIFT);
+
+        //LOL Mode disabled
+        MODIFY_FIELD(_regs[slaveno][7], 0, 0x1, REG7_LOL_MODE_SHIFT);
+
+        //Frac-N LD Prec 5.0ns
+        MODIFY_FIELD(_regs[slaveno][7], 0, REG7_FRAC_N_PREC_MASK, REG7_FRAC_N_PREC_SHIFT);
+
+        //LD Mode Frac-N
+        MODIFY_FIELD(_regs[slaveno][7], 0, 0x1, REG7_LD_MODE_SHIFT);
+
+        //------------------------------------------------------------//
+        //----------------------- register 10 ------------------------//
+        //------------------------------------------------------------//
 
         //adc enable
         MODIFY_FIELD(_regs[slaveno][10], 1, 0x1, REG10_ADC_EN_SHIFT);
+
+        //adc conversion enable
         MODIFY_FIELD(_regs[slaveno][10], 1, 0x1, REG10_ADC_CONV_SHIFT);
+
+        //------------------------------------------------------------//
+        //----------------------- register 12 ------------------------//
+        //------------------------------------------------------------//
+
+        //phase resync 0
+        MODIFY_FIELD(_regs[slaveno][12], 0, REG12_RESYNC_CLOCK_MASK, REG12_RESYNC_CLOCK_SHIFT);
+
+        //write all registers
+        for (int addr = 12; addr >= 0; addr--)
+            this->write_reg(slaveno, addr);
     }
 
     void pd_synth(const int slaveno)
@@ -239,6 +337,7 @@ private:
 
     double tune_synth(const int slaveno, const double RFout)
     {
+        if (verbose) std::cout << " tune_synth(slaveno=" << slaveno << ")" << std::endl;
         if (verbose) std::cout << " RFout " << (RFout/1e6) << " MHz" << std::endl;
 
         //determine the reference out divider and VCOout
@@ -255,7 +354,7 @@ private:
         if (verbose) std::cout << " VCOout " << (VCOout/1e6) << " MHz" << std::endl;
 
         //use doubler to increase the pfd frequency (good for noise performance)
-        int REFDBL = 1;
+        int REFDBL = 0;
         int REFDIV = 0;
 
         //prescaler settings
@@ -281,15 +380,12 @@ private:
         int NINT = int(NDIV);
         double NFRAC = std::ldexp(NDIV-NINT, 24);
         int FRAC1 = int(NFRAC);
-        int MOD2 = fPFD/5e6; //TODO MOD2 = fPFD/GCD(fPFD, fCHSP)
+        int MOD2 = fPFD/1e6; //TODO MOD2 = fPFD/GCD(fPFD, fCHSP)
         int FRAC2 = int((NFRAC-FRAC1)*MOD2);
         if (verbose) std::cout << " NINT " << NINT << "" << std::endl;
         if (verbose) std::cout << " FRAC1 " << FRAC1 << "" << std::endl;
         if (verbose) std::cout << " MOD2 " << MOD2 << "" << std::endl;
         if (verbose) std::cout << " FRAC2 " << FRAC2 << "" << std::endl;
-
-        //pick the maximum timeout for VCO band select
-        int TIMEOUT = 1023;
 
         //VCO Band Division
         //PFD/(band division × 16) < 150 kHz
@@ -297,23 +393,26 @@ private:
         while (not(fPFD/(VCObanddiv*16) < 150e3)) VCObanddiv++;
         if (verbose) std::cout << " VCObanddiv " << VCObanddiv << "" << std::endl;
 
-        //Automatic Level Calibration Timeout
-        //(Timeout × ALC Wait/PFD Frequency) > 50 μs
-        int ALC = 0;
-        while (not(((TIMEOUT * ALC)/fPFD) > 50e-6)) ALC++;
-        if (verbose) std::cout << " ALC " << ALC << "" << std::endl;
-
-        //Synthesizer Lock Timeout
-        //(Timeout × Synthesizer Lock Timeout/PFD Frequency) > 20 μs
-        int SLT = 0;
-        while (not(((TIMEOUT * SLT)/fPFD) > 20e-6)) SLT++;
-        if (verbose) std::cout << " SLT " << SLT << "" << std::endl;
+        //Maximize ALC Wait (to reduce Timeout to minimize time) so
+        //that ALC Wait = 30 and Synthesizer Lock Timeout = 12.
+        int ALC = 30;
+        int SLT = 12;
+        int TIMEOUT = std::ceil((fPFD*50e-6)/ALC);
+        if (verbose) std::cout << " TIMEOUT " << TIMEOUT << "" << std::endl;
 
         //ADC Clock Divider (ADC_CLK_DIV)
         //PFD/((ADC_CLK_DIV × 4) × 2) < 100 kHz
+        /*
         int ADC_CLK_DIV = 1;
         while (not(fPFD/((ADC_CLK_DIV*4)*2) < 100e3)) ADC_CLK_DIV++;
         if (verbose) std::cout << " ADC_CLK_DIV " << ADC_CLK_DIV << "" << std::endl;
+        const long sleepUs = long(1e6*16*ADC_CLK_DIV/fPFD);
+        */
+
+        //Copied from the ADI GUI
+        //after trying to juxtapose the documentation with the GUI
+        int ADC_CLK_DIV = 65;
+        const long sleepUs = 160;
 
         //load registers
         MODIFY_FIELD(_regs[slaveno][0], NINT, REG0_NVALUE_MASK, REG0_NVALUE_SHIFT);
@@ -332,9 +431,24 @@ private:
         MODIFY_FIELD(_regs[slaveno][9], VCObanddiv, REG9_VCO_BAND_MASK, REG9_VCO_BAND_SHIFT);
         MODIFY_FIELD(_regs[slaveno][10], ADC_CLK_DIV, REG10_ADC_CLK_DIV_MASK, REG10_ADC_CLK_DIV_SHIFT);
 
-        //write all registers
-        for (int addr = 12; addr >= 0; addr--)
-            this->write_reg(slaveno, addr);
+        //write other registers
+        this->write_reg(slaveno, 6);
+        this->write_reg(slaveno, 9);
+        this->write_reg(slaveno, 10);
+
+        //FREQUENCY UPDATE SEQUENCE
+        MODIFY_FIELD(_regs[slaveno][4], 1, 0x1, REG4_CNTR_RESET);
+        this->write_reg(slaveno, 4);
+        this->write_reg(slaveno, 2);
+        this->write_reg(slaveno, 1);
+        MODIFY_FIELD(_regs[slaveno][0], 0, 0x1, REG0_AUTOCAL_SHIFT);
+        this->write_reg(slaveno, 0);
+        MODIFY_FIELD(_regs[slaveno][4], 0, 0x1, REG4_CNTR_RESET);
+        this->write_reg(slaveno, 4);
+        boost::this_thread::sleep(boost::posix_time::microseconds(sleepUs));
+        if (verbose) std::cout << " sleep time " << (sleepUs) << " us" << std::endl;
+        MODIFY_FIELD(_regs[slaveno][0], 1, 0x1, REG0_AUTOCAL_SHIFT);
+        this->write_reg(slaveno, 0);
 
         //calculate actual tune value
         double Nactual = NINT + std::ldexp(double(FRAC1 + FRAC2/double(MOD2)), -24);
