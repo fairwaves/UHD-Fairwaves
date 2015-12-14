@@ -367,7 +367,7 @@ private:
         double fPFD = 0;
         while (true)
         {
-            fPFD = _ref_clock*((1+REFDBL)/(RDIV*(1+REFDIV)));
+            fPFD = _ref_clock*(double(1+REFDBL)/double(RDIV*(1+REFDIV)));
             NDIV = VCOout/fPFD;
             if (NDIV < Nmin) RDIV++;
             else break;
@@ -455,6 +455,8 @@ private:
         double RFoutactual = (fPFD*Nactual)/(1 << RFOUTDIVSEL);
         if (verbose) std::cout << " Nactual " << Nactual << "" << std::endl;
         if (verbose) std::cout << " RFoutactual " << (RFoutactual/1e6) << " MHz" << std::endl;
+        if (verbose) boost::this_thread::sleep(boost::posix_time::microseconds(10000));
+        if (verbose) std::cout << " Locked " << this->get_locked((slaveno==SPI_SS_AUX1)?1:2).value << "" << std::endl;
         return RFoutactual;
     }
 
