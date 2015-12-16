@@ -31,3 +31,10 @@ Conflicts: umtrx-uhd
 Replaces: umtrx-uhd
 Description: Fairwaves UmTRX driver - UHD plugin module
  The industrial grade dual-channel wide-band SDR transceiver.
+
+Package: umtrx-dbg
+Section: debug
+Architecture: any
+Depends: umtrx, uhd-umtrx, ${misc:Depends}
+Description: Fairwaves UmTRX driver - debug symbols
+ The industrial grade dual-channel wide-band SDR transceiver.
