@@ -188,6 +188,7 @@ void umtrx_impl::client_query_handle1(const boost::property_tree::ptree &request
     {
         const std::string type = request.get("type", "");
         if (type.empty()) response.put("error", "type field not specified: BOOL, INT, DOUBLE, SENSOR, RANGE");
+        else if (type == "STRING") response.put("result", _tree->access<std::string>(path).get());
         else if (type == "BOOL") response.put("result", _tree->access<bool>(path).get());
         else if (type == "INT") response.put("result", _tree->access<int>(path).get());
         else if (type == "DOUBLE") response.put("result", _tree->access<double>(path).get());
@@ -219,6 +220,7 @@ void umtrx_impl::client_query_handle1(const boost::property_tree::ptree &request
     {
         const std::string type = request.get("type", "");
         if (type.empty()) response.put("error", "type field not specified: BOOL, INT, DOUBLE");
+        else if (type == "STRING") _tree->access<std::string>(path).set(request.get<std::string>("value"));
         else if (type == "BOOL") _tree->access<bool>(path).set(request.get<bool>("value"));
         else if (type == "INT") _tree->access<int>(path).set(request.get<int>("value"));
         else if (type == "DOUBLE") _tree->access<double>(path).set(request.get<double>("value"));
