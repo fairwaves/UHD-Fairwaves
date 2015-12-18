@@ -128,6 +128,10 @@ if (UNIX)
     list(APPEND UMTRX_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+#make boost property tree thread safe
+#http://stackoverflow.com/questions/8156948/is-boostproperty-treeptree-thread-safe
+add_definitions(-DBOOST_SPIRIT_THREADSAFE)
+
 ########################################################################
 # Helpful compiler flags
 ########################################################################
