@@ -35,7 +35,7 @@ class umsel2_ctrl
 public:
     typedef boost::shared_ptr<umsel2_ctrl> sptr;
 
-    static sptr make(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock);
+    static sptr make(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock, const bool verbose);
 
     /*!
      * Query the tune range.

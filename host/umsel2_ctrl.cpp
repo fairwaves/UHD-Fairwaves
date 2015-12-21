@@ -22,8 +22,6 @@
 #include <cmath>
 #include <map>
 
-static const bool verbose = true;
-
 static const int REG0_NVALUE_SHIFT = 4;
 static const int REG0_NVALUE_MASK = 0xffff;
 static const int REG0_PRESCALER_SHIFT = 20;
@@ -108,8 +106,8 @@ class umsel2_ctrl_impl : public umsel2_ctrl
 {
 public:
 
-    umsel2_ctrl_impl(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock):
-        _ctrl(ctrl), _spiface(spiface), _ref_clock(ref_clock)
+    umsel2_ctrl_impl(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock, const bool verbose):
+        _ctrl(ctrl), _spiface(spiface), _ref_clock(ref_clock), verbose(verbose)
     {
         this->init_synth(SPI_SS_AUX1);
         this->init_synth(SPI_SS_AUX2);
@@ -471,9 +469,10 @@ private:
     uhd::spi_iface::sptr _spiface;
     const double _ref_clock;
     std::map<int, std::map<int, int> > _regs;
+    const bool verbose;
 };
 
-umsel2_ctrl::sptr umsel2_ctrl::make(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock)
+umsel2_ctrl::sptr umsel2_ctrl::make(uhd::wb_iface::sptr ctrl, uhd::spi_iface::sptr spiface, const double ref_clock, const bool verbose)
 {
-    return umsel2_ctrl::sptr(new umsel2_ctrl_impl(ctrl, spiface, ref_clock));
+    return umsel2_ctrl::sptr(new umsel2_ctrl_impl(ctrl, spiface, ref_clock, verbose));
 }

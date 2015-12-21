@@ -273,9 +273,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     ////////////////////////////////////////////////////////////////////////
     // setup umsel2 control when present
     ////////////////////////////////////////////////////////////////////////
-    //TODO delect umsel2 and setup _umsel2 sptr...
-    //will be null when not available
-    _umsel2 = umsel2_ctrl::make(_ctrl/*peek*/, _ctrl/*spi*/, this->get_master_clock_rate());
+    const std::string detect_umsel = device_addr.get("umsel", "off");
+    if (detect_umsel != "off")
+    {
+        //TODO delect umsel2 automatically with I2C communication
+        const bool umsel_verbose = device_addr.has_key("umsel_verbose");
+        _umsel2 = umsel2_ctrl::make(_ctrl/*peek*/, _ctrl/*spi*/, this->get_master_clock_rate(), umsel_verbose);
+    }
 
     //register lock detect for umsel2
     if (_umsel2)
