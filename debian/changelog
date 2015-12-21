@@ -1,3 +1,12 @@
+umtrx (1.0.6) trusty; urgency=low
+
+  * host: make boost property tree thread safe
+  * host: support string type in JSON query
+  * debian: build now produces an additional package with debug symbols
+  * umtrx_firmware: fixed typo preventing it from working
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Mon, 21 Dec 2015 14:23:56 +0300
+
 umtrx (1.0.5) trusty; urgency=low
 
   * host: disable umtrx_fifo_ctrl cache of spi config
