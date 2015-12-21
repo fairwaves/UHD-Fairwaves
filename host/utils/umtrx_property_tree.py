@@ -59,6 +59,10 @@ class umtrx_property_tree:
     self._send_request('GET', path, value_type='RANGE')
     return self._recv_response()
 
+  def query_string_raw(self, path):
+    self._send_request('GET', path, value_type='STRING')
+    return self._recv_response()
+
   #
   # Getters (value)
   #
@@ -83,6 +87,10 @@ class umtrx_property_tree:
     res = self.query_range_raw(path)
     return res['result']
 
+  def query_string_value(self, path):
+    res = self.query_string_raw(path)
+    return res['result']
+
   #
   # Setters
   #
@@ -97,6 +105,10 @@ class umtrx_property_tree:
 
   def set_double(self, path, val):
     self._send_request('SET', path, value_type='DOUBLE', value=val)
+    return self._recv_response()
+
+  def set_string(self, path, val):
+    self._send_request('SET', path, value_type='STRING', value=val)
     return self._recv_response()
 
   #
