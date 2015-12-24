@@ -119,8 +119,17 @@ private:
         UMTRX_VER_2_3_1
     };
 
+    enum umtrx_dcdc_ver {
+        DCDC_VER_2_3_1_OLD = 0,
+        DCDC_VER_2_3_1_NEW = 1,
+
+        DCDC_VER_COUNT //Should be the last
+    };
+
     // hardware revision
     umtrx_hw_rev _hw_rev;
+    int _hw_dcdc_ver;
+
     unsigned _pll_div;
     const char* get_hw_rev() const;
 
@@ -129,10 +138,7 @@ private:
     static const int UMTRX_VGA2_DEF;
     static const int UMTRX_VGA2_MIN;
 
-    // Conversion table for converting DCDC_R values to actual voltages.
-    static const std::vector<double> _dcdc_val_to_volt;
-    // Find a dcdc_r value to approximate requested Vout voltage
-    static int volt_to_dcdc_r(double v);
+    static const double _dcdc_val_to_volt[umtrx_impl::DCDC_VER_COUNT][256];
 
     ads1015_ctrl _sense_pwr;
     ads1015_ctrl _sense_dc;
@@ -183,6 +189,7 @@ private:
     void set_tx_fe_corrections(const std::string &mb, const std::string &board, const double);
     void set_tcxo_dac(const umtrx_iface::sptr &, const uint16_t val);
     void detect_hw_rev(const uhd::fs_path &mb_path);
+    void detect_hw_dcdc_ver(const uhd::fs_path &mb_path);
     void commit_pa_state();
     void set_enpa1(bool en);
     void set_enpa2(bool en);
@@ -199,6 +206,9 @@ private:
     void set_dc_offset_correction(const std::string &which, const std::complex<double> &corr);
     double set_rx_freq(const std::string &which, const double freq);
     uhd::freq_range_t get_rx_freq_range(const std::string &which) const;
+
+    // Find a dcdc_r value to approximate requested Vout voltage
+    int volt_to_dcdc_r(double v);
 
     static double dc_offset_int2double(uint8_t corr);
     static uint8_t dc_offset_double2int(double corr);

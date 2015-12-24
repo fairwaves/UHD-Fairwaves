@@ -38,8 +38,9 @@ const int umtrx_impl::UMTRX_VGA1_DEF = -20;
 const int umtrx_impl::UMTRX_VGA2_DEF = 22;
 const int umtrx_impl::UMTRX_VGA2_MIN = 0;
 
-static const double _dcdc_val_to_volt_init[256] =
+const double umtrx_impl::_dcdc_val_to_volt[umtrx_impl::DCDC_VER_COUNT][256] =
 {
+  {
      9.38,  9.38,  9.40,  9.42,  9.42,  9.44,  9.46,  9.46,  9.48,  9.50, // 10
      9.50,  9.52,  9.54,  9.54,  9.56,  9.58,  9.58,  9.60,  9.60,  9.62, // 20
      9.64,  9.66,  9.66,  9.68,  9.70,  9.70,  9.72,  9.74,  9.76,  9.76, // 30
@@ -66,8 +67,35 @@ static const double _dcdc_val_to_volt_init[256] =
     20.02, 20.20, 20.38, 20.58, 20.76, 20.96, 21.18, 21.38, 21.60, 21.82, // 240
     21.92, 22.16, 22.40, 22.66, 22.92, 23.18, 23.46, 23.74, 24.02, 24.30, // 250
     24.62, 24.94, 25.28, 25.62, 25.98, 26.34
+  },{
+    4.84,  4.84,  4.86,  4.88,  4.88,  4.90,  4.92,  4.94,  4.94,  4.96,  // 10
+    4.98,  5.00,  5.02,  5.02,  5.04,  5.06,  5.06,  5.08,  5.10,  5.12,  // 20
+    5.12,  5.14,  5.16,  5.18,  5.20,  5.22,  5.22,  5.24,  5.26,  5.28,  // 30
+    5.30,  5.32,  5.32,  5.34,  5.36,  5.38,  5.40,  5.42,  5.44,  5.46,  // 40
+    5.48,  5.50,  5.50,  5.52,  5.54,  5.56,  5.58,  5.60,  5.62,  5.64,  // 50
+    5.66,  5.68,  5.70,  5.72,  5.74,  5.76,  5.78,  5.80,  5.82,  5.86,  // 60
+    5.88,  5.90,  5.92,  5.94,  5.96,  5.98,  6.00,  6.02,  6.04,  6.08,  // 70
+    6.10,  6.12,  6.14,  6.16,  6.20,  6.22,  6.24,  6.28,  6.30,  6.32,  // 80
+    6.34,  6.36,  6.40,  6.42,  6.44,  6.48,  6.50,  6.54,  6.56,  6.58,  // 90
+    6.62,  6.64,  6.68,  6.70,  6.74,  6.76,  6.78,  6.82,  6.84,  6.88,  // 100
+    6.92,  6.94,  6.98,  7.00,  7.04,  7.08,  7.12,  7.14,  7.18,  7.22,  // 110
+    7.26,  7.28,  7.30,  7.34,  7.38,  7.42,  7.46,  7.50,  7.54,  7.58,  // 120
+    7.62,  7.66,  7.70,  7.74,  7.78,  7.82,  7.86,  7.90,  7.92,  7.98,  // 130
+    8.02,  8.06,  8.10,  8.16,  8.20,  8.26,  8.30,  8.34,  8.40,  8.44,  // 140
+    8.50,  8.54,  8.60,  8.66,  8.68,  8.74,  8.78,  8.84,  8.90,  8.96,  // 150
+    9.02,  9.08,  9.14,  9.20,  9.26,  9.32,  9.38,  9.44,  9.52,  9.58,  // 160
+    9.62,  9.68,  9.76,  9.82,  9.90,  9.96,  10.04, 10.12, 10.18, 10.26, // 170
+    10.34, 10.42, 10.50, 10.58, 10.68, 10.76, 10.80, 10.88, 10.98, 11.08, // 180
+    11.16, 11.26, 11.36, 11.44, 11.54, 11.64, 11.74, 11.86, 11.96, 12.08, // 190
+    12.18, 12.30, 12.36, 12.48, 12.60, 12.72, 12.84, 12.96, 13.10, 13.24, // 200
+    13.36, 13.50, 13.64, 13.78, 13.94, 14.08, 14.24, 14.40, 14.48, 14.66, // 210
+    14.82, 15.00, 15.18, 15.36, 15.54, 15.74, 15.92, 16.12, 16.32, 16.54, // 220
+    16.76, 16.98, 17.22, 17.44, 17.58, 17.82, 18.08, 18.34, 18.62, 18.90, // 230
+    19.20, 19.48, 19.80, 20.10, 20.44, 20.78, 21.12, 21.50, 21.88, 22.26, // 240
+    22.48, 22.90, 23.34, 23.80, 24.26, 24.74, 25.26, 25.76, 26.32, 26.86, // 250
+    27.48, 28.12, 28.78, 29.50, 29.50, 29.50
+  }
 };
-const std::vector<double> umtrx_impl::_dcdc_val_to_volt(_dcdc_val_to_volt_init, &_dcdc_val_to_volt_init[256]);
 
 /***********************************************************************
  * Property tree "alias" function
@@ -269,6 +297,23 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     detect_hw_rev(mb_path);
     _tree->create<std::string>(mb_path / "hwrev").set(get_hw_rev());
     UHD_MSG(status) << "Detected UmTRX " << get_hw_rev() << std::endl;
+
+    _hw_dcdc_ver = device_addr.cast<int>("dcdc_ver", -1);
+    if (_hw_dcdc_ver < 0)
+    {
+        detect_hw_dcdc_ver(mb_path);
+    } else {
+        if (_hw_dcdc_ver >= DCDC_VER_COUNT)
+        {
+            UHD_MSG(status) << "Unknown UmTRX DCDC version " << _hw_dcdc_ver << std::endl;
+            _hw_dcdc_ver = DCDC_VER_2_3_1_OLD;
+        }
+        if (_hw_dcdc_ver != DCDC_VER_2_3_1_OLD)
+        {
+            UHD_MSG(status) << "Using DCDC version " << _hw_dcdc_ver << std::endl;
+        }
+    }
+    _tree->create<int>(mb_path / "hwdcdc_ver").set(_hw_dcdc_ver);
 
     ////////////////////////////////////////////////////////////////////////
     // setup umsel2 control when present
@@ -733,12 +778,13 @@ umtrx_impl::~umtrx_impl(void)
 
 int umtrx_impl::volt_to_dcdc_r(double v)
 {
-    if (v <= _dcdc_val_to_volt[0])
+    if (v <= _dcdc_val_to_volt[_hw_dcdc_ver][0])
         return 0;
-    else if (v >= _dcdc_val_to_volt[255])
+    else if (v >= _dcdc_val_to_volt[_hw_dcdc_ver][255])
         return 255;
     else
-        return std::lower_bound(_dcdc_val_to_volt.begin(), _dcdc_val_to_volt.end(), v) - _dcdc_val_to_volt.begin();
+        return std::lower_bound(&_dcdc_val_to_volt[_hw_dcdc_ver][0], &_dcdc_val_to_volt[_hw_dcdc_ver][256], v) -
+                                &_dcdc_val_to_volt[_hw_dcdc_ver][0];
 }
 
 void umtrx_impl::set_pa_dcdc_r(uint8_t val)
@@ -1124,4 +1170,35 @@ const char* umtrx_impl::get_hw_rev() const
     case UMTRX_VER_2_3_1:  return "2.3.1";
     default:               return "[unknown]";
     }
+}
+
+void umtrx_impl::detect_hw_dcdc_ver(const uhd::fs_path &)
+{
+    _hw_dcdc_ver = DCDC_VER_2_3_1_OLD;
+    if (_hw_rev < UMTRX_VER_2_3_1)
+    {
+        return;
+    }
+
+    uint8_t old = _pa_dcdc_r;
+    bool old_pa_nlow = _pa_nlow;
+
+    set_nlow(true);
+    set_pa_dcdc_r(0);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+    double v_actual = read_dc_v("DCOUT").to_real();
+
+    double err_min = std::abs(v_actual - _dcdc_val_to_volt[0][0]);
+    for (unsigned j = 1; j < DCDC_VER_COUNT; ++j) {
+       double err = std::abs(v_actual - _dcdc_val_to_volt[j][0]);
+       if (err < err_min) {
+           err_min = err;
+           _hw_dcdc_ver = j;
+       }
+    }
+    set_pa_dcdc_r(old);
+    set_nlow(old_pa_nlow);
+
+    UHD_MSG(status) << "Detected UmTRX DCDC ver. " << _hw_dcdc_ver
+                    << " (err: " << err_min << ")" << std::endl;
 }
