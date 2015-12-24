@@ -58,6 +58,7 @@ list(APPEND UMTRX_SOURCES
     cores/time64_core_200.cpp
     cores/validate_subdev_spec.cpp
     cores/apply_corrections.cpp
+    umsel2_ctrl.cpp
 )
 
 ########################################################################

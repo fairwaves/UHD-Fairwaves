@@ -31,6 +31,7 @@
 #include "ads1015_ctrl.hpp"
 #include "tmp102_ctrl.hpp"
 #include "power_amp.hpp"
+#include "umsel2_ctrl.hpp"
 #include <uhd/usrp/mboard_eeprom.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/device.hpp>
@@ -152,6 +153,7 @@ private:
     std::string _device_ip_addr;
     umtrx_iface::sptr _iface;
     umtrx_fifo_ctrl::sptr _ctrl;
+    umsel2_ctrl::sptr _umsel2;
 
     //controls for perifs
     uhd::dict<std::string, lms6002d_ctrl::sptr> _lms_ctrl;
@@ -195,6 +197,8 @@ private:
     uhd::transport::zero_copy_if::sptr make_xport(const size_t which, const uhd::device_addr_t &args);
     std::complex<double> get_dc_offset_correction(const std::string &which) const;
     void set_dc_offset_correction(const std::string &which, const std::complex<double> &corr);
+    double set_rx_freq(const std::string &which, const double freq);
+    uhd::freq_range_t get_rx_freq_range(const std::string &which) const;
 
     static double dc_offset_int2double(uint8_t corr);
     static uint8_t dc_offset_double2int(double corr);

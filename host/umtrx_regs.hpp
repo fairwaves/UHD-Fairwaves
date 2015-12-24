@@ -104,6 +104,9 @@ localparam SR_SPI_CORE = 185;   // 3
 #define U2_REG_TIME64_HI_RB_PPS READBACK_BASE + 4*14
 #define U2_REG_TIME64_LO_RB_PPS READBACK_BASE + 4*15
 
+#define AUX_LD1_IRQ_BIT (1 << 14)
+#define AUX_LD2_IRQ_BIT (1 << 15)
+
 /////////////////////////////////////////////////
 // LMS regs
 ////////////////////////////////////////////////
