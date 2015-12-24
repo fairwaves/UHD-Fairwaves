@@ -145,6 +145,9 @@ private:
     tmp102_ctrl  _temp_side_a;
     tmp102_ctrl  _temp_side_b;
 
+    // Optimal device specific value
+    int _umtrx_vga2_def;
+
     //PA control
     bool _pa_nlow;
     bool _pa_en1;

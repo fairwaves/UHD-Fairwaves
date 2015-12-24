@@ -207,6 +207,7 @@ static mtu_result_t determine_mtu(const std::string &addr, const mtu_result_t &u
  **********************************************************************/
 umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 {
+    _umtrx_vga2_def = device_addr.cast<int>("lmsvga2", UMTRX_VGA2_DEF);
     _device_ip_addr = device_addr["addr"];
     UHD_MSG(status) << "UmTRX driver version: " << UMTRX_VERSION << std::endl;
     UHD_MSG(status) << "Opening a UmTRX device... " << _device_ip_addr << std::endl;
@@ -804,7 +805,7 @@ uhd::gain_range_t umtrx_impl::generate_tx_power_range(const std::string &which) 
     // maintain high signal quality.
     uhd::gain_range_t pa_range = generate_pa_power_range(which);
 //    UHD_MSG(status) << "Original PA output power range: " << pa_range.to_pp_string() << std::endl;
-    uhd::gain_range_t vga_range(pa_range.start() - (UMTRX_VGA2_DEF-UMTRX_VGA2_MIN), pa_range.start()-1, 1.0);
+    uhd::gain_range_t vga_range(pa_range.start() - (_umtrx_vga2_def-UMTRX_VGA2_MIN), pa_range.start()-1, 1.0);
     uhd::gain_range_t res_range(vga_range);
     res_range.insert(res_range.end(), pa_range.begin(), pa_range.end());
 //    UHD_MSG(status) << "Generated Tx output power range: " << res_range.to_pp_string() << std::endl;
@@ -830,16 +831,16 @@ double umtrx_impl::set_tx_power(double power, const std::string &which)
 
     if (power >= min_pa_power)
     {
-        UHD_MSG(status) << "Setting Tx power using PA (VGA2=" << UMTRX_VGA2_DEF << ", PA=" << power << ")" << std::endl;
+        UHD_MSG(status) << "Setting Tx power using PA (VGA2=" << _umtrx_vga2_def << ", PA=" << power << ")" << std::endl;
         // Set VGA2 to the recommended value and use PA to control Tx power
-        _lms_ctrl[which]->set_tx_gain(UMTRX_VGA2_DEF, "VGA2");
+        _lms_ctrl[which]->set_tx_gain(_umtrx_vga2_def, "VGA2");
         actual_power = set_pa_power(power, which);
     } else {
-        double vga2_gain = UMTRX_VGA2_DEF - (min_pa_power-power);
+        double vga2_gain = _umtrx_vga2_def - (min_pa_power-power);
         UHD_MSG(status) << "Setting Tx power using VGA2 (VGA2=" << vga2_gain << ", PA=" << min_pa_power << ")" << std::endl;
         // Set PA output power to minimum and use VGA2 to control Tx power
         actual_power = _lms_ctrl[which]->set_tx_gain(vga2_gain, "VGA2");
-        actual_power = set_pa_power(min_pa_power, which) - (UMTRX_VGA2_DEF-actual_power);
+        actual_power = set_pa_power(min_pa_power, which) - (_umtrx_vga2_def-actual_power);
     }
 
     return actual_power;
