@@ -574,7 +574,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         } else {
             // Set LMS internal VGA1 gain to optimal value
             // VGA2 will be set in the set_tx_power()
-            ctrl->set_tx_gain(UMTRX_VGA1_DEF, "VGA1");
+            const int vga1 = device_addr.cast<int>("lmsvga1", UMTRX_VGA1_DEF);
+            ctrl->set_tx_gain(vga1, "VGA1");
             _tx_power_range[fe_name] = generate_tx_power_range(fe_name);
 
             // Use PA control to control output power
