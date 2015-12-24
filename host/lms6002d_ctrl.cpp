@@ -395,6 +395,10 @@ protected:
         boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_i_int(%d)\n", offset);
         lms.set_tx_vga1dc_i_int(offset);
+        uint8_t old = lms.get_tx_vga1dc_i_int();
+        if (offset != old) {
+            lms.dump();
+        }
         return offset;
     }
 
@@ -402,6 +406,10 @@ protected:
         boost::recursive_mutex::scoped_lock l(_mutex);
         if (verbosity>0) printf("lms6002d_ctrl_impl::set_tx_vga1dc_q_int(%d)\n", offset);
         lms.set_tx_vga1dc_q_int(offset);
+        uint8_t old = lms.get_tx_vga1dc_q_int();
+        if (offset != old) {
+            lms.dump();
+        }
         return offset;
     }
 
