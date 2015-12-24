@@ -1112,7 +1112,7 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
         pa_low = pa_low_env;
     }
     if (pa_low.empty())
-        _pa_nlow = false;
+        _pa_nlow = true; //Turn off Vin bypass by default
     else
         _pa_nlow = (boost::lexical_cast<int>(pa_low) == 0);
 
