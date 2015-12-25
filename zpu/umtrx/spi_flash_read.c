@@ -29,7 +29,7 @@ spi_flash_rdid(void)
 
 size_t spi_flash_log2_memory_size(void)
 {
-    static size_t _spi_flash_log2_memory_size = 0;
+    size_t _spi_flash_log2_memory_size = 0;
     if (_spi_flash_log2_memory_size == 0){
         uint32_t id = spi_flash_rdid();
         uint8_t type = (id >> 8) & 0xff;
