@@ -304,15 +304,8 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     {
         detect_hw_dcdc_ver(mb_path);
     } else {
-        if (_hw_dcdc_ver >= DCDC_VER_COUNT)
-        {
-            UHD_MSG(status) << "Unknown UmTRX DCDC version " << _hw_dcdc_ver << std::endl;
-            _hw_dcdc_ver = DCDC_VER_2_3_1_OLD;
-        }
-        if (_hw_dcdc_ver != DCDC_VER_2_3_1_OLD)
-        {
-            UHD_MSG(status) << "Using DCDC version " << _hw_dcdc_ver << std::endl;
-        }
+        UHD_ASSERT_THROW(_hw_dcdc_ver < DCDC_VER_COUNT);
+        UHD_MSG(status) << "Using DCDC version " << _hw_dcdc_ver << std::endl;
     }
     _tree->create<int>(mb_path / "hwdcdc_ver").set(_hw_dcdc_ver);
 
