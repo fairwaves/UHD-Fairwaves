@@ -1,3 +1,21 @@
+umtrx (1.0.8) trusty; urgency=low
+
+  * host: integrate support class for umsel2
+  * host: integrate support class for umsel2
+  * host: implement selection for umsel2 + lms
+  * host: umsel2 register work for adf355-2
+  * host: umsel2 adf355-2 tuning algorithm
+  * host: freq update sequence, copied registers from gui
+  * host: print locked for debugging
+  * umsel: device args for enabling umsel2 and verbose
+  * add lmsvga1 device args parameter to override VGA1_DEF
+  * autodetect DCDC translation version on startup
+  * add lmsvga2 args parameter to override UMTRX_VGA2_DEF
+  * turn off vin bypass to amplifiers by default
+  * throw exception if incorrect DCDC version were provided
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Mon, 28 Dec 2015 15:07:56 +0300
+
 umtrx (1.0.7) trusty; urgency=low
 
   * host: Properly handle most corner cases in VSWR calculations
