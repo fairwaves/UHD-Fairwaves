@@ -1,3 +1,13 @@
+umtrx (1.0.7) trusty; urgency=low
+
+  * host: Properly handle most corner cases in VSWR calculations
+  * host: Add "STRING" to umtrx_monitor error output
+  * host: Add string getters/setters to the Python property tree library
+  * host: Checking in umtrx_query_versions.py
+  * debian: packaged python utils in host/utils
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Mon, 25 Dec 2015 19:35:56 +0100
+
 umtrx (1.0.6) trusty; urgency=low
 
   * host: make boost property tree thread safe
