@@ -1,5 +1,1 @@
-Voltages1     PR1:GAUGE:0:32, PR2:GAUGE:0:32, PF1:GAUGE:0:32, PF2:GAUGE:0:32 
-Voltages2     Zero:GAUGE:0:32, Vin:GAUGE:0:32, VinPA:GAUGE:0:32, DCOUT:GAUGE:0:32
-Temperature   A:GAUGE:-40:120, B:GAUGE:-40:120
-ReturnLoss    C1:GAUGE:0:32, C2:GAUGE:0:32
-VSWR          C1:GAUGE:0:32, C2:GAUGE:0:32
+sensor        value:GAUGE:U:U
