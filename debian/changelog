@@ -1,3 +1,9 @@
+umtrx (1.0.10) trusty; urgency=low
+
+  * collectd: rewritten counter collection plugin
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Mon, 21 Mar 2016 19:21:00 +0100
+
 umtrx (1.0.9) trusty; urgency=low
 
   * collectd: osmo-nitb counter collection plugin
