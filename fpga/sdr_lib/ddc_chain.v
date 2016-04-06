@@ -59,7 +59,11 @@ module ddc_chain
    reg [WIDTH-1:0]  rx_fe_i_mux, rx_fe_q_mux;
    wire        realmode;
    wire        swap_iq;
-   
+
+   reg idle_rst;
+   always @(posedge clk)
+      idle_rst <= (rst | ~ddc_enb);
+
    setting_reg #(.my_addr(BASE+0)) sr_0
      (.clk(clk),.rst(rst),.strobe(set_stb),.addr(set_addr),
       .in(set_data),.out(phase_inc),.changed());
@@ -92,9 +96,7 @@ module ddc_chain
 
    // NCO
    always @(posedge clk)
-     if(rst)
-       phase <= 0;
-     else if(~ddc_enb)
+     if(idle_rst)
        phase <= 0;
      else
        phase <= phase + phase_inc;
@@ -117,36 +119,36 @@ module ddc_chain
      (.clk(clk), .in(q_cordic), .strobe_in(1'b1), .out(q_cordic_clip));
 
    // CIC decimator  24 bit I/O
-   cic_strober cic_strober(.clock(clk),.reset(rst),.enable(ddc_enb),.rate(cic_decim_rate),
+   cic_strober cic_strober(.clock(clk),.reset(idle_rst),.enable(ddc_enb),.rate(cic_decim_rate),
 			   .strobe_fast(1),.strobe_slow(strobe_cic) );
 
    cic_decim #(.bw(WIDTH))
-     decim_i (.clock(clk),.reset(rst),.enable(ddc_enb),
+     decim_i (.clock(clk),.reset(idle_rst),.enable(ddc_enb),
 	      .rate(cic_decim_rate),.strobe_in(1'b1),.strobe_out(strobe_cic),
 	      .signal_in(i_cordic_clip),.signal_out(i_cic));
    
    cic_decim #(.bw(WIDTH))
-     decim_q (.clock(clk),.reset(rst),.enable(ddc_enb),
+     decim_q (.clock(clk),.reset(idle_rst),.enable(ddc_enb),
 	      .rate(cic_decim_rate),.strobe_in(1'b1),.strobe_out(strobe_cic),
 	      .signal_in(q_cordic_clip),.signal_out(q_cic));
 
    // First (small) halfband  24 bit I/O
    small_hb_dec #(.WIDTH(WIDTH)) small_hb_i
-     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.run(ddc_enb),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb1),.run(ddc_enb),
       .stb_in(strobe_cic),.data_in(i_cic),.stb_out(strobe_hb1),.data_out(i_hb1));
    
    small_hb_dec #(.WIDTH(WIDTH)) small_hb_q
-     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.run(ddc_enb),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb1),.run(ddc_enb),
       .stb_in(strobe_cic),.data_in(q_cic),.stb_out(),.data_out(q_hb1));
 
    // Second (large) halfband  24 bit I/O
    wire [8:0]  cpi_hb = enable_hb1 ? {cic_decim_rate,1'b0} : {1'b0,cic_decim_rate};
    hb_dec #(.WIDTH(WIDTH)) hb_i
-     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.run(ddc_enb),.cpi(cpi_hb),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb2),.run(ddc_enb),.cpi(cpi_hb),
       .stb_in(strobe_hb1),.data_in(i_hb1),.stb_out(strobe_hb2),.data_out(i_hb2));
 
    hb_dec #(.WIDTH(WIDTH)) hb_q
-     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.run(ddc_enb),.cpi(cpi_hb),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb2),.run(ddc_enb),.cpi(cpi_hb),
       .stb_in(strobe_hb1),.data_in(q_hb1),.stb_out(),.data_out(q_hb2));
 
    //scalar operation (gain of 6 bits)

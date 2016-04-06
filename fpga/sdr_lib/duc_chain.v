@@ -46,6 +46,10 @@ module duc_chain
    wire [3:0]  tx_femux_a, tx_femux_b;
    wire        enable_hb1, enable_hb2;
    wire        rate_change;
+
+   reg idle_rst;
+   always @(posedge clk)
+      idle_rst <= (rst | ~duc_enb);
    
    setting_reg #(.my_addr(BASE+0)) sr_0
      (.clk(clk),.rst(rst),.strobe(set_stb),.addr(set_addr),
@@ -66,13 +70,13 @@ module duc_chain
    reg 	       strobe_hb2 = 1;
    
    cic_strober #(.WIDTH(8))
-     cic_strober(.clock(clk),.reset(rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
+     cic_strober(.clock(clk),.reset(idle_rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
 		 .strobe_fast(1),.strobe_slow(strobe_cic_pre) );
    cic_strober #(.WIDTH(2))
-     hb2_strober(.clock(clk),.reset(rst),.enable(duc_enb & ~rate_change),.rate(enable_hb2 ? 2 : 1),
+     hb2_strober(.clock(clk),.reset(idle_rst),.enable(duc_enb & ~rate_change),.rate(enable_hb2 ? 2 : 1),
 		 .strobe_fast(strobe_cic_pre),.strobe_slow(strobe_hb2_pre) );
    cic_strober #(.WIDTH(2))
-     hb1_strober(.clock(clk),.reset(rst),.enable(duc_enb & ~rate_change),.rate(enable_hb1 ? 2 : 1),
+     hb1_strober(.clock(clk),.reset(idle_rst),.enable(duc_enb & ~rate_change),.rate(enable_hb1 ? 2 : 1),
 		 .strobe_fast(strobe_hb2_pre),.strobe_slow(strobe_hb1_pre) );
    
    always @(posedge clk) strobe_hb1 <= strobe_hb1_pre;
@@ -81,9 +85,7 @@ module duc_chain
 
    // NCO
    always @(posedge clk)
-     if(rst)
-       phase <= 0;
-     else if(~duc_enb)
+     if(idle_rst)
        phase <= 0;
      else
        phase <= phase + phase_inc;
@@ -102,24 +104,24 @@ module duc_chain
    //   but the default case inside hb_interp handles this
    
    hb_interp #(.IWIDTH(18),.OWIDTH(18),.ACCWIDTH(WIDTH)) hb_interp_i
-     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in({bb_i, 2'b0}),.stb_out(strobe_hb2),.data_out(hb1_i));
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in({bb_i, 2'b0}),.stb_out(strobe_hb2),.data_out(hb1_i));
    hb_interp #(.IWIDTH(18),.OWIDTH(18),.ACCWIDTH(WIDTH)) hb_interp_q
-     (.clk(clk),.rst(rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in({bb_q, 2'b0}),.stb_out(strobe_hb2),.data_out(hb1_q));
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb1),.cpo(cpo),.stb_in(strobe_hb1),.data_in({bb_q, 2'b0}),.stb_out(strobe_hb2),.data_out(hb1_q));
    
    small_hb_int #(.WIDTH(18)) small_hb_interp_i
-     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_i),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_i),
       .output_rate(interp_rate),.stb_out(strobe_cic),.data_out(hb2_i));
    small_hb_int #(.WIDTH(18)) small_hb_interp_q
-     (.clk(clk),.rst(rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_q),
+     (.clk(clk),.rst(idle_rst),.bypass(~enable_hb2),.stb_in(strobe_hb2),.data_in(hb1_q),
       .output_rate(interp_rate),.stb_out(strobe_cic),.data_out(hb2_q));
    
    cic_interp  #(.bw(18),.N(4),.log2_of_max_rate(7))
-     cic_interp_i(.clock(clk),.reset(rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
+     cic_interp_i(.clock(clk),.reset(idle_rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
 		  .strobe_in(strobe_cic),.strobe_out(1),
 		  .signal_in(hb2_i),.signal_out(i_interp));
    
    cic_interp  #(.bw(18),.N(4),.log2_of_max_rate(7))
-     cic_interp_q(.clock(clk),.reset(rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
+     cic_interp_q(.clock(clk),.reset(idle_rst),.enable(duc_enb & ~rate_change),.rate(interp_rate),
 		  .strobe_in(strobe_cic),.strobe_out(1),
 		  .signal_in(hb2_q),.signal_out(q_interp));
 
