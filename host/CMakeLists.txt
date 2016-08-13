@@ -151,7 +151,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 ########################################################################
-# Look for device filter
+# UHD compatibility checks
 ########################################################################
 message(STATUS "Checking uhd::device::register_device() API...")
 message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/device.hpp...")
@@ -162,6 +162,19 @@ if ("${has_device_filter}" STREQUAL "-1")
 else()
     add_definitions(-DUHD_HAS_DEVICE_FILTER)
     message(STATUS "  has filter API")
+endif()
+
+message(STATUS "Checking uhd::property::set_publisher() API...")
+message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/property_tree.hpp...")
+file(READ ${UHD_INCLUDE_DIRS}/uhd/property_tree.hpp property_tree_hpp)
+string(FIND "${property_tree_hpp}" "set_publisher" has_set_publisher)
+if ("${has_set_publisher}" STREQUAL "-1")
+    message(STATUS "  missing set_publisher() API")
+else()
+    add_definitions(-Dpublish=set_publisher)
+    add_definitions(-Dsubscribe=add_desired_subscriber)
+    add_definitions(-Dcoerce=add_coerced_subscriber)
+    message(STATUS "  has set_publisher() API")
 endif()
 
 ########################################################################
