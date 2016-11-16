@@ -63,6 +63,10 @@ class umtrx_property_tree:
     self._send_request('GET', path, value_type='STRING')
     return self._recv_response()
 
+  def query_complex_raw(self, path):
+    self._send_request('GET', path, value_type='COMPLEX')
+    return self._recv_response()
+
   #
   # Getters (value)
   #
@@ -91,6 +95,12 @@ class umtrx_property_tree:
     res = self.query_string_raw(path)
     return res['result']
 
+  def query_complex_value(self, path):
+    res = self.query_complex_raw(path)
+    i = float(res['result'][0])
+    q = float(res['result'][1])
+    return complex(i, q)
+
   #
   # Setters
   #
@@ -109,6 +119,13 @@ class umtrx_property_tree:
 
   def set_string(self, path, val):
     self._send_request('SET', path, value_type='STRING', value=val)
+    return self._recv_response()
+
+  def set_complex(self, path, val):
+    if type(val) is complex:
+      # Convert complex to an array
+      val = [val.real, val.imag]
+    self._send_request('SET', path, value_type='COMPLEX', value=val)
     return self._recv_response()
 
   #

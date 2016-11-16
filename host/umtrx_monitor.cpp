@@ -49,13 +49,18 @@ namespace asio = boost::asio;
  * print json.loads(f.readline())
  * {u'result': u'true'}
  *
- * #get the value of a tree entry, types can be BOOL, INT, DOUBLE, SENSOR, RANGE
+ * #get the value of a tree entry, types can be BOOL, INT, DOUBLE, COMPLEX, SENSOR, RANGE
  * s.send(json.dumps(dict(action='GET', path='/mboards/0/sensors/tempA', type='SENSOR'))+'\n')
  * print json.loads(f.readline())
  * {u'result': {u'unit': u'C', u'name': u'TempA', u'value': u'61.625000'}}
  *
- * #set the value of a tree entry, types can be BOOL, INT, DOUBLE
+ * #set the value of a tree entry, types can be BOOL, INT, DOUBLE, COMPLEX
  * s.send(json.dumps(dict(action='SET', path='/mboards/0/dboards/A/rx_frontends/0/freq/value', type='DOUBLE', value=1e9))+'\n')
+ * print json.loads(f.readline())
+ * {} #empty response means no error
+ *
+ * #in case of COMPLEX 'value' is an array of [real, imag] values
+ * s.send(json.dumps(dict(action='SET', path='/mboards/0/rx_frontends/A/dc_offset/value', type='COMPLEX', value=[0.1, 0.0]))+'\n')
  * print json.loads(f.readline())
  * {} #empty response means no error
  */
@@ -187,11 +192,22 @@ void umtrx_impl::client_query_handle1(const boost::property_tree::ptree &request
     else if (action == "GET")
     {
         const std::string type = request.get("type", "");
-        if (type.empty()) response.put("error", "type field not specified: STRING, BOOL, INT, DOUBLE, SENSOR, RANGE");
+        if (type.empty()) response.put("error", "type field not specified: STRING, BOOL, INT, DOUBLE, COMPLEX, SENSOR, RANGE");
         else if (type == "STRING") response.put("result", _tree->access<std::string>(path).get());
         else if (type == "BOOL") response.put("result", _tree->access<bool>(path).get());
         else if (type == "INT") response.put("result", _tree->access<int>(path).get());
         else if (type == "DOUBLE") response.put("result", _tree->access<double>(path).get());
+        else if (type == "COMPLEX")
+        {
+            boost::property_tree::ptree result;
+            boost::property_tree::ptree ptree_i, ptree_q;
+            const std::complex<double> c = _tree->access<std::complex<double> >(path).get();
+            ptree_i.put("", c.real());
+            ptree_q.put("", c.imag());
+            result.push_back(std::make_pair("", ptree_i));
+            result.push_back(std::make_pair("", ptree_q));
+            response.add_child("result", result);
+        }
         else if (type == "SENSOR")
         {
             boost::property_tree::ptree result;
@@ -219,11 +235,18 @@ void umtrx_impl::client_query_handle1(const boost::property_tree::ptree &request
     else if (action == "SET")
     {
         const std::string type = request.get("type", "");
-        if (type.empty()) response.put("error", "type field not specified: STRING, BOOL, INT, DOUBLE");
+        if (type.empty()) response.put("error", "type field not specified: STRING, BOOL, INT, DOUBLE, COMPLEX");
         else if (type == "STRING") _tree->access<std::string>(path).set(request.get<std::string>("value"));
         else if (type == "BOOL") _tree->access<bool>(path).set(request.get<bool>("value"));
         else if (type == "INT") _tree->access<int>(path).set(request.get<int>("value"));
         else if (type == "DOUBLE") _tree->access<double>(path).set(request.get<double>("value"));
+        else if (type == "COMPLEX")
+        {
+            boost::property_tree::ptree value = request.get_child("value");
+            double i = value.front().second.get<double>("");
+            double q = value.back().second.get<double>("");
+            _tree->access<std::complex<double> >(path).set(std::complex<double>(i, q));
+        }
         else response.put("error", "unknown type: " + type);
     }
     else if (action == "HAS")
