@@ -37,7 +37,7 @@ def publish():
 
     for name, value in current_sensors.items():
         print "PUTVAL {host}/umtrx-{id}/sensor-{name} interval={interval} {now}:{value}".format(
-            host=HOSTNAME, id=BOARD_ID, name=name, interval=INTERVAL, now=now, value=value)
+            host=HOSTNAME, id=BOARD_ID, name=name.lower(), interval=INTERVAL, now=now, value=value)
 
 
 s = sched.scheduler(time.time, time.sleep)
