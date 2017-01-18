@@ -23,6 +23,7 @@
 #include <uhd/transport/zero_copy.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
+#include <boost/cstdint.hpp>
 #include <uhd/types/wb_iface.hpp>
 #include <string>
 
