@@ -120,5 +120,5 @@ then RX VITA time alignment will not be possible due to ambiguity.
 Currently, the adc sample strobes are driven from a common sigal.
 
 simple_gemac_wrapper.v was modified to have an axi_packet_gate in the eth transmit direction.
-This guarantees thats a packet is 100% buffered before being send out over ethernet.
+This guarantees thats a packet is 100% buffered before being sent out over ethernet.
 This avoid in-packet underflow when the mac is fed from a slower clock domain.
