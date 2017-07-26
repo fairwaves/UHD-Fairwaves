@@ -162,10 +162,10 @@ static void handle_udp_ctrl_packet(
             ctrl_data_out.data.zpu_action.action = ctrl_data_in->data.zpu_action.action;
             switch (ctrl_data_in->data.zpu_action.action) {
             case UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC:
-                ctrl_data_out.data.zpu_action.data = (uint32_t)get_vctcxo_dac();
+                ctrl_data_out.data.zpu_action.data = (uint32_t)gpsdo_get_dac();
                 break;
             case UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC:
-                set_vctcxo_dac((uint16_t)ctrl_data_in->data.zpu_action.data);
+                gpsdo_set_dac((uint16_t)ctrl_data_in->data.zpu_action.data);
                 break;
             }
         }

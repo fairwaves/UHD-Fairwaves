@@ -41,8 +41,8 @@ static int gpsdo_debug = 0;
 
 static uint16_t dac_value; /* Current DAC value */
 
-int
-set_vctcxo_dac(uint16_t v)
+static int
+_set_vctcxo_dac(uint16_t v)
 {
   if (gpsdo_debug) printf("DAC: %d\n", v);
   dac_value = v;
@@ -53,8 +53,8 @@ set_vctcxo_dac(uint16_t v)
   );
 }
 
-uint16_t
-get_vctcxo_dac(void)
+static uint16_t
+_get_vctcxo_dac(void)
 {
     return dac_value;
 }
@@ -140,7 +140,7 @@ _gpsdo_pid_step(int32_t val)
   if (gpsdo_debug) printf("GPSDO: correction = %d (P=%d, I=%d, D=%d)>>%d limit +-%d\n", tot, p_term, i_term, d_term, PID_SCALE_SHIFT, PID_MAX_DEV);
 
   /* Update DAC */
-  set_vctcxo_dac( PID_MID_VAL + tot );
+  _set_vctcxo_dac( PID_MID_VAL + tot );
 }
 
 
@@ -190,7 +190,7 @@ void
 gpsdo_init(void)
 {
   /* Set the DAC to mid value */
-  set_vctcxo_dac( PID_MID_VAL );
+  _set_vctcxo_dac( PID_MID_VAL );
 
   /* Register IRQ handler */
   pic_register_handler(IRQ_GPSDO, _gpsdo_irq_handler);
@@ -200,4 +200,17 @@ gpsdo_init(void)
 
   /* Start request */
   gpsdo_regs->csr = GPSDO_CSR_REQ;
+}
+
+void gpsdo_set_dac(uint16_t v)
+{
+  /* Reset PID */
+  _gpsdo_pid_init();
+  /* Set the DAC value */
+  _set_vctcxo_dac(v);
+}
+
+uint16_t gpsdo_get_dac(void)
+{
+  return _get_vctcxo_dac();
 }
