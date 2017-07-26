@@ -31,7 +31,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-/* #define GPSDO_DEBUG 1 */
+static int gpsdo_debug = 0;
 
 
 /* DAC */
@@ -44,9 +44,7 @@ static uint16_t dac_value; /* Current DAC value */
 int
 set_vctcxo_dac(uint16_t v)
 {
-#ifdef GPSDO_DEBUG
-  printf("DAC: %d\n", v);
-#endif
+  if (gpsdo_debug) printf("DAC: %d\n", v);
   dac_value = v;
   return spi_transact(
     SPI_TXRX, SPI_SS_DAC,
@@ -139,6 +137,8 @@ _gpsdo_pid_step(int32_t val)
   else if (tot < -PID_MAX_DEV)
     tot = -PID_MAX_DEV;
 
+  if (gpsdo_debug) printf("GPSDO: correction = %d (P=%d, I=%d, D=%d)>>%d limit +-%d\n", tot, p_term, i_term, d_term, PID_SCALE_SHIFT, PID_MAX_DEV);
+
   /* Update DAC */
   set_vctcxo_dac( PID_MID_VAL + tot );
 }
@@ -162,16 +162,13 @@ _gpsdo_irq_handler(unsigned irq)
     /* Counter value */
     uint32_t val = gpsdo_regs->cnt;
 
-#ifdef GPSDO_DEBUG
-  printf("GPSDO Count: %d\n", val);
-#endif
-
     /* Next request */
     gpsdo_regs->csr = GPSDO_CSR_REQ;
 
     /* TODO:: Save the current wall time to be able check
        time passed since the last lock later. This is useful
        e.g. to check whether we still have a GPS lock.*/
+    if (gpsdo_debug) printf("GPSDO: Counter = %u @ %u sec %u ticks\n", val, cur_secs, cur_ticks);
 
     /* Check validity of value */
     if (abs(val - PID_TARGET) < 100000)
@@ -180,6 +177,8 @@ _gpsdo_irq_handler(unsigned irq)
       /* Integer overlow warning! */
       /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
       g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
+      if (gpsdo_debug) printf("GPSDO: Filtered counter = %u + %u/8\n",
+                              (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
 
       /* Update PID */
       _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
