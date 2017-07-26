@@ -461,6 +461,66 @@ public:
         lms_clear_bits(0x70, (1 << 1));
     }
 
+    /** Load value from 0x52/0x62 register to a selected DC calibration register */
+    void set_dc_calibration_value(uint8_t dc_addr, uint8_t calibration_reg_base, uint8_t value);
+
+    /** Get selected DC calibration register value */
+    uint8_t get_dc_calibration_value(uint8_t dc_addr, uint8_t calibration_reg_base);
+
+    /** Set value for the Rx FE DC calibration, I channel */
+    void set_rxfe_dc_i(int8_t value);
+
+    /** Get value for the Rx FE DC calibration, I channel */
+    int8_t get_rxfe_dc_i();
+
+    /** Set value for the Rx FE DC calibration, Q channel */
+    void set_rxfe_dc_q(int8_t value);
+
+    /** Get value for the Rx FE DC calibration, Q channel */
+    int8_t get_rxfe_dc_q();
+
+    /** Set value for the Rx LPF DC calibration, I channel */
+    void set_rxlpf_dc_i(uint8_t value);
+
+    /** Get value for the Rx LPF DC calibration, I channel */
+    uint8_t get_rxlpf_dc_i();
+
+    /** Set value for the Rx LPF DC calibration, Q channel */
+    void set_rxlpf_dc_q(uint8_t value);
+
+    /** Get value for the Rx LPF DC calibration, Q channel */
+    uint8_t get_rxlpf_dc_q();
+
+    /** Set value for the Rx VGA2 DC reference module */
+    void set_rxvga2_dc_reference(uint8_t value);
+
+    /** Get value for the Rx VGA2 DC reference module */
+    uint8_t get_rxvga2_dc_reference();
+
+    /** Set value for the Rx First gain stage (VGA2A), I channel */
+    void set_rxvga2a_dc_i(uint8_t value);
+
+    /** Get value for the Rx First gain stage (VGA2A), I channel */
+    uint8_t get_rxvga2a_dc_i();
+
+    /** Set value for the Rx First gain stage (VGA2A), Q channel */
+    void set_rxvga2a_dc_q(uint8_t value);
+
+    /** Get value for the Rx First gain stage (VGA2A), Q channel */
+    uint8_t get_rxvga2a_dc_q();
+
+    /** Set value for the Rx Second gain stage (VGA2B), I channel */
+    void set_rxvga2b_dc_i(uint8_t value);
+
+    /** Get value for the Rx Second gain stage (VGA2A), I channel */
+    uint8_t get_rxvga2b_dc_i();
+
+    /** Set value for the Rx Second gain stage (VGA2B), Q channel */
+    void set_rxvga2b_dc_q(uint8_t value);
+
+    /** Get value for the Rx Second gain stage (VGA2B), Q channel */
+    uint8_t get_rxvga2b_dc_q();
+
     /** Programming and Calibration Guide: 4.1 General DC Calibration Procedure */
     int general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibration_reg_base);
 

@@ -393,6 +393,114 @@ protected:
         return offset;
     }
 
+    void set_rxfe_dc_i(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxfe_dc_i(%d)\n", value);
+        lms.set_rxfe_dc_i(value);
+    }
+
+    uint8_t get_rxfe_dc_i() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxfe_dc_i()\n");
+        return lms.get_rxfe_dc_i();
+    }
+
+    void set_rxfe_dc_q(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxfe_dc_q(%d)\n", value);
+        lms.set_rxfe_dc_q(value);
+    }
+
+    uint8_t get_rxfe_dc_q() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxfe_dc_q()\n");
+        return lms.get_rxfe_dc_q();
+    }
+
+    void set_rxlpf_dc_i(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxlpf_dc_i(%d)\n", value);
+        lms.set_rxlpf_dc_i(value);
+    }
+
+    uint8_t get_rxlpf_dc_i() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxlpf_dc_i()\n");
+        return lms.get_rxlpf_dc_i();
+    }
+
+    void set_rxlpf_dc_q(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxlpf_dc_q(%d)\n", value);
+        lms.set_rxlpf_dc_q(value);
+    }
+
+    uint8_t get_rxlpf_dc_q() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxlpf_dc_q()\n");
+        return lms.get_rxlpf_dc_q();
+    }
+
+    void set_rxvga2_dc_reference(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxvga2_dc_reference(%d)\n", value);
+        lms.set_rxvga2_dc_reference(value);
+    }
+
+    uint8_t get_rxvga2_dc_reference() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxvga2_dc_reference()\n");
+        return lms.get_rxvga2_dc_reference();
+    }
+
+    void set_rxvga2a_dc_i(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxvga2a_dc_i(%d)\n", value);
+        lms.set_rxvga2a_dc_i(value);
+    }
+
+    uint8_t get_rxvga2a_dc_i() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxvga2a_dc_i()\n");
+        return lms.get_rxvga2a_dc_i();
+    }
+
+    void set_rxvga2a_dc_q(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxvga2a_dc_q(%d)\n", value);
+        lms.set_rxvga2a_dc_q(value);
+    }
+
+    uint8_t get_rxvga2a_dc_q() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxvga2a_dc_q()\n");
+        return lms.get_rxvga2a_dc_q();
+    }
+
+    void set_rxvga2b_dc_i(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxvga2b_dc_i(%d)\n", value);
+        lms.set_rxvga2b_dc_i(value);
+    }
+
+    uint8_t get_rxvga2b_dc_i() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxvga2b_dc_i()\n");
+        return lms.get_rxvga2b_dc_i();
+    }
+
+    void set_rxvga2b_dc_q(uint8_t value) {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::set_rxvga2b_dc_q(%d)\n", value);
+        lms.set_rxvga2b_dc_q(value);
+    }
+
+    uint8_t get_rxvga2b_dc_q() {
+        boost::recursive_mutex::scoped_lock l(_mutex);
+        if (verbosity>0) printf("lms6002d_ctrl_impl::get_rxvga2b_dc_q()\n");
+        return lms.get_rxvga2b_dc_q();
+    }
+
 private:
     umtrx_lms6002d_dev lms;        // Interface to the LMS chip.
     int tx_vga1gain, tx_vga2gain;  // Stored values of Tx VGA1 and VGA2 gains.

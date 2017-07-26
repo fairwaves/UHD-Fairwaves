@@ -55,6 +55,25 @@ public:
 
     virtual uint8_t get_tx_vga1dc_i_int(void) = 0;
     virtual uint8_t get_tx_vga1dc_q_int(void) = 0;
+
+    virtual void set_rxfe_dc_i(uint8_t value) = 0;
+    virtual uint8_t get_rxfe_dc_i() = 0;
+    virtual void set_rxfe_dc_q(uint8_t value) = 0;
+    virtual uint8_t get_rxfe_dc_q() = 0;
+    virtual void set_rxlpf_dc_i(uint8_t value) = 0;
+    virtual uint8_t get_rxlpf_dc_i() = 0;
+    virtual void set_rxlpf_dc_q(uint8_t value) = 0;
+    virtual uint8_t get_rxlpf_dc_q() = 0;
+    virtual void set_rxvga2_dc_reference(uint8_t value) = 0;
+    virtual uint8_t get_rxvga2_dc_reference() = 0;
+    virtual void set_rxvga2a_dc_i(uint8_t value) = 0;
+    virtual uint8_t get_rxvga2a_dc_i() = 0;
+    virtual void set_rxvga2a_dc_q(uint8_t value) = 0;
+    virtual uint8_t get_rxvga2a_dc_q() = 0;
+    virtual void set_rxvga2b_dc_i(uint8_t value) = 0;
+    virtual uint8_t get_rxvga2b_dc_i() = 0;
+    virtual void set_rxvga2b_dc_q(uint8_t value) = 0;
+    virtual uint8_t get_rxvga2b_dc_q() = 0;
 };
 
 #endif /* INCLUDED_LMS6002D_CTRL_HPP */

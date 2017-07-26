@@ -202,6 +202,141 @@ void lms6002d_dev::set_txrx_polarity_and_interleaving(int rx_fsync_polarity,
     lms_write_bits(0x5A, 0xD8, data);
 }
 
+void lms6002d_dev::set_dc_calibration_value(uint8_t dc_addr, uint8_t calibration_reg_base, uint8_t value)
+{
+    uint8_t reg_val;
+
+    if (verbosity > 0) printf("Manually setting DC Offset Calibration for base %x, ADDR %d: %d\n", calibration_reg_base, dc_addr, value);
+
+    // DC_CNTVAL[5:0] = value
+    write_reg(calibration_reg_base+0x02, value&0x3f);
+    // Save old register value
+    reg_val = read_reg(calibration_reg_base+0x03);
+    // DC_ADDR := ADDR
+    reg_val = (reg_val & 0xf8) | dc_addr;
+    write_reg(calibration_reg_base+0x03, reg_val);
+    // DC_LOAD := 1
+    reg_val = reg_val | (1 << 4);
+    write_reg(calibration_reg_base+0x03, reg_val);
+    // DC_LOAD := 0
+    reg_val = reg_val ^ (1 << 4);
+    write_reg(calibration_reg_base+0x03, reg_val);
+}
+
+uint8_t lms6002d_dev::get_dc_calibration_value(uint8_t dc_addr, uint8_t calibration_reg_base)
+{
+    // DC_ADDR := ADDR
+    lms_write_bits(calibration_reg_base+0x03, 0xf8, dc_addr);
+
+    uint8_t res = read_reg(calibration_reg_base);
+    if (verbosity > 0) printf("Reading DC Offset Calibration for base %x, ADDR %d: %d\n", calibration_reg_base, dc_addr, res);
+
+    return res;
+}
+
+void lms6002d_dev::set_rxfe_dc_i(int8_t value)
+{
+    uint8_t coded_value = (value<0)?(64-value):value;
+    if (verbosity > 0) printf("Setting DC Offset Calibration for RxFE Channel I to %d (0x%X)\n", value, coded_value);
+    // DCOFF_I_RXFE := value
+    lms_write_bits(0x71, 0x7f, coded_value);
+}
+
+int8_t lms6002d_dev::get_rxfe_dc_i()
+{
+    uint8_t res = lms_read_shift(0x71, 0x3f, 0);
+    uint8_t sign = lms_read_shift(0x71, 0x40, 6);
+    if (verbosity > 0) printf("Reading DC Offset Calibration for RxFE Channel I: sign=%d val=%d)\n", sign, res);
+    return sign?-res:res;
+}
+
+void lms6002d_dev::set_rxfe_dc_q(int8_t value)
+{
+    uint8_t coded_value = (value<0)?(64-value):value;
+    if (verbosity > 0) printf("Setting DC Offset Calibration for RxFE Channel Q to %d (0x%X)\n", value, coded_value);
+    // DCOFF_I_RXFE := value
+    lms_write_bits(0x72, 0x7f, coded_value);
+}
+
+int8_t lms6002d_dev::get_rxfe_dc_q()
+{
+    uint8_t res = lms_read_shift(0x72, 0x3f, 0);
+    uint8_t sign = lms_read_shift(0x72, 0x40, 6);
+    if (verbosity > 0) printf("Reading DC Offset Calibration for RxFE Channel Q: sign=%d val=%d)\n", sign, res);
+    return sign?-res:res;
+}
+
+void lms6002d_dev::set_rxlpf_dc_i(uint8_t value)
+{
+    set_dc_calibration_value(0, 0x50, value);
+}
+
+uint8_t lms6002d_dev::get_rxlpf_dc_i()
+{
+    return get_dc_calibration_value(0, 0x50);
+}
+
+void lms6002d_dev::set_rxlpf_dc_q(uint8_t value)
+{
+    set_dc_calibration_value(1, 0x50, value);
+}
+
+uint8_t lms6002d_dev::get_rxlpf_dc_q()
+{
+    return get_dc_calibration_value(1, 0x50);
+}
+
+void lms6002d_dev::set_rxvga2_dc_reference(uint8_t value)
+{
+    set_dc_calibration_value(0, 0x60, value);
+}
+
+uint8_t lms6002d_dev::get_rxvga2_dc_reference()
+{
+    return get_dc_calibration_value(0, 0x60);
+}
+
+void lms6002d_dev::set_rxvga2a_dc_i(uint8_t value)
+{
+    set_dc_calibration_value(1, 0x60, value);
+}
+
+uint8_t lms6002d_dev::get_rxvga2a_dc_i()
+{
+    return get_dc_calibration_value(1, 0x60);
+}
+
+void lms6002d_dev::set_rxvga2a_dc_q(uint8_t value)
+{
+    set_dc_calibration_value(2, 0x60, value);
+}
+
+uint8_t lms6002d_dev::get_rxvga2a_dc_q()
+{
+    return get_dc_calibration_value(2, 0x60);
+}
+
+void lms6002d_dev::set_rxvga2b_dc_i(uint8_t value)
+{
+    set_dc_calibration_value(3, 0x60, value);
+}
+
+uint8_t lms6002d_dev::get_rxvga2b_dc_i()
+{
+    return get_dc_calibration_value(3, 0x60);
+}
+
+void lms6002d_dev::set_rxvga2b_dc_q(uint8_t value)
+{
+    set_dc_calibration_value(4, 0x60, value);
+}
+
+uint8_t lms6002d_dev::get_rxvga2b_dc_q()
+{
+    return get_dc_calibration_value(4, 0x60);
+}
+
+
 int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibration_reg_base)
 {
     uint8_t reg_val;

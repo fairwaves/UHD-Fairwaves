@@ -707,6 +707,35 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
             .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, _1))
             .set(std::complex<double>(dc_i, dc_q));
 
+        //rx cal props
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_fe_dc_i" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxfe_dc_i, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_i, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_fe_dc_q" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxfe_dc_q, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_q, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_lpf_dc_i" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxlpf_dc_i, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_i, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_lpf_dc_q" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxlpf_dc_q, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_q, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2_dc_reference" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxvga2_dc_reference, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2_dc_reference, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2a_dc_i" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxvga2a_dc_i, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_i, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2a_dc_q" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxvga2a_dc_q, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_q, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2b_dc_i" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxvga2b_dc_i, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_i, ctrl, _1));
+        _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2b_dc_q" / "value")
+            .publish(boost::bind(&lms6002d_ctrl::get_rxvga2b_dc_q, ctrl))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_q, ctrl, _1));
+
         // Alias diversity switch control from mb_path
         property_alias<bool>(_tree, mb_path / "divsw"+(fe_name=="A"?"1":"2"), rx_rf_fe_path / "diversity");
     }
