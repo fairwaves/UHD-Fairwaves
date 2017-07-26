@@ -19,6 +19,7 @@
 #include "u2_init.h"
 #include "pic.h"
 #include "spi.h"
+#include "time64.h"
 
 #include "memory_map.h"
 
@@ -153,6 +154,9 @@ _gpsdo_pid_step(int32_t val)
 #define VAL_LPF_INIT_VALUE (PID_TARGET<<VAL_LPF_PRECISION)
 
 static uint32_t g_val_lpf = VAL_LPF_INIT_VALUE;
+static uint32_t g_prev_secs = 0;
+static uint32_t g_prev_ticks = 0;
+static uint32_t g_last_calc_freq = 0; /* Last calculated VCTCXO frequency */
 
 static void
 _gpsdo_irq_handler(unsigned irq)
@@ -161,18 +165,21 @@ _gpsdo_irq_handler(unsigned irq)
   {
     /* Counter value */
     uint32_t val = gpsdo_regs->cnt;
+    /* Read the current wall time */
+    uint32_t cur_secs, cur_ticks;
+    time64_read(&cur_secs, &cur_ticks);
 
     /* Next request */
     gpsdo_regs->csr = GPSDO_CSR_REQ;
 
-    /* TODO:: Save the current wall time to be able check
-       time passed since the last lock later. This is useful
-       e.g. to check whether we still have a GPS lock.*/
     if (gpsdo_debug) printf("GPSDO: Counter = %u @ %u sec %u ticks\n", val, cur_secs, cur_ticks);
 
     /* Check validity of value */
     if (abs(val - PID_TARGET) < 100000)
     {
+      /* Save calculated frequency */
+      g_last_calc_freq = val;
+
       /* LPF the value */
       /* Integer overlow warning! */
       /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
@@ -183,12 +190,19 @@ _gpsdo_irq_handler(unsigned irq)
       /* Update PID */
       _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
     }
+
+    /* Save the current wall time */
+    g_prev_secs = cur_secs;
+    g_prev_ticks = cur_ticks;
   }
 }
 
 void
 gpsdo_init(void)
 {
+  /* Set last saved freq to an invalid value */
+  g_last_calc_freq = 0;
+
   /* Set the DAC to mid value */
   _set_vctcxo_dac( PID_MID_VAL );
 
@@ -200,6 +214,15 @@ gpsdo_init(void)
 
   /* Start request */
   gpsdo_regs->csr = GPSDO_CSR_REQ;
+
+  /* Save the current wall time.
+   * We can use it to estimate time to lock */
+  time64_read(&g_prev_secs, &g_prev_ticks);
+}
+
+void gpsdo_set_debug(int level)
+{
+  gpsdo_debug = level;
 }
 
 void gpsdo_set_dac(uint16_t v)
@@ -213,4 +236,24 @@ void gpsdo_set_dac(uint16_t v)
 uint16_t gpsdo_get_dac(void)
 {
   return _get_vctcxo_dac();
+}
+
+uint32_t gpsdo_get_last_freq(void)
+{
+  return g_last_calc_freq;
+}
+
+uint32_t gpsdo_get_lpf_freq(void)
+{
+  return g_val_lpf;
+}
+
+uint32_t gpsdo_get_last_pps_secs(void)
+{
+  return g_prev_secs;
+}
+
+uint32_t gpsdo_get_last_pps_ticks(void)
+{
+  return g_prev_ticks;
 }

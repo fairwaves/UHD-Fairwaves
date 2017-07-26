@@ -21,10 +21,25 @@
 
 void gpsdo_init(void);
 
+/* Enable/disable GPSDO debug printing */
+void gpsdo_set_debug(int level);
+
 /* Set value of the VCTCXO DAC */
 void gpsdo_set_dac(uint16_t v);
 
 /* Get the current VCTCXO DAC value */
 uint16_t gpsdo_get_dac(void);
+
+/* Get the last calculated VCTCXO frequency */
+uint32_t gpsdo_get_last_freq(void);
+
+/* Get the last alpha/8 filtered VCTCXO frequency (29.3 fixed point) */
+uint32_t gpsdo_get_lpf_freq(void);
+
+/* Get time (seconds part) of the last PPS pulse  */
+uint32_t gpsdo_get_last_pps_secs(void);
+
+/* Get time (ticks part) of the last PPS pulse  */
+uint32_t gpsdo_get_last_pps_ticks(void);
 
 #endif /* INCLUDED_GPSDO_H */

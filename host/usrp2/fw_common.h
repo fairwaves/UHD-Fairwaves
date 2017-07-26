@@ -32,7 +32,7 @@ extern "C" {
 //fpga and firmware compatibility numbers
 #define USRP2_FPGA_COMPAT_NUM 9
 #define USRP2_FW_COMPAT_NUM 12
-#define USRP2_FW_VER_MINOR 2
+#define USRP2_FW_VER_MINOR 3
 
 //used to differentiate control packets over data port
 #define USRP2_INVALID_VRT_HEADER 0
@@ -127,8 +127,12 @@ typedef enum{
 
 typedef enum{
     UMTRX_ZPU_REQUEST_GET_VCTCXO_DAC = 1,
-    UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC = 2
-    /* GPSDO control to be here */
+    UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC = 2,
+    UMTRX_ZPU_REQUEST_SET_GPSDO_DEBUG = 3,
+    UMTRX_ZPU_REQUEST_GET_GPSDO_FREQ = 4,
+    UMTRX_ZPU_REQUEST_GET_GPSDO_FREQ_LPF = 5,
+    UMTRX_ZPU_REQUEST_GET_GPSDO_PPS_SECS = 6,
+    UMTRX_ZPU_REQUEST_SET_GPSDO_PPS_TICKS = 7
 } umtrx_zpu_action_t;
 
 typedef struct{

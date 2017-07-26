@@ -167,6 +167,21 @@ static void handle_udp_ctrl_packet(
             case UMTRX_ZPU_REQUEST_SET_VCTCXO_DAC:
                 gpsdo_set_dac((uint16_t)ctrl_data_in->data.zpu_action.data);
                 break;
+            case UMTRX_ZPU_REQUEST_SET_GPSDO_DEBUG:
+                gpsdo_set_debug((bool)ctrl_data_in->data.zpu_action.data);
+                break;
+            case UMTRX_ZPU_REQUEST_GET_GPSDO_FREQ:
+                ctrl_data_out.data.zpu_action.data = gpsdo_get_last_freq();
+                break;
+            case UMTRX_ZPU_REQUEST_GET_GPSDO_FREQ_LPF:
+                ctrl_data_out.data.zpu_action.data = gpsdo_get_lpf_freq();
+                break;
+            case UMTRX_ZPU_REQUEST_GET_GPSDO_PPS_SECS:
+                ctrl_data_out.data.zpu_action.data = gpsdo_get_last_pps_secs();
+                break;
+            case UMTRX_ZPU_REQUEST_SET_GPSDO_PPS_TICKS:
+                ctrl_data_out.data.zpu_action.data = gpsdo_get_last_pps_ticks();
+                break;
             }
         }
         break;
