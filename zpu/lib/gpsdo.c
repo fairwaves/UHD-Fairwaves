@@ -148,7 +148,11 @@ _gpsdo_pid_step(int32_t val)
 /* Driver */
 /* ------ */
 
-static int32_t g_val_lpf = PID_TARGET;
+/* Extra bits of precision for g_val_lpf */
+#define VAL_LPF_PRECISION 3
+#define VAL_LPF_INIT_VALUE (PID_TARGET<<VAL_LPF_PRECISION)
+
+static uint32_t g_val_lpf = VAL_LPF_INIT_VALUE;
 
 static void
 _gpsdo_irq_handler(unsigned irq)
@@ -156,7 +160,7 @@ _gpsdo_irq_handler(unsigned irq)
   if (gpsdo_regs->csr & GPSDO_CSR_RDY)
   {
     /* Counter value */
-    int32_t val = gpsdo_regs->cnt;
+    uint32_t val = gpsdo_regs->cnt;
 
 #ifdef GPSDO_DEBUG
   printf("GPSDO Count: %d\n", val);
@@ -173,10 +177,12 @@ _gpsdo_irq_handler(unsigned irq)
     if (abs(val - PID_TARGET) < 100000)
     {
       /* LPF the value */
-      g_val_lpf = (g_val_lpf * 7 + val + 4) >> 3;
+      /* Integer overlow warning! */
+      /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
+      g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
 
       /* Update PID */
-      _gpsdo_pid_step(g_val_lpf);
+      _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
     }
   }
 }
