@@ -320,6 +320,8 @@ main(void)
 #endif
   printf("FPGA compatibility number: %d\n", USRP2_FPGA_COMPAT_NUM);
   printf("Firmware compatibility number: %d\n", USRP2_FW_COMPAT_NUM);
+  printf("Firmware version minor: %d\n", USRP2_FW_VER_MINOR);
+  printf("Firmware GIT commit hash: %x\n", GITHASH);
 
   //init readback for firmware minor version number
   fw_regs[U2_FW_REG_VER_MINOR] = USRP2_FW_VER_MINOR;
