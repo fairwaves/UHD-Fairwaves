@@ -26,7 +26,7 @@ class umtrx_property_tree:
     d = dict(action=action, path=path)
     if value_type is not None: d['type'] = value_type
     if value is not None: d['value'] = value
-    return self.s.send(json.dumps(d)+'\n')
+    return self.s.send(bytes(json.dumps(d)+'\n', 'UTF-8'))
 
   def _recv_response(self):
     resp = self.f.readline().strip()
@@ -73,15 +73,15 @@ class umtrx_property_tree:
 
   def query_bool_value(self, path):
     res = self.query_bool_raw(path)
-    return res['result']['value']
+    return res['result']
 
   def query_int_value(self, path):
     res = self.query_int_raw(path)
-    return res['result']['value']
+    return int(res['result'])
 
   def query_double_value(self, path):
     res = self.query_double_raw(path)
-    return res['result']['value']
+    return float(res['result'])
 
   def query_sensor_value(self, path):
     res = self.query_sensor_raw(path)
