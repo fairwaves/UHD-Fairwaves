@@ -39,7 +39,7 @@
 
 #define DAC_BITS	12
 
-uint16_t dac_value; /* Current DAC value */
+static uint16_t dac_value; /* Current DAC value */
 
 int
 set_vctcxo_dac(uint16_t v)
