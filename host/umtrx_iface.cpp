@@ -70,21 +70,16 @@ public:
     umtrx_iface_impl(udp_simple::sptr ctrl_transport):
         _ctrl_transport(ctrl_transport),
         _ctrl_seq_num(0),
-        _protocol_compat(0) //initialized below...
+        _protocol_compat(USRP2_FW_COMPAT_NUM)
     {
         //Obtain the firmware's compat number.
-        //Save the response compat number for communication.
-        //TODO can choose to reject certain older compat numbers
         usrp2_ctrl_data_t ctrl_data;
-        ctrl_data.id = htonl(USRP2_CTRL_ID_WAZZUP_BRO);
-        ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
-        if (ntohl(ctrl_data.id) != USRP2_CTRL_ID_WAZZUP_DUDE) {
-            ctrl_data.id = htonl(UMTRX_CTRL_ID_REQUEST);
-            ctrl_data = ctrl_send_and_recv(ctrl_data, 0, ~0);
-            if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE)
-                throw uhd::runtime_error(str(boost::format("unexpected firmware response: -->%c<--") % (char)ntohl(ctrl_data.id)));
-        }
+        ctrl_data.id = htonl(UMTRX_CTRL_ID_REQUEST);
+        ctrl_data = ctrl_send_and_recv(ctrl_data, _protocol_compat, ~0);
+        if (ntohl(ctrl_data.id) != UMTRX_CTRL_ID_RESPONSE)
+            throw uhd::runtime_error(str(boost::format("unexpected firmware response: -->%c<--") % (char)ntohl(ctrl_data.id)));
 
+        //Save the response compat number for future communication.
         _protocol_compat = ntohl(ctrl_data.proto_ver);
 
         // Read EEPROM with UMTRX extensions
