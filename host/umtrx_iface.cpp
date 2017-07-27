@@ -321,7 +321,7 @@ public:
             if(len >= sizeof(boost::uint32_t) and (hi < compat or lo > compat)){
                 throw uhd::runtime_error(str(boost::format(
                     "\nPlease update the firmware and FPGA images for your device.\n"
-                    "See the application notes for USRP2/N-Series for instructions.\n"
+                    "See the application notes for UmTRX for instructions.\n"
                     "Expected protocol compatibility number %s, but got %d:\n"
                     "The firmware build is not compatible with the host code build."
                 ) % ((lo == hi)? (boost::format("%d") % hi) : (boost::format("[%d to %d]") % lo % hi)) % compat));
