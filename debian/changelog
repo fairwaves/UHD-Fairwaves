@@ -1,3 +1,18 @@
+umtrx (1.0.12) trusty; urgency=low
+
+  * [ZPU] BUGFIX: Fix GPSDO rounding issue to stabilize frequency down to +-1 Hz @ 52MHz.
+  * [ZPU] Export measured frequency and last PPS time over the control socket.
+  * [ZPU] Allow GPSDO debug enable/disable over the control socket.
+  * [ZPU] Print firmware minor version and git hash on startup.
+  * [ZPU] Make debug output on wrong packets less scary for users.
+  * [host] Cleanup UmTRX detection on UHD startup.
+  * [host] Export DC calibration registers through the property tree.
+  * [host] Fix build with newer UHD versions.
+  * [utils] BUGIX: Multiple fixes for the umtrx_ty_tree.py module.
+  * [utils] Lowercase sensor names in umtrx2collectd.
+
+ -- Alexander Chemeris <Alexander.Chemeris@fairwaves.co>  Thu, 27 Jul 2017 23:46:07 +0300
+
 umtrx (1.0.11) trusty; urgency=low
 
   * collectd: use 'fairwaves-monitoring' user to run plugin
