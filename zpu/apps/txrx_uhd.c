@@ -111,8 +111,8 @@ static void handle_udp_ctrl_packet(
 
     //ensure that the protocol versions match
     if (payload_len >= sizeof(uint32_t) && ctrl_data_in->proto_ver != USRP2_FW_COMPAT_NUM){
-        if (ctrl_data_in->proto_ver) printf("!Error in control packet handler: Expected compatibility number %d, but got %d\n",
-            USRP2_FW_COMPAT_NUM, ctrl_data_in->proto_ver
+        if (ctrl_data_in->proto_ver) printf("Received a control packet with compatibility number %d. Replying with our compatibility number %d.\n",
+            ctrl_data_in->proto_ver, USRP2_FW_COMPAT_NUM
         );
 #ifdef UMTRX
         ctrl_data_in_id = UMTRX_CTRL_ID_REQUEST;
@@ -123,7 +123,7 @@ static void handle_udp_ctrl_packet(
 
     //ensure that this is not a short packet
     if (payload_len < sizeof(usrp2_ctrl_data_t)){
-        printf("!Error in control packet handler: Expected payload length %d, but got %d\n",
+        printf("Received a short packet: Expected payload length %d, but got %d. Sending USRP2_CTRL_ID_HUH_WHAT\n",
             (int)sizeof(usrp2_ctrl_data_t), payload_len
         );
         ctrl_data_in_id = USRP2_CTRL_ID_HUH_WHAT;
