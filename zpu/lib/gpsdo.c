@@ -20,6 +20,7 @@
 #include "pic.h"
 #include "spi.h"
 #include "time64.h"
+#include "eeprom.h"
 
 #include "memory_map.h"
 
@@ -153,6 +154,7 @@ _gpsdo_pid_step(int32_t val)
 #define VAL_LPF_PRECISION 3
 #define VAL_LPF_INIT_VALUE (PID_TARGET<<VAL_LPF_PRECISION)
 
+static bool g_is_first_run = true; /* Running for the first time? */
 static uint32_t g_val_lpf = VAL_LPF_INIT_VALUE;
 static uint32_t g_prev_secs = 0;
 static uint32_t g_prev_ticks = 0;
@@ -179,13 +181,20 @@ _gpsdo_irq_handler(unsigned irq)
     {
       /* Save calculated frequency */
       g_last_calc_freq = val;
-
-      /* LPF the value */
-      /* Integer overlow warning! */
-      /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
-      g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
-      if (gpsdo_debug) printf("GPSDO: Filtered counter = %u + %u/8\n",
-                              (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
+      
+      if (g_is_first_run) {
+        g_is_first_run = false;
+        g_val_lpf = val<<VAL_LPF_PRECISION;
+        printf("GPSDO init: Filtered counter = %u + %u/8\n",
+               (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
+      } else {
+        /* LPF the value */
+        /* Integer overlow warning! */
+        /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
+        g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
+        if (gpsdo_debug) printf("GPSDO: Filtered counter = %u + %u/8\n",
+                                (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
+      }
 
       /* Update PID */
       _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
@@ -200,11 +209,22 @@ _gpsdo_irq_handler(unsigned irq)
 void
 gpsdo_init(void)
 {
+  uint16_t tcxo_dac = eeprom_read_tcxo_dac();
+  if (tcxo_dac == 0xFFFF) {
+    tcxo_dac = PID_MID_VAL;
+    printf("TCXO DAC: %d (default, no EEPROM caliibration value)\n", tcxo_dac);
+  } else {
+    printf("TCXO DAC: %d (read from EEPROM)\n", tcxo_dac);
+  }
+
+  /* Reset GPSDO */
+  g_is_first_run = true;
+
   /* Set last saved freq to an invalid value */
   g_last_calc_freq = 0;
-
+  
   /* Set the DAC to mid value */
-  _set_vctcxo_dac( PID_MID_VAL );
+  _set_vctcxo_dac( tcxo_dac );
 
   /* Register IRQ handler */
   pic_register_handler(IRQ_GPSDO, _gpsdo_irq_handler);
@@ -229,6 +249,8 @@ void gpsdo_set_dac(uint16_t v)
 {
   /* Reset PID */
   _gpsdo_pid_init();
+  /* Reset GPSDO */
+  g_is_first_run = true;
   /* Set the DAC value */
   _set_vctcxo_dac(v);
 }
