@@ -1,5 +1,6 @@
 /*
  * Copyright 2007 Free Software Foundation, Inc.
+ * Copyright 2017 Alexander Chemeris <Alexander.Chemeris@fairwaves.co>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +22,8 @@
 #include "nonstdio.h"
 
 static const int EEPROM_PAGESIZE = 16;
+
+#define EEPROM_TCXO_DAC_OFFSET (0xFF-3)
 
 bool find_safe_booted_flag(void) {
 #ifdef NO_EEPROM
@@ -91,3 +94,18 @@ eeprom_read (int i2c_addr, int eeprom_offset, void *buf, int len)
   return true;
 }
 #endif
+
+uint16_t
+eeprom_read_tcxo_dac()
+{
+  uint16_t val;
+  eeprom_read(USRP2_I2C_ADDR_MBOARD, EEPROM_TCXO_DAC_OFFSET, &val, 2);
+  return (val>>8)+(val<<8);
+}
+
+bool
+eeprom_write_tcxo_dac(uint16_t tcxo_dac)
+{
+  uint16_t val = (tcxo_dac>>8)+(tcxo_dac<<8);
+  return eeprom_write(USRP2_I2C_ADDR_MBOARD, EEPROM_TCXO_DAC_OFFSET, &val, 2);
+}
