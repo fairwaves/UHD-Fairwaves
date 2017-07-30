@@ -86,6 +86,7 @@ typedef struct {
   int32_t val_prev;
 
   /* State */
+  int32_t init_val;
   int32_t err_sum;
 } pid_data_t;
 
@@ -93,7 +94,7 @@ typedef struct {
 static pid_data_t g_pid;
 
 static void
-_gpsdo_pid_init(void)
+_gpsdo_pid_init(int32_t init_val)
 {
   /* Configure loop */
   g_pid.Pk = 64;
@@ -102,7 +103,14 @@ _gpsdo_pid_init(void)
 
   /* Reset state */
   g_pid.val_prev = PID_TARGET;
+  g_pid.init_val = init_val;
   g_pid.err_sum  = 0;
+}
+
+static void
+_gpsdo_pid_first_step(int32_t val)
+{
+  g_pid.val_prev = val;
 }
 
 static void
@@ -139,10 +147,11 @@ _gpsdo_pid_step(int32_t val)
   else if (tot < -PID_MAX_DEV)
     tot = -PID_MAX_DEV;
 
-  if (gpsdo_debug) printf("GPSDO: correction = %d (P=%d, I=%d, D=%d)>>%d limit +-%d\n", tot, p_term, i_term, d_term, PID_SCALE_SHIFT, PID_MAX_DEV);
+  if (gpsdo_debug) printf("GPSDO: DAC = %d %d (P=%d, I=%d, D=%d)>>%d limit +-%d\n",
+                          g_pid.init_val, tot, p_term, i_term, d_term, PID_SCALE_SHIFT, PID_MAX_DEV);
 
   /* Update DAC */
-  _set_vctcxo_dac( PID_MID_VAL + tot );
+  _set_vctcxo_dac( g_pid.init_val + tot );
 }
 
 
@@ -153,8 +162,16 @@ _gpsdo_pid_step(int32_t val)
 /* Extra bits of precision for g_val_lpf */
 #define VAL_LPF_PRECISION 3
 #define VAL_LPF_INIT_VALUE (PID_TARGET<<VAL_LPF_PRECISION)
+#define SKIP_ON_FIRST_RUN_VAL 2
 
-static bool g_is_first_run = true; /* Running for the first time? */
+/* Value > 0 indicates first run. Value itself is a ocunter how many IRQs
+ * to skip before starting PID regulation. Value of 2 is selected, because
+ * (1) the first tick will produce incorrect frequency counter because frequency
+ * correction occue in the middle of counting and (2) we need one valid reading
+ * to initialize g_pid.val_prev used for calculation of the D component. Previously
+ * we always initialized g_pid.val_prev to a value of the ideal target value
+ * which resulted in excessive oscillations. */
+static int8_t g_skip_on_first_run = SKIP_ON_FIRST_RUN_VAL;
 static uint32_t g_val_lpf = VAL_LPF_INIT_VALUE;
 static uint32_t g_prev_secs = 0;
 static uint32_t g_prev_ticks = 0;
@@ -182,11 +199,12 @@ _gpsdo_irq_handler(unsigned irq)
       /* Save calculated frequency */
       g_last_calc_freq = val;
       
-      if (g_is_first_run) {
-        g_is_first_run = false;
+      if (g_skip_on_first_run > 0) {
+        g_skip_on_first_run--;
         g_val_lpf = val<<VAL_LPF_PRECISION;
         printf("GPSDO init: Filtered counter = %u + %u/8\n",
                (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
+        _gpsdo_pid_first_step(val);
       } else {
         /* LPF the value */
         /* Integer overlow warning! */
@@ -194,10 +212,10 @@ _gpsdo_irq_handler(unsigned irq)
         g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
         if (gpsdo_debug) printf("GPSDO: Filtered counter = %u + %u/8\n",
                                 (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
-      }
 
-      /* Update PID */
-      _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
+        /* Update PID */
+        _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
+      }
     }
 
     /* Save the current wall time */
@@ -218,19 +236,19 @@ gpsdo_init(void)
   }
 
   /* Reset GPSDO */
-  g_is_first_run = true;
+  g_skip_on_first_run = SKIP_ON_FIRST_RUN_VAL;
 
   /* Set last saved freq to an invalid value */
   g_last_calc_freq = 0;
   
-  /* Set the DAC to mid value */
+  /* Set the DAC to initial value */
   _set_vctcxo_dac( tcxo_dac );
 
   /* Register IRQ handler */
   pic_register_handler(IRQ_GPSDO, _gpsdo_irq_handler);
 
   /* Init PID */
-  _gpsdo_pid_init();
+  _gpsdo_pid_init(tcxo_dac);
 
   /* Start request */
   gpsdo_regs->csr = GPSDO_CSR_REQ;
@@ -248,9 +266,9 @@ void gpsdo_set_debug(int level)
 void gpsdo_set_dac(uint16_t v)
 {
   /* Reset PID */
-  _gpsdo_pid_init();
+  _gpsdo_pid_init(v);
   /* Reset GPSDO */
-  g_is_first_run = true;
+  g_skip_on_first_run = SKIP_ON_FIRST_RUN_VAL;
   /* Set the DAC value */
   _set_vctcxo_dac(v);
 }
