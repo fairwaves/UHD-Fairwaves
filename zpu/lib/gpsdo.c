@@ -230,9 +230,9 @@ gpsdo_init(void)
   uint16_t tcxo_dac = eeprom_read_tcxo_dac();
   if (tcxo_dac == 0xFFFF) {
     tcxo_dac = PID_MID_VAL;
-    printf("TCXO DAC: %d (default, no EEPROM caliibration value)\n", tcxo_dac);
+    printf("TCXO DAC: %d (hardcoded init)\n", tcxo_dac);
   } else {
-    printf("TCXO DAC: %d (read from EEPROM)\n", tcxo_dac);
+    printf("TCXO DAC: %d (init from EEPROM)\n", tcxo_dac);
   }
 
   /* Reset GPSDO */
