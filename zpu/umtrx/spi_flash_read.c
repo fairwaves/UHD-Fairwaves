@@ -51,7 +51,7 @@ size_t spi_flash_log2_memory_size(void)
 
 size_t spi_flash_log2_sector_size(void)
 {
-    static unsigned char log2_sector_size[3] = {
+    static const unsigned char log2_sector_size[3] = {
         16, /* M25P32  */
         16, /* M25P64  */
         18, /* M25P128 */
