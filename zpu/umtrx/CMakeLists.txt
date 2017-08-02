@@ -19,6 +19,8 @@
 INCLUDE(${CMAKE_SOURCE_DIR}/lib/CMakeLists.txt)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
+SET(MIN_STACK 1300)
+
 ADD_DEFINITIONS(-DUSRP2P)
 ADD_DEFINITIONS(-DUDP_UART_MASK=2 -DNUM_UARTS_STORAGE=1) #GPS=UART1 streaming enabled
 
@@ -45,4 +47,5 @@ SET(GEN_OUTPUTS_BIN_SIZE 0x3fff)
 ADD_EXECUTABLE(umtrx_txrx_uhd.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c ${libumtrxfw_FILES})
 # TARGET_LINK_LIBRARIES(umtrx_txrx_uhd.elf libumtrxfw)
 GEN_OUTPUTS(umtrx_txrx_uhd.elf)
+TEST_STACK(umtrx_txrx_uhd.elf ${MIN_STACK})
 

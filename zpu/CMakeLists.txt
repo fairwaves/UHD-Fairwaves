@@ -87,6 +87,8 @@ INCLUDE_DIRECTORIES(
 FIND_PROGRAM(LINKER zpu-elf-ld)
 FIND_PROGRAM(OBJCOPY zpu-elf-objcopy)
 FIND_PROGRAM(OBJDUMP zpu-elf-objdump)
+FIND_PROGRAM(ELFSIZE zpu-elf-size)
+
 FIND_PROGRAM(HEXDUMP hexdump)
 
 ########################################################################
@@ -128,6 +130,19 @@ MACRO(GEN_OUTPUTS target)
     )
 ENDMACRO(GEN_OUTPUTS)
 
+MACRO(TEST_STACK target minsize)
+    GET_FILENAME_COMPONENT(name ${target} NAME_WE)
+    ADD_CUSTOM_COMMAND(
+        OUTPUT ${name}.freestack DEPENDS ${target}
+        COMMAND echo $$\(\(16383 - $$\(${ELFSIZE} ${target} | tail -n1 | { read text data bss dec hex\; echo $$dec\; }\)\)\) > ${name}.freestack
+        COMMAND echo Free stack space for ${target} is `cat ${name}.freestack`
+        COMMAND if [ `cat ${name}.freestack` -le ${minsize} ]\; then echo ERROR Image stack overflow `cat ${name}.freestack` is less than ${minsize}\; exit 1\; fi
+    )
+    #add a top level target for output files
+    ADD_CUSTOM_TARGET(
+        ${name}_freestack ALL DEPENDS ${name}.freestack
+    )
+ENDMACRO(TEST_SIZE)
 ########################################################################
 # Add the subdirectories
 ########################################################################
