@@ -39,9 +39,16 @@ static const size_t num_idle_cyc_b4_flush = 11; //small but lucky number
 static uint16_t _base_port;
 static int8_t _storage_map[MAX_NUM_UARTS];
 
+#ifdef BOOTLOADER
+#define UART_BUF_SZ 16
+#else
+#define UART_BUF_SZ 128
+#endif
+
+
 typedef struct{
     struct socket_address dst;
-    _AL4 uint8_t buf[256];
+    _AL4 uint8_t buf[UART_BUF_SZ];
     size_t len; //length of buffer
     size_t cyc; //idle cycle count
 } udp_uart_state_t;
