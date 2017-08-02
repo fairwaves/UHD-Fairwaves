@@ -40,14 +40,10 @@ int is_valid_fpga_image(uint32_t addr) {
 }
 
 int is_valid_fw_image(uint32_t addr) {
-	static const uint8_t fwheader[] = {0x0b, 0x0b, 0x0b, 0x0b}; //just lookin for a jump to anywhere located at the reset vector
-	//printf("is_valid_fw_image(): starting with addr=%x...\n", addr);
-	uint8_t buf[12];
-	spi_flash_read(addr, 4, buf);
-	//printf("is_valid_fw_image(): read ");
-	//for(int i = 0; i < 5; i++) printf("%x ", buf[i]);
-	//printf("\n");
-	return memcmp(buf, fwheader, 4) == 0;
+	static const uint8_t fwheader[2] = {0x0b, 0x0b}; //just lookin for a jump to anywhere located at the reset vector
+	uint8_t buf[2];
+	spi_flash_read(addr, 2, buf);
+	return memcmp(buf, fwheader, 2) == 0;
 }
 
 void start_program(void)
