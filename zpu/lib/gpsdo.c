@@ -46,7 +46,9 @@ static uint16_t dac_value; /* Current DAC value */
 static int
 _set_vctcxo_dac(uint16_t v)
 {
+#ifndef BOOTLOADER
   if (gpsdo_debug) printf("DAC: %d\n", v);
+#endif
   dac_value = v;
   return spi_transact(
     SPI_TXRX, SPI_SS_DAC,
@@ -152,9 +154,10 @@ _gpsdo_pid_step(int32_t val)
   else if (tot < -PID_MAX_DEV)
     tot = -PID_MAX_DEV;
 
+#ifndef BOOTLOADER
   if (gpsdo_debug) printf("GPSDO: DAC = %d %d (P=%d, I=%d, D=%d)>>%d limit +-%d\n",
                           g_pid.init_val, tot, p_term, i_term, d_term, PID_SCALE_SHIFT, PID_MAX_DEV);
-
+#endif
   /* Update DAC */
   _set_vctcxo_dac( g_pid.init_val + tot );
 }
@@ -195,9 +198,9 @@ _gpsdo_irq_handler(unsigned irq)
 
     /* Next request */
     gpsdo_regs->csr = GPSDO_CSR_REQ;
-
+#ifndef BOOTLOADER
     if (gpsdo_debug) printf("GPSDO: Counter = %u @ %u sec %u ticks\n", val, cur_secs, cur_ticks);
-
+#endif
     /* Check validity of value */
     if (abs(val - PID_TARGET) < 100000)
     {
@@ -207,17 +210,20 @@ _gpsdo_irq_handler(unsigned irq)
       if (g_skip_on_first_run > 0) {
         g_skip_on_first_run--;
         g_val_lpf = val<<VAL_LPF_PRECISION;
+#ifndef BOOTLOADER
         printf("GPSDO init: Filtered counter = %u + %u/8\n",
                (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
+#endif
         _gpsdo_pid_first_step(val);
       } else {
         /* LPF the value */
         /* Integer overlow warning! */
         /* This works for val ~= 52M, but don't try to use it with much larger values - it will overflow */
         g_val_lpf = (g_val_lpf * 7 + (val<<VAL_LPF_PRECISION) + 4) >> 3;
+#ifndef BOOTLOADER
         if (gpsdo_debug) printf("GPSDO: Filtered counter = %u + %u/8\n",
                                 (g_val_lpf>>VAL_LPF_PRECISION), (g_val_lpf&((1<<VAL_LPF_PRECISION)-1)));
-
+#endif
         /* Update PID */
         _gpsdo_pid_step(g_val_lpf>>VAL_LPF_PRECISION);
       }
@@ -233,11 +239,16 @@ void
 gpsdo_init(void)
 {
   uint16_t tcxo_dac = eeprom_read_tcxo_dac();
+  printf("TCXO DAC: %d ", tcxo_dac);
   if (tcxo_dac == 0xFFFF) {
     tcxo_dac = PID_MID_VAL;
-    printf("TCXO DAC: %d (hardcoded init)\n", tcxo_dac);
+#ifndef BOOTLOADER
+    printf("(hardcoded init)\n");
+#endif
   } else {
-    printf("TCXO DAC: %d (init from EEPROM)\n", tcxo_dac);
+#ifndef BOOTLOADER
+    printf("(init from EEPROM)\n");
+#endif
   }
 
   /* Reset GPSDO */

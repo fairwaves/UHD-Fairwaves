@@ -22,25 +22,27 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 ADD_DEFINITIONS(-DUSRP2P)
 ADD_DEFINITIONS(-DUDP_UART_MASK=2 -DNUM_UARTS_STORAGE=1) #GPS=UART1 streaming enabled
 
-ADD_LIBRARY(libumtrxfw STATIC
+SET(libumtrxfw_FILES
     ${COMMON_SRCS}
-    spif.c
-    spi_flash.c
-    spi_flash_read.c
-    bootloader_utils.c
-    ethernet.c
-    xilinx_s3_icap.c
-    xilinx_s6_icap.c
-    udp_fw_update.c
-    u2p_init.c
+    ${CMAKE_SOURCE_DIR}/umtrx/spif.c
+    ${CMAKE_SOURCE_DIR}/umtrx/spi_flash.c
+    ${CMAKE_SOURCE_DIR}/umtrx/spi_flash_read.c
+    ${CMAKE_SOURCE_DIR}/umtrx/bootloader_utils.c
+    ${CMAKE_SOURCE_DIR}/umtrx/ethernet.c
+    ${CMAKE_SOURCE_DIR}/umtrx/xilinx_s3_icap.c
+    ${CMAKE_SOURCE_DIR}/umtrx/xilinx_s6_icap.c
+    ${CMAKE_SOURCE_DIR}/umtrx/udp_fw_update.c
+    ${CMAKE_SOURCE_DIR}/umtrx/u2p_init.c
 )
+
+# ADD_LIBRARY(libumtrxfw STATIC ${libumtrxfw_FILES})
 
 ADD_SUBDIRECTORY(bootloader)
 
 ########################################################################
 SET(GEN_OUTPUTS_BIN_SIZE 0x3fff)
 
-ADD_EXECUTABLE(umtrx_txrx_uhd.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c)
-TARGET_LINK_LIBRARIES(umtrx_txrx_uhd.elf libumtrxfw)
+ADD_EXECUTABLE(umtrx_txrx_uhd.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c ${libumtrxfw_FILES})
+# TARGET_LINK_LIBRARIES(umtrx_txrx_uhd.elf libumtrxfw)
 GEN_OUTPUTS(umtrx_txrx_uhd.elf)
 

@@ -33,10 +33,11 @@ MACRO(GEN_RMI target)
 ENDMACRO(GEN_RMI)
 
 ########################################################################
-ADD_EXECUTABLE(bootloader.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c)
 ADD_DEFINITIONS(-DUSRP2P)
 ADD_DEFINITIONS(-DBOOTLOADER)
-TARGET_LINK_LIBRARIES(bootloader.elf libumtrxfw)
+
+ADD_EXECUTABLE(bootloader.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c  ${libumtrxfw_FILES})
+# TARGET_LINK_LIBRARIES(bootloader.elf libumtrxfw)
 SET(GEN_OUTPUTS_BIN_SIZE 0x3fff)
 GEN_OUTPUTS(bootloader.elf)
 GEN_RMI(bootloader.bin)

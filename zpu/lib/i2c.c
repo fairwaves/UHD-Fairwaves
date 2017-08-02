@@ -38,6 +38,13 @@ static uint16_t prescaler_values[MAX_WB_DIV+1] = {
 
 #define WATCHDOG   50000
 
+#ifndef BOOTLOADER
+static void _print_wderr(const char* f)
+{
+    printf("i2c_%s WATCHDOG failed!", f);
+}
+#endif
+
 void
 i2c_init(void)
 {
@@ -63,10 +70,11 @@ wait_for_xfer(void)
   unsigned i = WATCHDOG;
   while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_TIP))	// wait for xfer to complete
     --i;
-
+#ifndef BOOTLOADER
   if (i == 0) {
-    puts("wait_for_xfer WATCHDOG failed!"); 
+    _print_wderr("xfer");
   }
+#endif
 }
 
 static inline bool
@@ -90,7 +98,9 @@ i2c_read (unsigned char i2c_addr, unsigned char *buf, unsigned int len)
   while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_BUSY))
     --i;
   if (i == 0) {
-    puts("i2c_read WATCHDOG failed!"); 
+#ifndef BOOTLOADER
+    _print_wderr("read");
+#endif
     return false;
   }
 
@@ -120,7 +130,9 @@ i2c_write(unsigned char i2c_addr, const unsigned char *buf, unsigned int len)
   while ((i != 0) && (i2c_regs->cmd_status & I2C_ST_BUSY))
     --i;
   if (i == 0) {
-    puts("i2c_write WATCHDOG failed!");
+#ifndef BOOTLOADER
+    _print_wderr("write");
+#endif
     return false;
   }
 
