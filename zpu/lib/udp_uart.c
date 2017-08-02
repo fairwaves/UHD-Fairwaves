@@ -31,7 +31,7 @@
 #ifndef UDP_UART_MASK
     #error missing definition for UDP_UART_MASK enable mask
 #endif
-static const size_t num_idle_cyc_b4_flush = 11; //small but lucky number
+static const size_t num_idle_cyc_b4_flush = 250; //small but lucky number
 
 /***********************************************************************
  * Globals
