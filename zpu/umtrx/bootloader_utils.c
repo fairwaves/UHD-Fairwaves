@@ -67,14 +67,14 @@ void do_the_bootload_thing(void) {
 	set_safe_booted_flag(0); //haven't booted yet
 	
 	if(BUTTON_PUSHED) { //see memory_map.h
-		puts("Starting UmTRX in safe mode. Loading safe firmware.");
+		puts("Starting UmTRX in safe mode.");
 		return;
 	}
 	
 	if(!production_image) {
 		puts("Checking for valid production FPGA image...");
 		if(is_valid_fpga_image(PROD_FPGA_IMAGE_LOCATION_ADDR)) {
-			puts("Valid production FPGA image found. Attempting to boot.");
+			puts("Valid production FPGA image found, booting..");
 			set_safe_booted_flag(1);
 			mdelay(300); //so serial output can finish
 #ifdef SPARTAN6
@@ -89,10 +89,10 @@ void do_the_bootload_thing(void) {
 	if(is_valid_fw_image(PROD_FW_IMAGE_LOCATION_ADDR)) {
 		puts("Valid production firmware found. Loading...");
 		spi_flash_read(PROD_FW_IMAGE_LOCATION_ADDR, FW_IMAGE_SIZE_BYTES, (void *)RAM_BASE);
-		puts("Finished loading. Starting image.");
+		puts("Starting image...");
 		mdelay(300);
 		start_program();
-		puts("ERROR: Return from main program! This should never happen!");
+		puts("ERROR: Return from main!");
 		//if this happens, though, the safest thing to do is reboot the whole FPGA and start over.
 		mdelay(300);
 #ifdef SPARTAN6
@@ -102,6 +102,6 @@ void do_the_bootload_thing(void) {
 #endif
 		return;
 	}
-	puts("No valid production firmware found. Falling through to built-in firmware.");
+	puts("No valid production firmware found!");
 #endif
 }
