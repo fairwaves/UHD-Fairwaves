@@ -73,11 +73,16 @@ _get_vctcxo_dac(void)
 
 #define MAX_INT ((1<<31)-1)
 
+#define G_PID_PK 64
+#define G_PID_IK 16
+#define G_PID_DK 256
+
+
 typedef struct {
   /* Loop constants */
-  int16_t Pk;
-  int16_t Ik;
-  int16_t Dk;
+//  int16_t Pk;
+//  int16_t Ik;
+//  int16_t Dk;
 
   int32_t max_error;
   int32_t max_sum_error;
@@ -97,9 +102,9 @@ static void
 _gpsdo_pid_init(int32_t init_val)
 {
   /* Configure loop */
-  g_pid.Pk = 64;
-  g_pid.Ik = 16;
-  g_pid.Dk = 256; /* Seems high but we LPF PID input so d is dampened */
+  //g_pid.Pk = 64;
+  //g_pid.Ik = 16;
+  //g_pid.Dk = 256; /* Seems high but we LPF PID input so d is dampened */
 
   /* Reset state */
   g_pid.val_prev = PID_TARGET;
@@ -129,14 +134,14 @@ _gpsdo_pid_step(int32_t val)
     error = -PID_MAX_ERR;
 
   /* Compute P term */
-  p_term = error * g_pid.Pk;
+  p_term = error * G_PID_PK;
 
   /* Compute I term */
   g_pid.err_sum += error;
-  i_term = g_pid.err_sum * g_pid.Ik;
+  i_term = g_pid.err_sum * G_PID_IK;
 
   /* Compute D term */
-  d_term = (g_pid.val_prev - val) * g_pid.Dk;
+  d_term = (g_pid.val_prev - val) * G_PID_DK;
   g_pid.val_prev = val;
 
   /* Final value */
