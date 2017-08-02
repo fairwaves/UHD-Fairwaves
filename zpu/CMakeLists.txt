@@ -130,7 +130,7 @@ MACRO(GEN_OUTPUTS target)
     )
 ENDMACRO(GEN_OUTPUTS)
 
-MACRO(TEST_STACK target minsize)
+MACRO(TEST_STACK_SIZE target minsize)
     GET_FILENAME_COMPONENT(name ${target} NAME_WE)
     ADD_CUSTOM_COMMAND(
         OUTPUT ${name}.freestack DEPENDS ${target}
@@ -142,7 +142,7 @@ MACRO(TEST_STACK target minsize)
     ADD_CUSTOM_TARGET(
         ${name}_freestack ALL DEPENDS ${name}.freestack
     )
-ENDMACRO(TEST_SIZE)
+ENDMACRO(TEST_STACK_SIZE)
 ########################################################################
 # Add the subdirectories
 ########################################################################

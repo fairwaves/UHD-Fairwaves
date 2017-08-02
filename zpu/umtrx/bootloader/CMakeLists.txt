@@ -41,4 +41,5 @@ ADD_EXECUTABLE(bootloader.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c  ${libumtrxfw_
 SET(GEN_OUTPUTS_BIN_SIZE 0x3fff)
 GEN_OUTPUTS(bootloader.elf)
 GEN_RMI(bootloader.bin)
-TEST_STACK(bootloader.elf ${MIN_STACK})
+TEST_STACK_SIZE(bootloader.elf ${MIN_STACK})
+

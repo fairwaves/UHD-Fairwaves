@@ -47,5 +47,5 @@ SET(GEN_OUTPUTS_BIN_SIZE 0x3fff)
 ADD_EXECUTABLE(umtrx_txrx_uhd.elf ${CMAKE_SOURCE_DIR}/apps/txrx_uhd.c ${libumtrxfw_FILES})
 # TARGET_LINK_LIBRARIES(umtrx_txrx_uhd.elf libumtrxfw)
 GEN_OUTPUTS(umtrx_txrx_uhd.elf)
-TEST_STACK(umtrx_txrx_uhd.elf ${MIN_STACK})
+TEST_STACK_SIZE(umtrx_txrx_uhd.elf ${MIN_STACK})
 
