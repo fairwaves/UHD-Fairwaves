@@ -25,6 +25,9 @@
  * Constants
  **********************************************************************/
 #define MAX_NUM_UARTS 4
+#ifndef NUM_UARTS_STORAGE
+    #error missing definition for NUM_UARTS_STORAGE
+#endif
 #ifndef UDP_UART_MASK
     #error missing definition for UDP_UART_MASK enable mask
 #endif
@@ -34,6 +37,7 @@ static const size_t num_idle_cyc_b4_flush = 11; //small but lucky number
  * Globals
  **********************************************************************/
 static uint16_t _base_port;
+static int8_t _storage_map[MAX_NUM_UARTS];
 
 typedef struct{
     struct socket_address dst;
@@ -42,7 +46,7 @@ typedef struct{
     size_t cyc; //idle cycle count
 } udp_uart_state_t;
 
-static udp_uart_state_t _states[MAX_NUM_UARTS];
+static udp_uart_state_t _states[NUM_UARTS_STORAGE];
 
 /***********************************************************************
  * UDP handler for UARTs
@@ -55,14 +59,20 @@ static void handle_uart_data_packet(
     if (payload == NULL){
         const size_t which = src.port-_base_port;
         if (which >= MAX_NUM_UARTS) return;
-        _states[which].dst.port = 0;
+        int8_t idx = _storage_map[which];
+        if (idx >= NUM_UARTS_STORAGE || idx < 0) return;
+
+        _states[idx].dst.port = 0;
     }
 
     //handle a regular blocking UART write
     else{
         const size_t which = dst.port-_base_port;
         if (which >= MAX_NUM_UARTS) return;
-        _states[which].dst = src;
+        int8_t idx = _storage_map[which];
+        if (idx >= NUM_UARTS_STORAGE || idx < 0) return;
+
+        _states[idx].dst = src;
         for (size_t i = 0; i < payload_len; i++){
             hal_uart_putc((hal_uart_name_t)which, (int)payload[i]);
         }
@@ -74,11 +84,20 @@ static void handle_uart_data_packet(
  **********************************************************************/
 void udp_uart_init(const uint16_t base_port){
     _base_port = base_port;
-    for(size_t i = 0; i < MAX_NUM_UARTS; i++){
-        _states[i].dst.port = 0; //reset to null port
-        _states[i].len = 0;
-        _states[i].cyc = 0;
+    for(size_t i = 0, k = 0; (i < MAX_NUM_UARTS) && (k < NUM_UARTS_STORAGE); i++){
+        if (((UDP_UART_MASK) & (1 << i)) == 0) {
+            _storage_map[i] = -1;
+            continue;
+        }
+
+        _storage_map[i] = k;
+
+        _states[k].dst.port = 0; //reset to null port
+        _states[k].len = 0;
+        _states[k].cyc = 0;
         register_udp_listener(_base_port+i, handle_uart_data_packet);
+
+        ++k;
     }
 }
 
@@ -87,10 +106,11 @@ void udp_uart_init(const uint16_t base_port){
  **********************************************************************/
 void udp_uart_poll(void){
     for (size_t i = 0; i < MAX_NUM_UARTS; i++){
-        if (((UDP_UART_MASK) & (1 << i)) == 0) continue;
+        int8_t idx = _storage_map[i];
+        if (idx >= NUM_UARTS_STORAGE || idx < 0) continue;
 
         bool newline = false;
-        udp_uart_state_t *state = &_states[i];
+        udp_uart_state_t *state = &_states[idx];
 
         //read all characters we can without blocking
         for (size_t j = state->len; j < sizeof(_states[0].buf); j++){
