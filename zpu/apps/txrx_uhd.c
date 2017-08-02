@@ -382,6 +382,8 @@ main(void)
   ethernet_register_link_changed_callback(link_changed_callback);
   ethernet_init();
 
+  printf("Init is done\n");
+
   while(true){
 
     size_t num_lines;
