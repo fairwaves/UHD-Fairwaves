@@ -329,14 +329,12 @@ main(void)
 {
   u2_init();
 #ifdef BOOTLOADER
-  putstr("\nUSRP N210 UDP bootloader\n");
+  putstr("\nUmTRX bootloader\n");
 #else
-  putstr("\nTxRx-UHD-ZPU\n");
+  putstr("\nUmTRX production\n");
 #endif
   printf("FPGA compatibility number: %d\n", USRP2_FPGA_COMPAT_NUM);
-  printf("Firmware compatibility number: %d\n", USRP2_FW_COMPAT_NUM);
-  printf("Firmware version minor: %d\n", USRP2_FW_VER_MINOR);
-  printf("Firmware GIT commit hash: %x\n", GITHASH);
+  printf("Firmware: %d.%d-%x\n", USRP2_FW_COMPAT_NUM, USRP2_FW_VER_MINOR, GITHASH);
 
   //init readback for firmware minor version number
   fw_regs[U2_FW_REG_VER_MINOR] = USRP2_FW_VER_MINOR;
