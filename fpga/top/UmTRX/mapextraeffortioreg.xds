@@ -9,7 +9,7 @@
       <property name = "Map:Pack I/O Registers/Latches into IOBs"
                value = "For Inputs and Outputs" />
       <property name = "Map:Starting Placer Cost Table (1-100)"
-               value = "7" />
+               value = "24" />
       <property name = "Place &amp; Route:Place &amp; Route Effort Level (Overall)"
                value = "High" />
       <property name = "Place &amp; Route:Extra Effort (Highest PAR level only)"
