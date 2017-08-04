@@ -1,3 +1,14 @@
+umtrx (1.0.13) trusty; urgency=low
+
+  * [ZPU/host] Read TCXO DAC calibration from EEPROM once on UmTRX boot instead
+    of reading and setting it every time we launch a UHD app.
+  * [ZPU] Faster GPSDO converging when setting TCXO DAC value manually.
+  * [ZPU] BUGFIX: Optimize ZPU image size to avoid stack overflow.
+  * [ZPU] Print and check available ZPU stack space when compiling images.
+  * [FPGA/ZPU] Increase FPGA minor version number, generate new stable images.
+
+ -- Alexander Chemeris <Alexander.Chemeris@fairwaves.co>  Fri, 04 Aug 2017 15:55:56 +0300
+
 umtrx (1.0.12) trusty; urgency=low
 
   * [ZPU] BUGFIX: Fix GPSDO rounding issue to stabilize frequency down to +-1 Hz @ 52MHz.
