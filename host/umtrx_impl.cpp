@@ -740,11 +740,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         property_alias<bool>(_tree, mb_path / "divsw"+(fe_name=="A"?"1":"2"), rx_rf_fe_path / "diversity");
     }
 
-    //set TCXO DAC calibration value, which is read from mboard EEPROM
-    const std::string tcxo_dac = _iface->mb_eeprom.get("tcxo-dac", "");
+    //TCXO DAC calibration control
     if (not tcxo_dac.empty()) _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
-        .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1))
-        .set(boost::lexical_cast<uint16_t>(tcxo_dac));
+        .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1));
 
     ////////////////////////////////////////////////////////////////////
     // post config tasks
