@@ -216,15 +216,18 @@ wire DivSw1, DivSw2;
     // Status and control signals
     .LOCKED_OUT(led_stat));      // OUT
 
+   wire clk_rx_div2;
+
    pll_rx pll_rx_instance
    (// Clock in ports
     .gmii_rx_clk(GMII_RX_CLK),      // IN
     // Clock out ports
     .clk_rx(clk_rx),     // OUT
     .clk_to_mac(CLK_TO_MAC_int2), // OUT
-    .clk_rx_180(clk_rx_180));    // OUT
+    .clk_rx_180(clk_rx_180),
+    .clk_rx_div2(clk_rx_div2));    // OUT
 
-
+`ifndef NO_EXT_FIFO
    OFDDRRSE RAM_CLK_i1 (.Q(RAM_CLK),
 			.C0(clk270_100_buf),
 			.C1(~clk270_100_buf),
@@ -233,7 +236,17 @@ wire DivSw1, DivSw2;
 			.D1(1'b0),
 			.R(1'b0),
 			.S(1'b0));
-  
+`else
+   assign RAM_A    = 0;
+   assign RAM_BWn  = ~0;
+   assign RAM_ZZ   = 1;
+   assign RAM_LDn  = 1;
+   assign RAM_OEn  = 1;
+   assign RAM_WEn  = 1;
+   assign RAM_CENn = 1;
+   assign RAM_CLK  = 1;
+`endif
+
    // I2C -- Don't use external transistors for open drain, the FPGA implements this
    IOBUF scl_pin(.O(scl_pad_i), .IO(SCL), .I(scl_pad_o), .T(scl_pad_oen_o));
    IOBUF sda_pin(.O(sda_pad_i), .IO(SDA), .I(sda_pad_o), .T(sda_pad_oen_o));
@@ -276,7 +289,7 @@ wire DivSw1, DivSw2;
       .R(0),      // Synchronous reset input
       .S(0)       // Synchronous preset input
       );
-   
+
 
    //
    // Instantiate IO for Bidirectional bus to SRAM
@@ -335,7 +348,7 @@ wire DivSw1, DivSw2;
    end
 
    umtrx_core u2p_c(
-		     .sys_clk           (dsp_clk),
+		     .sys_clk           (clk_rx_div2),
 		     .dsp_clk           (lms_clk),
 		     .fe_clk            (clk_icap), //1/2 dsp rate
 		     .wb_clk            (wb_clk),

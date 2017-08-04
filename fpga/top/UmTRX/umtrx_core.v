@@ -624,8 +624,13 @@ module umtrx_core
      (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.changed(sfc_clear));
 
    wire sram_clear;
+`ifdef INTERNAL_FIFOS
+   setting_reg #(.my_addr(SR_MISC+2),.width(1)) sr_sram_clear
+     (.clk(dsp_clk),.rst(dsp_rst),.strobe(set_stb_dsp),.addr(set_addr_dsp),.in(set_data_dsp),.changed(sram_clear));
+`else
    setting_reg #(.my_addr(SR_MISC+2),.width(1)) sr_sram_clear
      (.clk(sys_clk),.rst(sys_rst),.strobe(set_stb_sys),.addr(set_addr_sys),.in(set_data_sys),.changed(sram_clear));
+`endif
 
    setting_reg #(.my_addr(SR_MISC+4),.width(1)) sr_phy
      (.clk(wb_clk),.rst(wb_rst),.strobe(set_stb),.addr(set_addr),.in(set_data),.out(phy_reset),.changed());
@@ -896,10 +901,15 @@ module umtrx_core
     );
 
    // /////////////////////////////////////////////////////////////////////////
-   // TX chains
-    wire [35:0] sram0_data, sram1_data;
-    wire sram0_valid, sram1_valid;
-    wire sram0_ready, sram1_ready;
+   // TX chains 
+	 wire [35:0] vita0_data_dsp;
+    wire vita0_valid_dsp;
+    wire vita0_ready_dsp;
+
+    wire [35:0] vita1_data_dsp;
+    wire vita1_valid_dsp;
+    wire vita1_ready_dsp;
+	 
     wire run_tx_dsp0, run_tx_dsp1;
 
     //switch to select frontend used per DSP
@@ -931,12 +941,12 @@ module umtrx_core
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
         .front_i(dac0_a_int), .front_q(dac0_b_int), .dac_stb(dac0_strobe), .run(run_tx_dsp0),
-        .vita_data_sys(sram0_data), .vita_valid_sys(sram0_valid), .vita_ready_sys(sram0_ready),
+        .vita_data_dsp(vita0_data_dsp), .vita_valid_dsp(vita0_valid_dsp), .vita_ready_dsp(vita0_ready_dsp),
         .err_data_sys(err_tx0_data), .err_valid_sys(err_tx0_valid), .err_ready_sys(err_tx0_ready),
         .vita_time(vita_time)
     );
     end else begin
-        assign sram0_ready = 1;
+        assign vita0_ready_dsp = 1;
         assign err_tx0_valid = 0;
         assign run_tx_dsp0 = 0;
     end
@@ -957,12 +967,12 @@ module umtrx_core
         .set_stb_dsp(set_stb_dsp), .set_addr_dsp(set_addr_dsp), .set_data_dsp(set_data_dsp),
         .set_stb_fe(set_stb_fe), .set_addr_fe(set_addr_fe), .set_data_fe(set_data_fe),
         .front_i(dac1_a_int), .front_q(dac1_b_int), .dac_stb(dac1_strobe), .run(run_tx_dsp1),
-        .vita_data_sys(sram1_data), .vita_valid_sys(sram1_valid), .vita_ready_sys(sram1_ready),
+        .vita_data_dsp(vita1_data_dsp), .vita_valid_dsp(vita1_valid_dsp), .vita_ready_dsp(vita1_ready_dsp),
         .err_data_sys(err_tx1_data), .err_valid_sys(err_tx1_valid), .err_ready_sys(err_tx1_ready),
         .vita_time(vita_time)
     );
     end else begin
-        assign sram1_ready = 1;
+        assign vita1_ready_dsp = 1;
         assign err_tx1_valid = 0;
         assign run_tx_dsp1 = 0;
     end
@@ -986,6 +996,77 @@ module umtrx_core
 
    // ///////////////////////////////////////////////////////////////////////////////////
    // DSP TX
+//`define INTERNAL_FIFOS
+
+`ifdef INTERNAL_FIFOS
+    wire [35:0] vita0_data_cc;
+    wire [35:0] vita1_data_cc;
+    wire vita0_valid_cc, vita1_valid_cc;
+    wire vita0_ready_cc, vita1_ready_cc;
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(9)) fifo_tx0_sys_dsp
+    (
+        .i_aclk(sys_clk), .i_tdata(dsp_tx0_data), .i_tvalid(dsp_tx0_valid), .i_tready(dsp_tx0_ready),
+        .o_aclk(dsp_clk), .o_tdata(vita0_data_cc), .o_tvalid(vita0_valid_cc), .o_tready(vita0_ready_cc),
+        .reset(dsp_rst | sys_rst | sram_clear)
+    );
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(9)) fifo_tx1_sys_dsp
+    (
+        .i_aclk(sys_clk), .i_tdata(dsp_tx1_data), .i_tvalid(dsp_tx1_valid), .i_tready(dsp_tx1_ready),
+        .o_aclk(dsp_clk), .o_tdata(vita1_data_cc), .o_tvalid(vita1_valid_cc), .o_tready(vita1_ready_cc),
+        .reset(dsp_rst | sys_rst | sram_clear)
+    );
+
+   fifo_axi_36 ififo0(
+		.s_aclk(dsp_clk),
+		.s_aresetn(~((dsp_rst | sram_clear))),
+
+		.s_axis_tvalid(vita0_valid_cc),
+		.s_axis_tready(vita0_ready_cc),
+		.s_axis_tdata(vita0_data_cc[31:0]),
+		.s_axis_tuser(vita0_data_cc[35:32]),
+
+		.m_aclk(dsp_clk),
+		.m_axis_tvalid(vita0_valid_dsp),
+		.m_axis_tready(vita0_ready_dsp),
+		.m_axis_tdata(vita0_data_dsp[31:0]),
+		.m_axis_tuser(vita0_data_dsp[35:32])
+	);
+	
+   fifo_axi_36 ififo1(
+		.s_aclk(dsp_clk),
+		.s_aresetn(~((dsp_rst | sram_clear))),
+
+		.s_axis_tvalid(vita1_valid_cc),
+		.s_axis_tready(vita1_ready_cc),
+		.s_axis_tdata(vita1_data_cc[31:0]),
+		.s_axis_tuser(vita1_data_cc[35:32]),
+
+		.m_aclk(dsp_clk),
+		.m_axis_tvalid(vita1_valid_dsp),
+		.m_axis_tready(vita1_ready_dsp),
+		.m_axis_tdata(vita1_data_dsp[31:0]),
+		.m_axis_tuser(vita1_data_dsp[35:32])
+	);
+`else
+    wire [35:0] sram0_data, sram1_data;
+    wire sram0_valid, sram1_valid;
+    wire sram0_ready, sram1_ready;
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_tx0_2clock_vita
+    (
+        .i_aclk(sys_clk), .i_tdata(sram0_data), .i_tvalid(sram0_valid), .i_tready(sram0_ready),
+        .o_aclk(dsp_clk), .o_tdata(vita0_data_dsp), .o_tvalid(vita0_valid_dsp), .o_tready(vita0_ready_dsp),
+        .reset(dsp_rst | sys_rst)
+    );
+
+    axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_tx1_2clock_vita
+    (
+        .i_aclk(sys_clk), .i_tdata(sram1_data), .i_tvalid(sram1_valid), .i_tready(sram1_ready),
+        .o_aclk(dsp_clk), .o_tdata(vita1_data_dsp), .o_tvalid(vita1_valid_dsp), .o_tready(vita1_ready_dsp),
+        .reset(dsp_rst | sys_rst)
+    );
 
 `ifndef NO_EXT_FIFO
    assign 	 RAM_A[20:19] = 2'b0;
@@ -1030,6 +1111,7 @@ module umtrx_core
 	.dataout_1(sram1_data),
 	.debug(debug_extfifo),
 	.debug2(debug_extfifo2) );
+`endif
 
    // /////////////////////////////////////////////////////////////////////////
    // VITA Timing

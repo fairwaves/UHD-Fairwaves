@@ -21,50 +21,52 @@
 module s6_icap_wb
   (input clk, input clk_icap, input reset,
    input cyc_i, input stb_i, input we_i, output reg ack_o,
-   input [31:0] dat_i, output reg[31:0] dat_o);//, output [31:0] debug_out);
+   input [31:0] dat_i, output [31:0] dat_o);//, output [31:0] debug_out);
 
-    reg slow_clk_icap;
-    always @(posedge clk_icap) slow_clk_icap <= ~slow_clk_icap;
+//    reg slow_clk_icap;
+//    always @(posedge clk_icap) slow_clk_icap <= ~slow_clk_icap;
 	
 	wire 	BUSY, CE, WRITE;
-	wire[31:0] s1_dat_i;
-	reg[31:0] s_dat_o;
-	wire[31:0] s1_dat_o;
+	wire[15:0] s1_dat_i;
+//	reg[31:0] s_dat_o;
+//	wire[31:0] s1_dat_o;
 	
-   assign s1_dat_o[31:16] = 16'd0;
-  
+//   assign s1_dat_o[31:16] = 16'd0;
+assign dat_o = 0;
+
+
    wire  full, empty;
 
-   fifo_xlnx_16x40_2clk icap_fifo
+   fifo_xlnx_32x36_2clk icap_fifo
      (.rst(reset),
-      .wr_clk(clk), .din(dat_i), .wr_en(we_i & stb_i & ~ack_o & ~full), .full(full),
-      .rd_clk(slow_clk_icap), .dout(s1_dat_i), .rd_en(~empty), .empty(empty));
+      .wr_clk(clk), .din(dat_i[15:0]), .wr_en(we_i & cyc_i & stb_i & ~ack_o & ~full), .full(full),
+      .rd_clk(clk_icap), .dout(s1_dat_i), .rd_en(~empty), .empty(empty));
 
-   assign WRITE 	 = empty;
+//   assign WRITE 	 = empty;
    assign CE 		 = empty;
    
    ICAP_SPARTAN6 ICAP_SPARTAN6_inst
-     (.BUSY(BUSY),          // Busy output
-      .O(s1_dat_o[15:0]),            // 16-bit data output
-      .CE(CE),              // Clock enable input
-      .CLK(slow_clk_icap),            // Clock input
-      .I(s1_dat_i[15:0]),            // 16-bit data input
-      .WRITE(WRITE)         // Write input
+     (.BUSY(),         // Busy output, active high
+      .O(),            // 16-bit data output
+      .CE(CE),         // Clock enable input, active low
+      .CLK(clk_icap),  // Clock input
+      .I(s1_dat_i),    // 16-bit data input
+      .WRITE(1'b0)     // Write input, 0 - WRITE, 1 - READ
       );
 
 //cross back to Wishbone clock domain
 	always @(posedge clk)
 	if (reset)
    	begin
-			s_dat_o <= 32'd0;
-		   dat_o <= 32'd0;
-			ack_o <= 1'b0;
+		//s_dat_o <= 32'd0;
+		//dat_o <= 32'd0;
+		ack_o <= 1'b0;
 		end
 	else 
 		begin
-		   s_dat_o <= s1_dat_o;
-		   dat_o[15:0] <= s_dat_o[15:0];
-         ack_o <= stb_i & ~ack_o;
+		// s_dat_o <= s1_dat_o;
+		// dat_o[15:0] <= s_dat_o[15:0];
+		ack_o <= cyc_i & stb_i & ~ack_o;
 		end
 		
 endmodule // s6_icap_wb

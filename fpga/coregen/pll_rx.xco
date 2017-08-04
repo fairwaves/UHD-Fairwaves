@@ -1,7 +1,7 @@
 ##############################################################
 #
-# Xilinx Core Generator version 13.1
-# Date: Sat Jan 07 20:42:05 2012
+# Xilinx Core Generator version 14.7
+# Date: Wed Aug  2 17:45:53 2017
 #
 ##############################################################
 #
@@ -12,12 +12,16 @@
 #
 ##############################################################
 #
+#  Generated from component: xilinx.com:ip:Clocking_Wizard:3.6
+#
+##############################################################
+#
 # BEGIN Project Options
 SET addpads = false
 SET asysymbol = true
 SET busformat = BusFormatAngleBracketNotRipped
 SET createndf = false
-SET designentry = Advanced
+SET designentry = Verilog
 SET device = xc6slx75
 SET devicefamily = spartan6
 SET flowvendor = Other
@@ -27,12 +31,12 @@ SET implementationfiletype = Ngc
 SET package = fgg484
 SET removerpms = false
 SET simulationfiles = Behavioral
-SET speedgrade = -3
+SET speedgrade = -2
 SET verilogsim = true
-SET vhdlsim = true
+SET vhdlsim = false
 # END Project Options
 # BEGIN Select
-SELECT Clocking_Wizard family Xilinx,_Inc. 3.1
+SELECT Clocking_Wizard xilinx.com:ip:Clocking_Wizard:3.6
 # END Select
 # BEGIN Parameters
 CSET calc_done=DONE
@@ -79,9 +83,9 @@ CSET clkout3_requested_phase=0.000
 CSET clkout3_used=true
 CSET clkout4_drives=BUFG
 CSET clkout4_requested_duty_cycle=50.000
-CSET clkout4_requested_out_freq=100.000
+CSET clkout4_requested_out_freq=62.500
 CSET clkout4_requested_phase=0.000
-CSET clkout4_used=false
+CSET clkout4_used=true
 CSET clkout5_drives=BUFG
 CSET clkout5_requested_duty_cycle=50.000
 CSET clkout5_requested_out_freq=100.000
@@ -114,6 +118,7 @@ CSET dcm_clkfx_multiply=4
 CSET dcm_clkgen_clk_out1_port=CLKFX
 CSET dcm_clkgen_clk_out2_port=CLKFX
 CSET dcm_clkgen_clk_out3_port=CLKFX
+CSET dcm_clkgen_clk_out4_port=CLKDV
 CSET dcm_clkgen_clkfx_divide=1
 CSET dcm_clkgen_clkfx_md_max=0.000
 CSET dcm_clkgen_clkfx_multiply=4
@@ -165,7 +170,7 @@ CSET mmcm_clkout3_duty_cycle=0.500
 CSET mmcm_clkout3_phase=0.000
 CSET mmcm_clkout3_use_fine_ps=false
 CSET mmcm_clkout4_cascade=false
-CSET mmcm_clkout4_divide=1
+CSET mmcm_clkout4_divide=2
 CSET mmcm_clkout4_duty_cycle=0.500
 CSET mmcm_clkout4_phase=0.000
 CSET mmcm_clkout4_use_fine_ps=false
@@ -207,7 +212,7 @@ CSET pll_clkout2_phase=0.000
 CSET pll_clkout3_divide=1
 CSET pll_clkout3_duty_cycle=0.500
 CSET pll_clkout3_phase=0.000
-CSET pll_clkout4_divide=1
+CSET pll_clkout4_divide=2
 CSET pll_clkout4_duty_cycle=0.500
 CSET pll_clkout4_phase=0.000
 CSET pll_clkout5_divide=1
@@ -253,4 +258,4 @@ CSET use_spread_spectrum=false
 CSET use_status=false
 # END Parameters
 GENERATE
-# CRC: 681ed89a
+# CRC: 42b0e01c

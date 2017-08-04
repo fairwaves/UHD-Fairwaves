@@ -58,6 +58,7 @@
 // CLK_OUT1   125.000      0.000      50.0      200.000     50.000
 // CLK_OUT2   125.000    180.000      50.0      300.000     50.000
 // CLK_OUT3   125.000      0.000      50.0      200.000     50.000
+// CLK_OUT4    62.500      0.000      50.0      200.000     50.000
 //
 //----------------------------------------------------------------------------
 // Input Clock   Input Freq (MHz)   Input Jitter (UI)
@@ -73,7 +74,8 @@ module pll_rx
   // Clock out ports
   output        clk_rx,
   output        clk_rx_180,
-  output        clk_to_mac
+  output        clk_to_mac,
+  output        clk_rx_div2
  );
 
   // Input buffering
@@ -95,6 +97,7 @@ module pll_rx
   wire clkfb;
   wire clk0;
   wire clk180;
+  wire clkdv;
 
   DCM_SP
   #(.CLKDV_DIVIDE          (2.000),
@@ -120,7 +123,7 @@ module pll_rx
     .CLK2X180              (),
     .CLKFX                 (),
     .CLKFX180              (),
-    .CLKDV                 (),
+    .CLKDV                 (clkdv),
     // Ports for dynamic phase shift
     .PSCLK                 (1'b0),
     .PSEN                  (1'b0),
@@ -151,6 +154,9 @@ module pll_rx
    (.O   (clk_to_mac),
     .I   (clk0));
 
+  BUFG clkout4_buf
+   (.O   (clk_rx_div2),
+    .I   (clkdv));
 
 
 endmodule

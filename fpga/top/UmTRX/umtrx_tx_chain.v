@@ -37,10 +37,10 @@ module umtrx_tx_chain
     input dac_stb,
     output run,
 
-    //sys clock domain
-    input [35:0] vita_data_sys,
-    input vita_valid_sys,
-    output vita_ready_sys,
+    //dsp clock domain
+    input [35:0] vita_data_dsp,
+    input vita_valid_dsp,
+    output vita_ready_dsp,
 
     //sys clock domain
     output [35:0] err_data_sys,
@@ -91,9 +91,15 @@ module umtrx_tx_chain
     /*******************************************************************
      * TX VITA deframer
      ******************************************************************/
-    wire [35:0] vita_data_dsp, err_data_dsp;
-    wire vita_valid_dsp, err_valid_dsp;
-    wire vita_ready_dsp, err_ready_dsp;
+	  /*
+    wire [35:0] vita_data_dsp;
+    wire vita_valid_dsp;
+    wire vita_ready_dsp;
+	 */
+	 
+	 wire [35:0] err_data_dsp;
+	 wire err_valid_dsp;
+    wire err_ready_dsp;
 
     vita_tx_chain #(.BASE(CTRL_BASE), .UNIT(PROT_DEST), .FIFOSIZE(FIFOSIZE),
         .REPORT_ERROR(1), .DO_FLOW_CONTROL(1),
@@ -114,12 +120,14 @@ module umtrx_tx_chain
     /*******************************************************************
      * Cross clock fifo from sys to dsp clock domain
      ******************************************************************/
+	  /*
     axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_vita
     (
         .i_aclk(sys_clk), .i_tdata(vita_data_sys), .i_tvalid(vita_valid_sys), .i_tready(vita_ready_sys),
         .o_aclk(dsp_clk), .o_tdata(vita_data_dsp), .o_tvalid(vita_valid_dsp), .o_tready(vita_ready_dsp),
         .reset(dsp_rst | sys_rst)
     );
+	 */
     axi_fifo_2clk #(.WIDTH(36), .SIZE(0)) fifo_2clock_err
     (
         .i_aclk(dsp_clk), .i_tdata(err_data_dsp), .i_tvalid(err_valid_dsp), .i_tready(err_ready_dsp),
