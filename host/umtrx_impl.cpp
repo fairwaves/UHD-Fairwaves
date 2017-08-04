@@ -741,7 +741,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     }
 
     //TCXO DAC calibration control
-    if (not tcxo_dac.empty()) _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
+    _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
         .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1));
 
     ////////////////////////////////////////////////////////////////////
