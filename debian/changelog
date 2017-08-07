@@ -1,3 +1,9 @@
+umtrx (1.0.14) trusty; urgency=medium
+
+  * Quick build fix.
+
+ -- Rauf Gyulaliev <rauf.gyulaliev@fairwaves.co>  Mon, 07 Aug 2017 09:15:31 +0300
+
 umtrx (1.0.13) trusty; urgency=low
 
   * [ZPU/host] Read TCXO DAC calibration from EEPROM once on UmTRX boot instead
