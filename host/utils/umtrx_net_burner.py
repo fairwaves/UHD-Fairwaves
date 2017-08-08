@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2010-2011 Ettus Research LLC
+# Copyright 2013-2017 Fairwaves, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-# TODO: make it autodetect UHD devices
 
 import optparse
 import math
@@ -495,7 +494,7 @@ class burner_socket(object):
 ########################################################################
 def get_options():
     parser = optparse.OptionParser()
-    parser.add_option("--addr", type="string",                 help="USRP-N2XX device address",       default='')
+    parser.add_option("--addr", type="string",                 help="UmTRX device address",       default='')
     parser.add_option("--fw",   type="string",                 help="firmware image path (optional)", default='')
     parser.add_option("--fpga", type="string",                 help="fpga image path (optional)",     default='')
     parser.add_option("--reset", action="store_true",          help="reset the device after writing", default=False)
@@ -527,7 +526,7 @@ if __name__=='__main__':
 
     if options.overwrite_safe and not options.read:
         print("Are you REALLY, REALLY sure you want to overwrite the safe image? This is ALMOST ALWAYS a terrible idea.")
-        print("If your image is faulty, your USRP2+ will become a brick until reprogrammed via JTAG.")
+        print("If your image is faulty, your UmTRX will become a brick until reprogrammed via JTAG.")
         response = raw_input("""Type "yes" to continue, or anything else to quit: """)
         if response != "yes": sys.exit(0)
 
