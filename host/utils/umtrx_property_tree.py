@@ -26,7 +26,7 @@ class umtrx_property_tree:
     d = dict(action=action, path=path)
     if value_type is not None: d['type'] = value_type
     if value is not None: d['value'] = value
-    return self.s.send(bytes(json.dumps(d)+'\n', 'UTF-8'))
+    return self.s.send((json.dumps(d)+'\n').encode('UTF-8'))
 
   def _recv_response(self):
     resp = self.f.readline().strip()
