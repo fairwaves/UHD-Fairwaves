@@ -1,3 +1,10 @@
+umtrx (1.0.15) trusty; urgency=medium
+
+  * host: Python 2 compatibility for umtrx_property_tree.py
+  * utils: s/USRP/UmTRX/g in console output of umtrx_net_burner.py
+
+ -- Rauf Gyulaliev <rauf.gyulaliev@fairwaves.co>  Tue, 15 Aug 2017 03:03:23 +0300
+
 umtrx (1.0.14) trusty; urgency=medium
 
   * Quick build fix.
