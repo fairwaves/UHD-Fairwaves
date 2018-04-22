@@ -118,7 +118,7 @@ void umtrx_impl::status_monitor_handler(void)
 void umtrx_impl::server_query_handler(void)
 {
     //accept the client socket (timeout is 100 ms, task is called again)
-    if (not wait_read_sockfd(_server_query_tcp_acceptor->native(), 100)) return;
+    if (not wait_read_sockfd(_server_query_tcp_acceptor->native_handle(), 100)) return;
     boost::shared_ptr<asio::ip::tcp::socket> socket(new asio::ip::tcp::socket(_server_query_io_service));
     _server_query_tcp_acceptor->accept(*socket);
 
