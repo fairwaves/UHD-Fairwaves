@@ -18,7 +18,6 @@
 #
 
 import optparse
-import math
 import os
 import re
 import struct

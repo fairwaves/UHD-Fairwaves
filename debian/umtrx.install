@@ -1,5 +1,3 @@
 usr/bin
 images/u2plus_umtrx_v2.bin images/umtrx_txrx_uhd.bin usr/share/umtrx/firmware
-host/utils/umtrx_query_sensors.py host/utils/umtrx_query_versions.py host/utils/umtrx_net_burner.py usr/share/umtrx
-
 host/utils/umtrx_property_tree.py host/utils/umtrx_vswr.py usr/lib/python2.7/dist-packages

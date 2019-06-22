@@ -6,6 +6,9 @@ INSTALL(PROGRAMS
     umtrx_gps_coord
     umtrx_auto_calibration
     umtrx_firmware
+    umtrx_net_burner
+    umtrx_query_sensors
+    umtrx_query_versions
     DESTINATION bin
 )
 
