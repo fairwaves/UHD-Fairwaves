@@ -3,7 +3,7 @@ Section: libs
 Priority: optional
 Maintainer: Josh Blum <josh@pothosware.com>
 Build-Depends:
-    debhelper (>= 9.0.0),
+    debhelper (>= 11.0.0),
     cmake (>= 2.8),
     libboost-all-dev,
     libuhd-dev (>= 3.7)
