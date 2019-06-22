@@ -5,7 +5,11 @@ Maintainer: Josh Blum <josh@pothosware.com>
 Build-Depends:
     debhelper (>= 11.0.0),
     cmake (>= 2.8),
-    libboost-all-dev,
+    libboost-date-time-dev,
+    libboost-filesystem-dev,
+    libboost-system-dev,
+    libboost-thread-dev,
+    libboost-program-options-dev,
     libuhd-dev (>= 3.7)
 Standards-Version: 3.9.5
 Homepage: http://umtrx.org/
