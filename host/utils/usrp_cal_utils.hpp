@@ -31,6 +31,7 @@
 #include <complex>
 #include <cmath>
 #include <fstream>
+#include <atomic>
 
 namespace fs = boost::filesystem;
 
@@ -227,7 +228,7 @@ static void capture_samples(
 /***********************************************************************
  * Transmit thread
  **********************************************************************/
-static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl){
+static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_freq, const double tx_wave_ampl, std::atomic<bool> &interrupted){
     uhd::set_thread_priority_safe();
 
     //create a transmit streamer
@@ -246,7 +247,7 @@ static void tx_thread(uhd::usrp::multi_usrp::sptr usrp, const double tx_wave_fre
     wave_table table(tx_wave_ampl);
 
     //fill buff and send until interrupted
-    while (not boost::this_thread::interruption_requested()){
+    while (not interrupted){
         for (size_t i = 0; i < buff.size(); i++){
             buff[i] = table(index += step);
         }

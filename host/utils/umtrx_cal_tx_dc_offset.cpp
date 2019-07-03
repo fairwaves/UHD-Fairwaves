@@ -18,6 +18,7 @@
 
 #include "usrp_cal_utils.hpp"
 #include <uhd/utils/safe_main.hpp>
+#include <boost/ref.hpp>
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/math/special_functions/round.hpp>
@@ -342,8 +343,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
     //create a transmitter thread
+    std::atomic<bool> interrupted(false);
     boost::thread_group threads;
-    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_freq, tx_wave_ampl));
+    threads.create_thread(boost::bind(&tx_thread, usrp, tx_wave_freq, tx_wave_ampl, boost::ref(interrupted)));
 
     //store the results here
     std::vector<result_t> results;
@@ -403,7 +405,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::cout << std::endl;
 
     //stop the transmitter
-    threads.interrupt_all();
+    interrupted = true;
     threads.join_all();
 
     if (not vm.count("single_test"))
