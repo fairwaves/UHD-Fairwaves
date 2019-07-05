@@ -12,15 +12,21 @@ if [ "$#" -lt "1" ] ; then
   echo "  - Tx DC offset calibration"
   echo "  - Tx IQ balance calibration"
   echo
-  echo "The result of the calibration is stored in the DIR/.uhd/cal/ directory. DIR is one of the \$APPDATA, \$HOME and /tmp,"
-  echo "whichever is defined. Make sure you run calibration from the same user as the one who runs applications or define"
-  echo "\$APPDATA or \$HOME appropriately. Calibration files will be loaded by the application automatically on startup."
-  echo "Old calibration files are renamed when you run a calibration to avoid overwriting."
+  echo "The result of the calibration is stored in the \$UHD_CONFIG_DIR/.uhd/cal/ directory."
+  echo "If \$UHD_CONFIG_DIR is undefined, /var/lib/umtrx is used instead."
+  echo "When running UHD applications, make sure you set one of \$UHD_CONFIG_DIR, \$APPDATA or \$HOME to the same directory,"
+  echo "so the calibration files could be found and autoloaded by the application on startup."
+  echo "Existing calibration files are renamed when you run a calibration to avoid overwriting."
   echo
   echo "Calibration is permanent and only depends on temperature. If the temperature of the system is stable, you need to"
   echo "run the calibration only once."
   exit 1
 fi
+
+if [ -z "$UHD_CONFIG_DIR" ]; then
+  export UHD_CONFIG_DIR=/var/lib/umtrx
+fi
+mkdir -p $UHD_CONFIG_DIR
 
 presets=$*
 
