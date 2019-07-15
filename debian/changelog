@@ -1,3 +1,9 @@
+umtrx (1.0.18) bionic; urgency=medium
+
+  * umtrx status monitor now binds to localhost instead of 0.0.0.0
+
+ -- Kirill Zakharenko <earwin@gmail.com>  Fri, 12 Jul 2019 13:39:48 +0300
+
 umtrx (1.0.17) bionic; urgency=medium
 
   * umtrx_auto_calibration: save result files to /var/lib/umtrx by default
