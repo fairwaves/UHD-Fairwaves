@@ -71,7 +71,7 @@ void umtrx_impl::status_monitor_start(const uhd::device_addr_t &device_addr)
     {
         UHD_MSG(status) << "Creating TCP monitor on port " << device_addr.get("status_port") << std::endl;
         _server_query_tcp_acceptor.reset(new asio::ip::tcp::acceptor(
-            _server_query_io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), device_addr.cast<int>("status_port", 0))));
+            _server_query_io_service, asio::ip::tcp::endpoint(asio::ip::address::from_string("127.0.0.1"), device_addr.cast<int>("status_port", 0))));
         _server_query_task = task::make(boost::bind(&umtrx_impl::server_query_handler, this));
     }
     _status_monitor_task = task::make(boost::bind(&umtrx_impl::status_monitor_handler, this));
