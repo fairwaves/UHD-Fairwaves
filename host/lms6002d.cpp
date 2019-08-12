@@ -118,7 +118,7 @@ double lms6002d_dev::txrx_pll_tune(uint8_t reg, double ref_clock, double out_fre
     for (int i = 0; i < 64; i++) {
         // Update VCOCAP
         lms_write_bits(reg + 0x9, 0x3f, i);
-        usleep(50);
+        usleep(long(50));
 
         int comp = read_reg(reg + 0x0a);
         switch (comp >> 6) {
@@ -360,7 +360,7 @@ int lms6002d_dev::general_dc_calibration_loop(uint8_t dc_addr, uint8_t calibrati
         if (verbosity > 1) printf("cnt=%d\n", try_cnt_limit);
 
         // Wait for 6.4(1.6) us
-        usleep(6.4);
+        usleep(long(6.4));
 
         // Read DC_CLBR_DONE
         reg_val  = read_reg(calibration_reg_base+0x01);
