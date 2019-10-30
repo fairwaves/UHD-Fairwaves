@@ -18,9 +18,9 @@
 #include "umtrx_impl.hpp"
 #include "umtrx_regs.hpp"
 #include "umtrx_version.hpp"
+#include "umtrx_log_adapter.hpp"
 #include "cores/apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
-#include <uhd/utils/msg.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp> //sleep
 #include <boost/assign/list_of.hpp>

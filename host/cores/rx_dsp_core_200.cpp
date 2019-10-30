@@ -18,7 +18,7 @@
 #include "rx_dsp_core_200.hpp"
 #include <uhd/types/dict.hpp>
 #include <uhd/exception.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/safe_call.hpp>
 #include <uhd/utils/algorithm.hpp>
 #include <boost/assign/list_of.hpp>

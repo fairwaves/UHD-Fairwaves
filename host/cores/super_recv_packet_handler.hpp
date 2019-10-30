@@ -22,7 +22,7 @@
 #include <uhd/exception.hpp>
 #include <uhd/convert.hpp>
 #include <uhd/stream.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/tasks.hpp>
 #include <uhd/utils/atomic.hpp>
 #include <uhd/utils/byteswap.hpp>
@@ -559,7 +559,7 @@ private:
                     rx_metadata_t metadata = curr_info.metadata;
                     _props[index].handle_overflow();
                     curr_info.metadata = metadata;
-                    UHD_MSG(fastpath) << "O";
+                    UHD_LOG_FASTPATH("O");
                 }
                 return;
 
@@ -576,7 +576,7 @@ private:
                     prev_info[index].ifpi.num_payload_words32*sizeof(boost::uint32_t)/_bytes_per_otw_item, _samp_rate);
                 curr_info.metadata.out_of_sequence = true;
                 curr_info.metadata.error_code = rx_metadata_t::ERROR_CODE_OVERFLOW;
-                UHD_MSG(fastpath) << "D";
+                UHD_LOG_FASTPATH("D");
                 return;
 
             }

@@ -1,5 +1,5 @@
 #include "power_amp.hpp"
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/exception.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>

@@ -17,7 +17,7 @@
 
 #include "usrp2/fw_common.h"
 #include "umtrx_iface.hpp"
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/log.hpp>
 #include <uhd/utils/byteswap.hpp>
 #include <uhd/types/device_addr.hpp>

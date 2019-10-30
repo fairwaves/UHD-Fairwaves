@@ -22,7 +22,7 @@
 #include <uhd/exception.hpp>
 #include <uhd/convert.hpp>
 #include <uhd/stream.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/tasks.hpp>
 #include <uhd/utils/atomic.hpp>
 #include <uhd/utils/byteswap.hpp>

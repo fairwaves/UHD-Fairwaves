@@ -20,7 +20,7 @@
 #include "umtrx_impl.hpp"
 #include "umtrx_iface.hpp"
 #include <uhd/exception.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include "missing/platform.hpp"
 #include <uhd/utils/tasks.hpp>
 #include <uhd/utils/safe_call.hpp>

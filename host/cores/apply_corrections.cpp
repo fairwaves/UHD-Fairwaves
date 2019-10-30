@@ -18,7 +18,7 @@
 #include "apply_corrections.hpp"
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <uhd/utils/paths.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/csv.hpp>
 #include <uhd/types/dict.hpp>
 #include <boost/filesystem.hpp>

@@ -18,7 +18,7 @@
 #include <uhd/utils/paths.hpp>
 #include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/algorithm.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>

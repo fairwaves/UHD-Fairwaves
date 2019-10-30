@@ -17,7 +17,7 @@
 
 #include "umtrx_regs.hpp"
 #include <uhd/exception.hpp>
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/utils/safe_call.hpp>
 #include <uhd/transport/vrt_if_packet.hpp>
 #include "umtrx_fifo_ctrl.hpp"

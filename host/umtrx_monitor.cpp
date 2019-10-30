@@ -16,7 +16,7 @@
 //
 
 #include "umtrx_impl.hpp"
-#include <uhd/utils/msg.hpp>
+#include "umtrx_log_adapter.hpp"
 #include <uhd/types/sensors.hpp>
 #include <uhd/types/ranges.hpp>
 #include <boost/asio.hpp>
