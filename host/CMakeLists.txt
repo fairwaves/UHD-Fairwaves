@@ -84,6 +84,13 @@ else()
     message(STATUS "  use log.hpp for logging")
 endif()
 
+if (EXISTS "${UHD_INCLUDE_DIRS}/uhd/utils/thread.hpp")
+    add_definitions(-DTHREAD_PRIORITY_HPP_DEPRECATED)
+    message(STATUS "  use thread.hpp (new interface)")
+else()
+    message(STATUS "  use thread_priority.hpp (old interface)")
+endif()
+
 ########################################################################
 # Setup Boost
 ########################################################################

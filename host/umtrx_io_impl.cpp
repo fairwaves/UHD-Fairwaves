@@ -27,7 +27,11 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <uhd/utils/thread_priority.hpp>
+#ifdef THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread.hpp>
+#else // THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread_priority.hpp>
+#endif // THREAD_PRIORITY_HPP_DEPRECATED
 
 //A reasonable number of frames for send/recv and async/sync
 static const size_t DEFAULT_NUM_FRAMES = 32;

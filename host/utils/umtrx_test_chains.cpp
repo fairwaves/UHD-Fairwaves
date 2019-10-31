@@ -15,7 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <uhd/utils/thread_priority.hpp>
+#ifdef THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread.hpp>
+#else // THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread_priority.hpp>
+#endif // THREAD_PRIORITY_HPP_DEPRECATED
 #include <uhd/utils/safe_main.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <boost/program_options.hpp>

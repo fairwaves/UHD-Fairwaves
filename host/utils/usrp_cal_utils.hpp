@@ -16,7 +16,11 @@
 //
 
 #include <uhd/utils/paths.hpp>
-#include <uhd/utils/thread_priority.hpp>
+#ifdef THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread.hpp>
+#else // THREAD_PRIORITY_HPP_DEPRECATED
+#  include <uhd/utils/thread_priority.hpp>
+#endif // THREAD_PRIORITY_HPP_DEPRECATED
 #include <uhd/utils/algorithm.hpp>
 #include "umtrx_log_adapter.hpp"
 #include <uhd/property_tree.hpp>
