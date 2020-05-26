@@ -1,3 +1,10 @@
+umtrx (1.0.19) bionic; urgency=medium
+
+  * library now supports python3
+  * updated for latest UHD/libboost
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Tue, 26 May 2020 07:48:32 +0300
+
 umtrx (1.0.18) bionic; urgency=medium
 
   * umtrx status monitor now binds to localhost instead of 0.0.0.0
