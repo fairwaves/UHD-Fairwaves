@@ -64,7 +64,7 @@ protected:
     // Map PA types to string names
     struct pa_type_map_pair_t {
         pa_type_t type;
-        std::string name;
+        std::string const &name;
     };
     static const pa_type_map_pair_t _pa_type_map[];
 
