@@ -104,7 +104,7 @@ static void apply_fe_corrections(
     const uhd::usrp::dboard_eeprom_t db_eeprom = sub_tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
 
     //make the calibration file path
-    const fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd" / "cal" / (file_prefix + db_eeprom.serial + ".csv");
+    const fs::path cal_data_path = fs::path(uhd::get_cal_data_path()) / (file_prefix + db_eeprom.serial + ".csv");
     UHD_MSG(status) << "Looking for FE correction at: " << cal_data_path.c_str() << "...  ";
     if (not fs::exists(cal_data_path)) {
         UHD_MSG(status) << "Not found" << std::endl;
