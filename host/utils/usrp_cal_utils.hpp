@@ -138,9 +138,7 @@ static void store_results(
     std::string serial = get_serial(usrp, rx_tx);
 
     //make the calibration file path
-    fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd";
-    fs::create_directory(cal_data_path);
-    cal_data_path = cal_data_path / "cal";
+    fs::path cal_data_path = fs::path(uhd::get_cal_data_path());
     fs::create_directory(cal_data_path);
     cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.2_%s.csv") % rx_tx % what % serial);
     if (fs::exists(cal_data_path)){
