@@ -60,7 +60,6 @@ static const boost::uint32_t MIN_PROTO_COMPAT_I2C = 7;
 // The register compat number must reflect the protocol compatibility
 // and the compatibility of the register mapping (more likely to change).
 static const boost::uint32_t MIN_PROTO_COMPAT_REG = 10;
-static const boost::uint32_t MIN_PROTO_COMPAT_UART = 7;
 
 class umtrx_iface_impl : public umtrx_iface{
 public:
