@@ -40,7 +40,6 @@
 #include <uhd/types/dict.hpp>
 #include <uhd/types/stream_cmd.hpp>
 #include <uhd/types/sensors.hpp>
-#include <uhd/types/clock_config.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
