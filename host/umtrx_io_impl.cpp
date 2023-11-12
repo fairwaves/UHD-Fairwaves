@@ -249,10 +249,10 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
         _rx_dsps[dsp]->set_nsamps_per_packet(spp); //seems to be a good place to set this
         _rx_dsps[dsp]->setup(args);
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &zero_copy_if::get_recv_buff, xports[chan_i], _1
+            &zero_copy_if::get_recv_buff, xports[chan_i], boost::placeholders::_1
         ), true /*flush*/);
         my_streamer->set_issue_stream_cmd(chan_i, boost::bind(
-            &rx_dsp_core_200::issue_stream_command, _rx_dsps[dsp], _1));
+            &rx_dsp_core_200::issue_stream_command, _rx_dsps[dsp], boost::placeholders::_1));
         _rx_streamers[dsp] = my_streamer; //store weak pointer
     }
 
@@ -471,7 +471,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
     //shared async queue for all channels in streamer
     boost::shared_ptr<async_md_type> async_md(new async_md_type(1000/*messages deep*/));
     if (not _old_async_queue) _old_async_queue.reset(new async_md_type(1000/*messages deep*/));
-    my_streamer->set_async_receiver(boost::bind(&async_md_type::pop_with_timed_wait, async_md, _1, _2));
+    my_streamer->set_async_receiver(boost::bind(&async_md_type::pop_with_timed_wait, async_md, boost::placeholders::_1, boost::placeholders::_2));
 
     //bind callbacks for the handler
     for (size_t chan_i = 0; chan_i < args.channels.size(); chan_i++)
@@ -506,7 +506,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
 
         //buffer get method handles flow control and hold task reference count
         my_streamer->set_xport_chan_get_buff(chan_i, boost::bind(
-            &get_send_buff, task, fc_mon, xports[chan_i], _1
+            &get_send_buff, task, fc_mon, xports[chan_i], boost::placeholders::_1
         ));
 
         _tx_streamers[dsp] = my_streamer; //store weak pointer

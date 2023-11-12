@@ -32,7 +32,7 @@
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/format.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/thread/barrier.hpp>
 #include <iostream>

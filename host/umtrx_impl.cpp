@@ -21,7 +21,7 @@
 #include "umtrx_log_adapter.hpp"
 #include "cores/apply_corrections.hpp"
 #include <uhd/utils/log.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/thread.hpp> //sleep
 #include <boost/assign/list_of.hpp>
 #include <boost/utility.hpp>
@@ -107,7 +107,7 @@ template <typename T> property<T> &property_alias(uhd::property_tree::sptr &_tre
 {
     // By default route each chanel to its own antenna
     return _tree->create<T>(alias)
-        .subscribe(boost::bind(&uhd::property<T>::set, boost::ref(_tree->access<T>(orig)), _1))
+        .subscribe(boost::bind(&uhd::property<T>::set, boost::ref(_tree->access<T>(orig)), boost::placeholders::_1))
         .publish(boost::bind(&uhd::property<T>::get, boost::ref(_tree->access<T>(orig))));
 }
 
@@ -266,23 +266,23 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _ctrl = umtrx_fifo_ctrl::make(this->make_xport(UMTRX_CTRL_FRAMER, device_addr_t()), UMTRX_CTRL_SID, fifo_ctrl_window);
     _ctrl->peek32(0); //test readback
     _tree->create<time_spec_t>(mb_path / "time/cmd")
-        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_time, _ctrl, _1));
+        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_time, _ctrl, boost::placeholders::_1));
     _tree->create<double>(mb_path / "tick_rate")
-        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_tick_rate, _ctrl, _1));
+        .subscribe(boost::bind(&umtrx_fifo_ctrl::set_tick_rate, _ctrl, boost::placeholders::_1));
 
     ////////////////////////////////////////////////////////////////////
     // setup the mboard eeprom
     ////////////////////////////////////////////////////////////////////
     _tree->create<mboard_eeprom_t>(mb_path / "eeprom")
         .set(_iface->mb_eeprom)
-        .subscribe(boost::bind(&umtrx_impl::set_mb_eeprom, this, _iface, _1));
+        .subscribe(boost::bind(&umtrx_impl::set_mb_eeprom, this, _iface, boost::placeholders::_1));
 
     ////////////////////////////////////////////////////////////////
     // create clock control objects
     ////////////////////////////////////////////////////////////////
     _tree->access<double>(mb_path / "tick_rate")
         .publish(boost::bind(&umtrx_impl::get_master_clock_rate, this))
-        .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, _1));
+        .subscribe(boost::bind(&umtrx_impl::update_tick_rate, this, boost::placeholders::_1));
     _tree->create<double>(mb_path / "dsp_rate")
         .publish(boost::bind(&umtrx_impl::get_master_dsp_rate, this));
 
@@ -336,13 +336,13 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     // note: the control is also aliased to RF frontend later
     _tree->create<bool>(mb_path / "divsw1")
-            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, _1, 0))
+            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, boost::placeholders::_1, 0))
             .set(device_addr.cast<bool>("divsw1", false));
     UHD_MSG(status) << "Diversity switch for channel 1: "
                     << (_tree->access<bool>(mb_path / "divsw1").get()?"true":"false")
                     << std::endl;
     _tree->create<bool>(mb_path / "divsw2")
-            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, _1, 1))
+            .subscribe(boost::bind(&umtrx_impl::set_diversity, this, boost::placeholders::_1, 1))
             .set(device_addr.cast<bool>("divsw2", false));
     UHD_MSG(status) << "Diversity switch for channel 2: "
                     << (_tree->access<bool>(mb_path / "divsw2").get()?"true":"false")
@@ -425,9 +425,9 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _tx_fes[1] = tx_frontend_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TX_FRONT1));
 
     _tree->create<subdev_spec_t>(mb_path / "rx_subdev_spec")
-        .subscribe(boost::bind(&umtrx_impl::update_rx_subdev_spec, this, _1));
+        .subscribe(boost::bind(&umtrx_impl::update_rx_subdev_spec, this, boost::placeholders::_1));
     _tree->create<subdev_spec_t>(mb_path / "tx_subdev_spec")
-        .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, _1));
+        .subscribe(boost::bind(&umtrx_impl::update_tx_subdev_spec, this, boost::placeholders::_1));
 
     for (char name = 'A'; name <= 'B'; name++)
     {
@@ -440,21 +440,21 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         tx_fe->set_mux("IQ");
         rx_fe->set_mux(false/*no swap*/);
         _tree->create<std::complex<double> >(rx_fe_path / "dc_offset" / "value")
-            .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, _1))
+            .coerce(boost::bind(&rx_frontend_core_200::set_dc_offset, rx_fe, boost::placeholders::_1))
             .set(std::complex<double>(0.0, 0.0));
         _tree->create<bool>(rx_fe_path / "dc_offset" / "enable")
-            .subscribe(boost::bind(&rx_frontend_core_200::set_dc_offset_auto, rx_fe, _1))
+            .subscribe(boost::bind(&rx_frontend_core_200::set_dc_offset_auto, rx_fe, boost::placeholders::_1))
             .set(true);
         _tree->create<std::complex<double> >(rx_fe_path / "iq_balance" / "value")
-            .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, _1))
+            .subscribe(boost::bind(&rx_frontend_core_200::set_iq_balance, rx_fe, boost::placeholders::_1))
             .set(std::polar<double>(0.0, 0.0));
         /*
         _tree->create<std::complex<double> >(tx_fe_path / "dc_offset" / "value")
-            .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, _1))
+            .coerce(boost::bind(&tx_frontend_core_200::set_dc_offset, tx_fe, boost::placeholders::_1))
             .set(std::complex<double>(0.0, 0.0));
         */
         _tree->create<std::complex<double> >(tx_fe_path / "iq_balance" / "value")
-            .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, _1))
+            .subscribe(boost::bind(&tx_frontend_core_200::set_iq_balance, tx_fe, boost::placeholders::_1))
             .set(std::polar<double>(0.0, 0.0));
     }
 
@@ -473,22 +473,22 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _rx_dsps[dspno]->set_mux("IQ", false/*no swap*/);
         _rx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
         _tree->access<double>(mb_path / "dsp_rate")
-            .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], _1));
+            .subscribe(boost::bind(&rx_dsp_core_200::set_tick_rate, _rx_dsps[dspno], boost::placeholders::_1));
         _tree->access<double>(mb_path / "tick_rate")
-            .subscribe(boost::bind(&rx_dsp_core_200::set_vita_rate, _rx_dsps[dspno], _1));
+            .subscribe(boost::bind(&rx_dsp_core_200::set_vita_rate, _rx_dsps[dspno], boost::placeholders::_1));
         fs_path rx_dsp_path = mb_path / str(boost::format("rx_dsps/%u") % dspno);
         _tree->create<meta_range_t>(rx_dsp_path / "rate/range")
             .publish(boost::bind(&rx_dsp_core_200::get_host_rates, _rx_dsps[dspno]));
         _tree->create<double>(rx_dsp_path / "rate/value")
             .set(this->get_master_clock_rate()/12) //some default
-            .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _rx_dsps[dspno], _1))
-            .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, dspno, _1));
+            .coerce(boost::bind(&rx_dsp_core_200::set_host_rate, _rx_dsps[dspno], boost::placeholders::_1))
+            .subscribe(boost::bind(&umtrx_impl::update_rx_samp_rate, this, dspno, boost::placeholders::_1));
         _tree->create<double>(rx_dsp_path / "freq/value")
-            .coerce(boost::bind(&rx_dsp_core_200::set_freq, _rx_dsps[dspno], _1));
+            .coerce(boost::bind(&rx_dsp_core_200::set_freq, _rx_dsps[dspno], boost::placeholders::_1));
         _tree->create<meta_range_t>(rx_dsp_path / "freq/range")
             .publish(boost::bind(&rx_dsp_core_200::get_freq_range, _rx_dsps[dspno]));
         _tree->create<stream_cmd_t>(rx_dsp_path / "stream_cmd")
-            .subscribe(boost::bind(&rx_dsp_core_200::issue_stream_command, _rx_dsps[dspno], _1));
+            .subscribe(boost::bind(&rx_dsp_core_200::issue_stream_command, _rx_dsps[dspno], boost::placeholders::_1));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -503,16 +503,16 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     for (size_t dspno = 0; dspno < _tx_dsps.size(); dspno++){
         _tx_dsps[dspno]->set_link_rate(UMTRX_LINK_RATE_BPS);
         _tree->access<double>(mb_path / "dsp_rate")
-            .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _tx_dsps[dspno], _1));
+            .subscribe(boost::bind(&tx_dsp_core_200::set_tick_rate, _tx_dsps[dspno], boost::placeholders::_1));
         fs_path tx_dsp_path = mb_path / str(boost::format("tx_dsps/%u") % dspno);
         _tree->create<meta_range_t>(tx_dsp_path / "rate/range")
             .publish(boost::bind(&tx_dsp_core_200::get_host_rates, _tx_dsps[dspno]));
         _tree->create<double>(tx_dsp_path / "rate/value")
             .set(this->get_master_clock_rate()/12) //some default
-            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _tx_dsps[dspno], _1))
-            .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, dspno, _1));
+            .coerce(boost::bind(&tx_dsp_core_200::set_host_rate, _tx_dsps[dspno], boost::placeholders::_1))
+            .subscribe(boost::bind(&umtrx_impl::update_tx_samp_rate, this, dspno, boost::placeholders::_1));
         _tree->create<double>(tx_dsp_path / "freq/value")
-            .coerce(boost::bind(&tx_dsp_core_200::set_freq, _tx_dsps[dspno], _1));
+            .coerce(boost::bind(&tx_dsp_core_200::set_freq, _tx_dsps[dspno], boost::placeholders::_1));
         _tree->create<meta_range_t>(tx_dsp_path / "freq/range")
             .publish(boost::bind(&tx_dsp_core_200::get_freq_range, _tx_dsps[dspno]));
     }
@@ -528,21 +528,21 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
     _time64 = time64_core_200::make(_ctrl, U2_REG_SR_ADDR(SR_TIME64), time64_rb_bases);
 
     _tree->access<double>(mb_path / "tick_rate")
-        .subscribe(boost::bind(&time64_core_200::set_tick_rate, _time64, _1));
+        .subscribe(boost::bind(&time64_core_200::set_tick_rate, _time64, boost::placeholders::_1));
     _tree->create<time_spec_t>(mb_path / "time" / "now")
         .publish(boost::bind(&time64_core_200::get_time_now, _time64))
-        .subscribe(boost::bind(&time64_core_200::set_time_now, _time64, _1));
+        .subscribe(boost::bind(&time64_core_200::set_time_now, _time64, boost::placeholders::_1));
     _tree->create<time_spec_t>(mb_path / "time" / "pps")
         .publish(boost::bind(&time64_core_200::get_time_last_pps, _time64))
-        .subscribe(boost::bind(&time64_core_200::set_time_next_pps, _time64, _1));
+        .subscribe(boost::bind(&time64_core_200::set_time_next_pps, _time64, boost::placeholders::_1));
     //setup time source props
     _tree->create<std::string>(mb_path / "time_source" / "value")
-        .subscribe(boost::bind(&time64_core_200::set_time_source, _time64, _1));
+        .subscribe(boost::bind(&time64_core_200::set_time_source, _time64, boost::placeholders::_1));
     _tree->create<std::vector<std::string> >(mb_path / "time_source" / "options")
         .publish(boost::bind(&time64_core_200::get_time_sources, _time64));
     //setup reference source props
     _tree->create<std::string>(mb_path / "clock_source" / "value")
-        .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, _1));
+        .subscribe(boost::bind(&umtrx_impl::update_clock_source, this, boost::placeholders::_1));
 
     static const std::vector<std::string> clock_sources = boost::assign::list_of("internal")("external");
     _tree->create<std::vector<std::string> >(mb_path / "clock_source"/ "options").set(clock_sources);
@@ -594,7 +594,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
                 .publish(boost::bind(&lms6002d_ctrl::get_rx_gain_range, ctrl, name));
 
             _tree->create<double>(rx_rf_fe_path / "gains" / name / "value")
-                .coerce(boost::bind(&lms6002d_ctrl::set_rx_gain, ctrl, _1, name))
+                .coerce(boost::bind(&lms6002d_ctrl::set_rx_gain, ctrl, boost::placeholders::_1, name))
                 .set((ctrl->get_rx_gain_range(name).start() + ctrl->get_rx_gain_range(name).stop())/2.0);
         }
 
@@ -608,7 +608,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
                     .publish(boost::bind(&lms6002d_ctrl::get_tx_gain_range, ctrl, name));
 
                 _tree->create<double>(tx_rf_fe_path / "gains" / name / "value")
-                    .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, _1, name))
+                    .coerce(boost::bind(&lms6002d_ctrl::set_tx_gain, ctrl, boost::placeholders::_1, name))
                     .set((ctrl->get_tx_gain_range(name).start() + ctrl->get_tx_gain_range(name).stop())/2.0);
             }
         } else {
@@ -623,7 +623,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
                 .publish(boost::bind(&umtrx_impl::get_tx_power_range, this, fe_name));
 
             _tree->create<double>(tx_rf_fe_path / "gains" / "PA" / "value")
-                .coerce(boost::bind(&umtrx_impl::set_tx_power, this, _1, fe_name))
+                .coerce(boost::bind(&umtrx_impl::set_tx_power, this, boost::placeholders::_1, fe_name))
                 // Set default output power to maximum
                 .set(get_tx_power_range(fe_name).stop());
 
@@ -631,14 +631,14 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
         //rx freq
         _tree->create<double>(rx_rf_fe_path / "freq" / "value")
-            .coerce(boost::bind(&umtrx_impl::set_rx_freq, this, fe_name, _1));
+            .coerce(boost::bind(&umtrx_impl::set_rx_freq, this, fe_name, boost::placeholders::_1));
         _tree->create<meta_range_t>(rx_rf_fe_path / "freq" / "range")
             .publish(boost::bind(&umtrx_impl::get_rx_freq_range, this, fe_name));
         _tree->create<bool>(rx_rf_fe_path / "use_lo_offset").set(false);
 
         //tx freq
         _tree->create<double>(tx_rf_fe_path / "freq" / "value")
-            .coerce(boost::bind(&lms6002d_ctrl::set_tx_freq, ctrl, _1));
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_freq, ctrl, boost::placeholders::_1));
         _tree->create<meta_range_t>(tx_rf_fe_path / "freq" / "range")
             .publish(boost::bind(&lms6002d_ctrl::get_tx_freq_range, ctrl));
         _tree->create<bool>(tx_rf_fe_path / "use_lo_offset").set(false);
@@ -647,34 +647,34 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         _tree->create<std::vector<std::string> >(rx_rf_fe_path / "antenna" / "options")
             .publish(boost::bind(&lms6002d_ctrl::get_rx_antennas, ctrl));
         _tree->create<std::string>(rx_rf_fe_path / "antenna" / "value")
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rx_ant, ctrl, _1))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rx_ant, ctrl, boost::placeholders::_1))
             .set("RX1");
 
         //tx ant
         _tree->create<std::vector<std::string> >(tx_rf_fe_path / "antenna" / "options")
             .publish(boost::bind(&lms6002d_ctrl::get_tx_antennas, ctrl));
         _tree->create<std::string>(tx_rf_fe_path / "antenna" / "value")
-            .subscribe(boost::bind(&lms6002d_ctrl::set_tx_ant, ctrl, _1))
+            .subscribe(boost::bind(&lms6002d_ctrl::set_tx_ant, ctrl, boost::placeholders::_1))
             .set("TX2");
 
         //misc
         _tree->create<std::string>(rx_rf_fe_path / "connection").set("IQ");
         _tree->create<std::string>(tx_rf_fe_path / "connection").set("IQ");
         _tree->create<bool>(rx_rf_fe_path / "enabled")
-            .coerce(boost::bind(&lms6002d_ctrl::set_rx_enabled, ctrl, _1));
+            .coerce(boost::bind(&lms6002d_ctrl::set_rx_enabled, ctrl, boost::placeholders::_1));
         _tree->create<bool>(tx_rf_fe_path / "enabled")
-            .coerce(boost::bind(&lms6002d_ctrl::set_tx_enabled, ctrl, _1));
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_enabled, ctrl, boost::placeholders::_1));
 
         //rx bw
         _tree->create<double>(rx_rf_fe_path / "bandwidth" / "value")
-            .coerce(boost::bind(&lms6002d_ctrl::set_rx_bandwidth, ctrl, _1))
+            .coerce(boost::bind(&lms6002d_ctrl::set_rx_bandwidth, ctrl, boost::placeholders::_1))
             .set(2*0.75e6);
         _tree->create<meta_range_t>(rx_rf_fe_path / "bandwidth" / "range")
             .publish(boost::bind(&lms6002d_ctrl::get_rx_bw_range, ctrl));
 
         //tx bw
         _tree->create<double>(tx_rf_fe_path / "bandwidth" / "value")
-            .coerce(boost::bind(&lms6002d_ctrl::set_tx_bandwidth, ctrl, _1))
+            .coerce(boost::bind(&lms6002d_ctrl::set_tx_bandwidth, ctrl, boost::placeholders::_1))
             .set(2*0.75e6);
         _tree->create<meta_range_t>(tx_rf_fe_path / "bandwidth" / "range")
             .publish(boost::bind(&lms6002d_ctrl::get_tx_bw_range, ctrl));
@@ -682,17 +682,17 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         //bind frontend corrections to the dboard freq props
         _tree->access<double>(tx_rf_fe_path / "freq" / "value")
             .set(0.0) //default value
-            .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, "0", fe_name, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_tx_fe_corrections, this, "0", fe_name, boost::placeholders::_1));
         _tree->access<double>(rx_rf_fe_path / "freq" / "value")
             .set(0.0) //default value
-            .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, "0", fe_name, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_rx_fe_corrections, this, "0", fe_name, boost::placeholders::_1));
 
         //tx cal props
         _tree->create<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_i" / "value")
-            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_i_int, ctrl, _1))
+            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_i_int, ctrl, boost::placeholders::_1))
             .publish(boost::bind(&lms6002d_ctrl::get_tx_vga1dc_i_int, ctrl));
         _tree->create<uint8_t>(tx_rf_fe_path / "lms6002d" / "tx_dc_q" / "value")
-            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_q_int, ctrl, _1))
+            .subscribe(boost::bind(&lms6002d_ctrl::_set_tx_vga1dc_q_int, ctrl, boost::placeholders::_1))
             .publish(boost::bind(&lms6002d_ctrl::get_tx_vga1dc_q_int, ctrl));
 
         //set Tx DC calibration values, which are read from mboard EEPROM
@@ -705,37 +705,37 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
         //plugin dc_offset from lms into the frontend corrections
         _tree->create<std::complex<double> >(mb_path / "tx_frontends" / fe_name / "dc_offset" / "value")
             .publish(boost::bind(&umtrx_impl::get_dc_offset_correction, this, fe_name))
-            .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, _1))
+            .subscribe(boost::bind(&umtrx_impl::set_dc_offset_correction, this, fe_name, boost::placeholders::_1))
             .set(std::complex<double>(dc_i, dc_q));
 
         //rx cal props
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_fe_dc_i" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxfe_dc_i, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_i, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_i, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_fe_dc_q" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxfe_dc_q, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_q, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxfe_dc_q, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_lpf_dc_i" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxlpf_dc_i, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_i, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_i, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rx_lpf_dc_q" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxlpf_dc_q, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_q, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxlpf_dc_q, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2_dc_reference" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxvga2_dc_reference, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2_dc_reference, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2_dc_reference, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2a_dc_i" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxvga2a_dc_i, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_i, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_i, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2a_dc_q" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxvga2a_dc_q, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_q, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2a_dc_q, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2b_dc_i" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxvga2b_dc_i, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_i, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_i, ctrl, boost::placeholders::_1));
         _tree->create<uint8_t>(rx_rf_fe_path / "lms6002d" / "rxvga2b_dc_q" / "value")
             .publish(boost::bind(&lms6002d_ctrl::get_rxvga2b_dc_q, ctrl))
-            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_q, ctrl, _1));
+            .subscribe(boost::bind(&lms6002d_ctrl::set_rxvga2b_dc_q, ctrl, boost::placeholders::_1));
 
         // Alias diversity switch control from mb_path
         property_alias<bool>(_tree, mb_path / "divsw"+(fe_name=="A"?"1":"2"), rx_rf_fe_path / "diversity");
@@ -743,7 +743,7 @@ umtrx_impl::umtrx_impl(const device_addr_t &device_addr)
 
     //TCXO DAC calibration control
     _tree->create<uint16_t>(mb_path / "tcxo_dac" / "value")
-        .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, _1));
+        .subscribe(boost::bind(&umtrx_impl::set_tcxo_dac, this, _iface, boost::placeholders::_1));
 
     ////////////////////////////////////////////////////////////////////
     // post config tasks
@@ -1103,7 +1103,7 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
 
     _hw_rev = UMTRX_VER_2_3_1;
     _tree->create<uint8_t>(mb_path / "pa_dcdc_r")
-            .subscribe(boost::bind(&umtrx_impl::set_pa_dcdc_r, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_pa_dcdc_r, this, boost::placeholders::_1));
 
     std::string pa_dcdc_r = _iface->mb_eeprom.get("pa_dcdc_r", "");
     char* pa_dcdc_r_env = getenv("UMTRX_PA_DCDC_R");
@@ -1138,11 +1138,11 @@ void umtrx_impl::detect_hw_rev(const fs_path& mb_path)
         _pa_nlow = (boost::lexical_cast<int>(pa_low) == 0);
 
     _tree->create<bool>(mb_path / "pa_en1")
-            .subscribe(boost::bind(&umtrx_impl::set_enpa1, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_enpa1, this, boost::placeholders::_1));
     _tree->create<bool>(mb_path / "pa_en2")
-            .subscribe(boost::bind(&umtrx_impl::set_enpa2, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_enpa2, this, boost::placeholders::_1));
     _tree->create<bool>(mb_path / "pa_nlow")
-            .subscribe(boost::bind(&umtrx_impl::set_nlow, this, _1));
+            .subscribe(boost::bind(&umtrx_impl::set_nlow, this, boost::placeholders::_1));
 
     commit_pa_state();
     UHD_MSG(status) << "PA low=`" << pa_low.c_str()
