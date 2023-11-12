@@ -25,6 +25,7 @@
 #include <boost/thread.hpp> //sleep
 #include <boost/assign/list_of.hpp>
 #include <boost/utility.hpp>
+#include <boost/foreach.hpp>
 
 static int verbosity = 0;
 

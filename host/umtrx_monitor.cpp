@@ -20,6 +20,7 @@
 #include <uhd/types/sensors.hpp>
 #include <uhd/types/ranges.hpp>
 #include <boost/asio.hpp>
+#include <boost/foreach.hpp>
 
 using namespace uhd;
 using namespace uhd::usrp;

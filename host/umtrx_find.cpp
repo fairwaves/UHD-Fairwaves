@@ -24,6 +24,7 @@
 #include <uhd/transport/if_addrs.hpp>
 #include <uhd/transport/udp_simple.hpp>
 #include <boost/asio.hpp>
+#include <boost/foreach.hpp>
 
 using namespace uhd;
 using namespace uhd::usrp;
