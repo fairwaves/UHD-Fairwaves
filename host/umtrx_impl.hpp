@@ -236,8 +236,8 @@ private:
     void client_query_handle1(const boost::property_tree::ptree &request, boost::property_tree::ptree &response);
 
     //streaming
-    std::vector<boost::weak_ptr<uhd::rx_streamer> > _rx_streamers;
-    std::vector<boost::weak_ptr<uhd::tx_streamer> > _tx_streamers;
+    std::vector<std::weak_ptr<uhd::rx_streamer> > _rx_streamers;
+    std::vector<std::weak_ptr<uhd::tx_streamer> > _tx_streamers;
     boost::mutex _setupMutex;
 };
 

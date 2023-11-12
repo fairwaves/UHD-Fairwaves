@@ -34,7 +34,7 @@
 class umtrx_fifo_ctrl : public uhd::wb_iface, public uhd::spi_iface
 {
 public:
-    typedef boost::shared_ptr<umtrx_fifo_ctrl> sptr;
+    typedef std::shared_ptr<umtrx_fifo_ctrl> sptr;
 
     //! Make a new FIFO control object
     static sptr make(uhd::transport::zero_copy_if::sptr xport, const boost::uint32_t sid, const size_t window_size);

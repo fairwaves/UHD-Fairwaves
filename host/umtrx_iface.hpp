@@ -34,7 +34,7 @@
  */
 class umtrx_iface : public uhd::wb_iface, public uhd::spi_iface, public uhd::i2c_iface{
 public:
-    typedef boost::shared_ptr<umtrx_iface> sptr;
+    typedef std::shared_ptr<umtrx_iface> sptr;
     /*!
      * Make a new umtrx interface with the control transport.
      * \param ctrl_transport the udp transport object
