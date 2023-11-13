@@ -26,6 +26,7 @@
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/usrp/dboard_eeprom.hpp>
+#include <uhd/version.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/thread.hpp>
@@ -138,7 +139,15 @@ static void store_results(
     std::string serial = get_serial(usrp, rx_tx);
 
     //make the calibration file path
+    //UHD4 deprecated get_app_path and uses designated calibration path (introduced earlier)
+    //Don't break existing UHD3 installs, so use cal path only on UHD4
+#if UHD_VERSION >= 4000000
     fs::path cal_data_path = fs::path(uhd::get_cal_data_path());
+#else
+    fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd";
+    fs::create_directory(cal_data_path);
+    cal_data_path = cal_data_path / "cal";
+#endif
     fs::create_directory(cal_data_path);
     cal_data_path = cal_data_path / str(boost::format("%s_%s_cal_v0.2_%s.csv") % rx_tx % what % serial);
     if (fs::exists(cal_data_path)){

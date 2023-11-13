@@ -21,6 +21,7 @@
 #include "umtrx_log_adapter.hpp"
 #include <uhd/utils/csv.hpp>
 #include <uhd/types/dict.hpp>
+#include <uhd/version.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/thread/mutex.hpp>
@@ -104,7 +105,13 @@ static void apply_fe_corrections(
     const uhd::usrp::dboard_eeprom_t db_eeprom = sub_tree->access<uhd::usrp::dboard_eeprom_t>(db_path).get();
 
     //make the calibration file path
+    //UHD4 deprecated get_app_path and uses designated calibration path (introduced earlier)
+    //Don't break existing UHD3 installs, so use cal path only on UHD4
+#if UHD_VERSION >= 4000000
     const fs::path cal_data_path = fs::path(uhd::get_cal_data_path()) / (file_prefix + db_eeprom.serial + ".csv");
+#else
+    const fs::path cal_data_path = fs::path(uhd::get_app_path()) / ".uhd" / "cal" / (file_prefix + db_eeprom.serial + ".csv");
+#endif
     UHD_MSG(status) << "Looking for FE correction at: " << cal_data_path.c_str() << "...  ";
     if (not fs::exists(cal_data_path)) {
         UHD_MSG(status) << "Not found" << std::endl;
