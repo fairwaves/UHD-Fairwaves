@@ -27,6 +27,8 @@
 #include <boost/function.hpp>
 #include <string>
 
+#include "umtrx_common.hpp"
+
 /*!
  * The umtrx interface class:
  * Provides a set of functions to implementation layer.
@@ -34,7 +36,7 @@
  */
 class umtrx_iface : public uhd::wb_iface, public uhd::spi_iface, public uhd::i2c_iface{
 public:
-    typedef std::shared_ptr<umtrx_iface> sptr;
+    typedef UMTRX_UHD_PTR_NAMESPACE::shared_ptr<umtrx_iface> sptr;
     /*!
      * Make a new umtrx interface with the control transport.
      * \param ctrl_transport the udp transport object
