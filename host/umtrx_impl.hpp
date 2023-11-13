@@ -20,6 +20,7 @@
 #define INCLUDED_UMTRX_IMPL_HPP
 
 #include "usrp2/fw_common.h"
+#include "umtrx_common.hpp"
 #include "umtrx_iface.hpp"
 #include "umtrx_fifo_ctrl.hpp"
 #include "lms6002d_ctrl.hpp"
@@ -236,8 +237,8 @@ private:
     void client_query_handle1(const boost::property_tree::ptree &request, boost::property_tree::ptree &response);
 
     //streaming
-    std::vector<std::weak_ptr<uhd::rx_streamer> > _rx_streamers;
-    std::vector<std::weak_ptr<uhd::tx_streamer> > _tx_streamers;
+    std::vector<UMTRX_UHD_PTR_NAMESPACE::weak_ptr<uhd::rx_streamer> > _rx_streamers;
+    std::vector<UMTRX_UHD_PTR_NAMESPACE::weak_ptr<uhd::tx_streamer> > _tx_streamers;
     boost::mutex _setupMutex;
 };
 

@@ -105,8 +105,8 @@ void umtrx_impl::update_rates(void)
 
 void umtrx_impl::update_rx_samp_rate(const size_t dsp, const double rate)
 {
-    std::shared_ptr<sph::recv_packet_streamer> my_streamer =
-        std::dynamic_pointer_cast<sph::recv_packet_streamer>(_rx_streamers[dsp].lock());
+    UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::recv_packet_streamer> my_streamer =
+        UMTRX_UHD_PTR_NAMESPACE::dynamic_pointer_cast<sph::recv_packet_streamer>(_rx_streamers[dsp].lock());
     if (not my_streamer) return;
 
     my_streamer->set_samp_rate(rate);
@@ -116,8 +116,8 @@ void umtrx_impl::update_rx_samp_rate(const size_t dsp, const double rate)
 
 void umtrx_impl::update_tx_samp_rate(const size_t dsp, const double rate)
 {
-    std::shared_ptr<sph::send_packet_streamer> my_streamer =
-        std::dynamic_pointer_cast<sph::send_packet_streamer>(_tx_streamers[dsp].lock());
+    UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::send_packet_streamer> my_streamer =
+        UMTRX_UHD_PTR_NAMESPACE::dynamic_pointer_cast<sph::send_packet_streamer>(_tx_streamers[dsp].lock());
     if (not my_streamer) return;
 
     my_streamer->set_samp_rate(rate);
@@ -130,15 +130,15 @@ void umtrx_impl::update_tick_rate(const double rate)
     //update the tick rate on all existing streamers -> thread safe
     for (size_t i = 0; i < _rx_streamers.size(); i++)
     {
-        std::shared_ptr<sph::recv_packet_streamer> my_streamer =
-            std::dynamic_pointer_cast<sph::recv_packet_streamer>(_rx_streamers[i].lock());
+        UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::recv_packet_streamer> my_streamer =
+            UMTRX_UHD_PTR_NAMESPACE::dynamic_pointer_cast<sph::recv_packet_streamer>(_rx_streamers[i].lock());
         if (not my_streamer) continue;
         my_streamer->set_tick_rate(rate);
     }
     for (size_t i = 0; i < _tx_streamers.size(); i++)
     {
-        std::shared_ptr<sph::send_packet_streamer> my_streamer =
-            std::dynamic_pointer_cast<sph::send_packet_streamer>(_tx_streamers[i].lock());
+        UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::send_packet_streamer> my_streamer =
+            UMTRX_UHD_PTR_NAMESPACE::dynamic_pointer_cast<sph::send_packet_streamer>(_tx_streamers[i].lock());
         if (not my_streamer) continue;
         my_streamer->set_tick_rate(rate);
     }
@@ -228,7 +228,7 @@ uhd::rx_streamer::sptr umtrx_impl::get_rx_stream(const uhd::stream_args_t &args_
     const size_t spp = unsigned(args.args.cast<double>("spp", bpp/bpi));
 
     //make the new streamer given the samples per packet
-    std::shared_ptr<sph::recv_packet_streamer> my_streamer = std::make_shared<sph::recv_packet_streamer>(spp);
+    UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::recv_packet_streamer> my_streamer = UMTRX_UHD_PTR_NAMESPACE::make_shared<sph::recv_packet_streamer>(spp);
 
     //init some streamer stuff
     my_streamer->resize(args.channels.size());
@@ -454,7 +454,7 @@ uhd::tx_streamer::sptr umtrx_impl::get_tx_stream(const uhd::stream_args_t &args_
     const size_t spp = bpp/convert::get_bytes_per_item(args.otw_format);
 
     //make the new streamer given the samples per packet
-    std::shared_ptr<sph::send_packet_streamer> my_streamer = std::make_shared<sph::send_packet_streamer>(spp);
+    UMTRX_UHD_PTR_NAMESPACE::shared_ptr<sph::send_packet_streamer> my_streamer = UMTRX_UHD_PTR_NAMESPACE::make_shared<sph::send_packet_streamer>(spp);
 
     //init some streamer stuff
     my_streamer->resize(args.channels.size());

@@ -27,6 +27,8 @@
 #include <uhd/types/wb_iface.hpp>
 #include <string>
 
+#include "umtrx_common.hpp"
+
 /*!
  * The umtrx FIFO control class:
  * Provide high-speed peek/poke interface.
@@ -34,7 +36,7 @@
 class umtrx_fifo_ctrl : public uhd::wb_iface, public uhd::spi_iface
 {
 public:
-    typedef std::shared_ptr<umtrx_fifo_ctrl> sptr;
+    typedef UMTRX_UHD_PTR_NAMESPACE::shared_ptr<umtrx_fifo_ctrl> sptr;
 
     //! Make a new FIFO control object
     static sptr make(uhd::transport::zero_copy_if::sptr xport, const boost::uint32_t sid, const size_t window_size);
